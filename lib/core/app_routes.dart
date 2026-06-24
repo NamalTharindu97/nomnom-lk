@@ -1,0 +1,8 @@
+class AppRoutes {
+  const AppRoutes._();
+
+  static const splash = '/';
+  static const login = '/login';
+  static const home = '/home';
+  static const offerDetails = '/offer-details';
+}

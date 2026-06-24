@@ -1,0 +1,33 @@
+# Flutter and Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+backend/bin/
+backend/tmp/
+backend/vendor/
+backend/coverage.out
+backend/coverage.html
+
+# Environment
+.env
+backend/config/firebase-credentials.json
+
+# Build outputs
+build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib

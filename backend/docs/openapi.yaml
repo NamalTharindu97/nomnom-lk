@@ -1,0 +1,1512 @@
+openapi: "3.0.3"
+info:
+  title: NomNom LK API
+  description: Backend API for the Sri Lanka-focused food offers discovery app.
+    Supports user auth, restaurant and offer management, favorites, search,
+    notifications, and an admin panel.
+  version: "1.0.0"
+  contact:
+    name: NomNom LK Team
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+  - url: https://api.nomnom.lk/api/v1
+    description: Production
+
+paths:
+  # ─── Auth ────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user with email & password
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email & password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/firebase:
+    post:
+      tags: [Auth]
+      summary: Authenticate with Firebase ID token (Google Sign-In)
+      operationId: firebaseLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FirebaseRequest"
+      responses:
+        "200":
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token using refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout and invalidate refresh token
+      operationId: logout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "204":
+          description: Logged out successfully
+
+  # ─── Users ───────────────────────────────────────────────────────────────
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      operationId: getMyProfile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/LangHeader"
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+    put:
+      tags: [Users]
+      summary: Update current user profile
+      operationId: updateMyProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+    delete:
+      tags: [Users]
+      summary: Deactivate current user account
+      operationId: deleteMyAccount
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Account deactivated
+
+  # ─── Restaurants ─────────────────────────────────────────────────────────
+  /restaurants:
+    get:
+      tags: [Restaurants]
+      summary: List restaurants (public)
+      operationId: listRestaurants
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/LangHeader"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [approved, pending, rejected]
+          description: Filter by status (default: approved)
+        - name: cuisine
+          in: query
+          schema:
+            type: string
+          description: Filter by cuisine tag
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name
+        - name: lat
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: lng
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: radius_km
+          in: query
+          schema:
+            type: number
+            default: 10
+      responses:
+        "200":
+          description: Paginated restaurant list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestaurantListResponse"
+    post:
+      tags: [Restaurants]
+      summary: Create a restaurant
+      operationId: createRestaurant
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRestaurantRequest"
+      responses:
+        "201":
+          description: Restaurant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestaurantResponse"
+
+  /restaurants/{id}:
+    get:
+      tags: [Restaurants]
+      summary: Get restaurant detail
+      operationId: getRestaurant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/LangHeader"
+      responses:
+        "200":
+          description: Restaurant detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestaurantDetailResponse"
+    put:
+      tags: [Restaurants]
+      summary: Update restaurant
+      operationId: updateRestaurant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRestaurantRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/RestaurantUpdated"
+    delete:
+      tags: [Restaurants]
+      summary: Delete restaurant
+      operationId: deleteRestaurant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Restaurant deleted
+
+  /restaurants/{id}/approve:
+    put:
+      tags: [Restaurants]
+      summary: Approve a pending restaurant
+      operationId: approveRestaurant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          $ref: "#/components/responses/RestaurantUpdated"
+
+  /restaurants/{id}/reject:
+    put:
+      tags: [Restaurants]
+      summary: Reject a pending restaurant
+      operationId: rejectRestaurant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/RestaurantUpdated"
+
+  # ─── Offers ──────────────────────────────────────────────────────────────
+  /offers:
+    get:
+      tags: [Offers]
+      summary: List offers (public)
+      operationId: listOffers
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/LangHeader"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [approved, pending, rejected, expired]
+          description: Filter by status (default: approved)
+        - name: restaurant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: cuisine
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Full-text search query
+        - name: min_discount
+          in: query
+          schema:
+            type: integer
+        - name: max_price
+          in: query
+          schema:
+            type: number
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [popular, newest, ending_soon, price_low, price_high, distance]
+            default: newest
+        - name: lat
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: lng
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: radius_km
+          in: query
+          schema:
+            type: number
+            default: 10
+      responses:
+        "200":
+          description: Paginated offer list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferListResponse"
+    post:
+      tags: [Offers]
+      summary: Create a new offer
+      operationId: createOffer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOfferRequest"
+      responses:
+        "201":
+          description: Offer created (pending approval)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferResponse"
+
+  /offers/{id}:
+    get:
+      tags: [Offers]
+      summary: Get offer detail
+      operationId: getOffer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/LangHeader"
+      responses:
+        "200":
+          description: Offer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferDetailResponse"
+    put:
+      tags: [Offers]
+      summary: Update an offer
+      operationId: updateOffer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOfferRequest"
+      responses:
+        "200":
+          description: Offer updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferResponse"
+    delete:
+      tags: [Offers]
+      summary: Delete an offer
+      operationId: deleteOffer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Offer deleted
+
+  /offers/{id}/approve:
+    put:
+      tags: [Offers]
+      summary: Approve a pending offer
+      operationId: approveOffer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Offer approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    example: approved
+
+  /offers/{id}/reject:
+    put:
+      tags: [Offers]
+      summary: Reject a pending offer
+      operationId: rejectOffer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Offer rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    example: rejected
+                  rejection_reason:
+                    type: string
+
+  # ─── Favorites ───────────────────────────────────────────────────────────
+  /favorites:
+    get:
+      tags: [Favorites]
+      summary: List user's favorite offers
+      operationId: listFavorites
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Paginated favorite offers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferListResponse"
+    post:
+      tags: [Favorites]
+      summary: Add offer to favorites
+      operationId: addFavorite
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offer_id]
+              properties:
+                offer_id:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Favorited successfully
+
+  /favorites/{offerId}:
+    delete:
+      tags: [Favorites]
+      summary: Remove offer from favorites
+      operationId: removeFavorite
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Removed from favorites
+
+  # ─── Search ──────────────────────────────────────────────────────────────
+  /search:
+    get:
+      tags: [Search]
+      summary: Unified search across offers and restaurants
+      operationId: search
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/LangHeader"
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [offers, restaurants, all]
+            default: all
+        - name: lat
+          in: query
+          schema:
+            type: number
+            format: float
+        - name: lng
+          in: query
+          schema:
+            type: number
+            format: float
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+
+  # ─── Upload ──────────────────────────────────────────────────────────────
+  /upload:
+    post:
+      tags: [Upload]
+      summary: Upload an image
+      operationId: uploadImage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, type]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file (max 5MB, jpg/png/webp)
+                type:
+                  type: string
+                  enum: [avatar, restaurant, offer]
+      responses:
+        "201":
+          description: Image uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: https://cdn.nomnom.lk/offers/uuid-filename.jpg
+
+  # ─── Notifications ───────────────────────────────────────────────────────
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List user's notifications
+      operationId: listNotifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Paginated notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Notification"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+
+  /notifications/{id}/read:
+    put:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      operationId: markNotificationRead
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Marked as read
+
+  /notifications/read-all:
+    put:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      operationId: markAllNotificationsRead
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: All marked as read
+
+  # ─── Devices ─────────────────────────────────────────────────────────────
+  /devices:
+    post:
+      tags: [Devices]
+      summary: Register FCM device token
+      operationId: registerDevice
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, platform]
+              properties:
+                token:
+                  type: string
+                platform:
+                  type: string
+                  enum: [ios, android]
+      responses:
+        "201":
+          description: Device registered
+
+  /devices/{token}:
+    delete:
+      tags: [Devices]
+      summary: Remove FCM device token
+      operationId: removeDevice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Device removed
+
+  # ─── Admin ───────────────────────────────────────────────────────────────
+  /admin/stats:
+    get:
+      tags: [Admin]
+      summary: Get admin dashboard statistics
+      operationId: adminStats
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: List all users (admin)
+      operationId: adminListUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [user, restaurant_owner, admin]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated user list
+
+  /admin/users/{id}:
+    get:
+      tags: [Admin]
+      summary: Get user details (admin)
+      operationId: adminGetUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User detail
+
+  /admin/users/{id}/role:
+    put:
+      tags: [Admin]
+      summary: Change user role
+      operationId: adminChangeUserRole
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [user, restaurant_owner, admin]
+      responses:
+        "204":
+          description: Role updated
+
+  /admin/users/{id}:
+    delete:
+      tags: [Admin]
+      summary: Deactivate user (admin)
+      operationId: adminDeactivateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: User deactivated
+
+  /admin/offers/pending:
+    get:
+      tags: [Admin]
+      summary: List all pending offers
+      operationId: adminPendingOffers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Pending offers with restaurant info
+
+  /admin/restaurants/pending:
+    get:
+      tags: [Admin]
+      summary: List all pending restaurants
+      operationId: adminPendingRestaurants
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Pending restaurants with owner info
+
+  /admin/notifications/send:
+    post:
+      tags: [Admin]
+      summary: Send push notification to users
+      operationId: adminSendPush
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title:
+                  type: string
+                body:
+                  type: string
+                target:
+                  type: string
+                  enum: [all, restaurant_owners, users]
+                  default: all
+                user_id:
+                  type: string
+                  format: uuid
+                  description: Target specific user (if target omitted)
+                data:
+                  type: object
+                  description: Optional deep-link payload
+      responses:
+        "200":
+          description: Notification sent
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter your JWT access token
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+      description: Page number
+    PerPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+      description: Items per page
+    LangHeader:
+      name: Accept-Language
+      in: header
+      schema:
+        type: string
+        default: en
+        enum: [en, si, ta]
+      description: Language for localized content (en, si, ta)
+
+  schemas:
+    # ─── Auth ──────────────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: nimali@example.com
+        password:
+          type: string
+          minLength: 8
+          example: SecurePass123!
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: Nimali Perera
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    FirebaseRequest:
+      type: object
+      required: [firebase_token]
+      properties:
+        firebase_token:
+          type: string
+          description: Firebase ID token from Firebase Auth SDK
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          example: 900
+        user:
+          $ref: "#/components/schemas/UserResponse"
+
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+
+    # ─── User ──────────────────────────────────────────────────────────────
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [user, restaurant_owner, admin]
+        phone:
+          type: string
+          nullable: true
+        is_onboarded:
+          type: boolean
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        avatar_url:
+          type: string
+        phone:
+          type: string
+
+    # ─── Restaurant ─────────────────────────────────────────────────────────
+    CreateRestaurantRequest:
+      type: object
+      required: [name, address]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        name_si:
+          type: string
+          description: Sinhala name
+        name_ta:
+          type: string
+          description: Tamil name
+        description:
+          type: string
+        description_si:
+          type: string
+        description_ta:
+          type: string
+        address:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        contact_phone:
+          type: string
+        cuisine_tags:
+          type: array
+          items:
+            type: string
+        cover_image:
+          type: string
+
+    UpdateRestaurantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        name_si:
+          type: string
+        name_ta:
+          type: string
+        description:
+          type: string
+        address:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        contact_phone:
+          type: string
+        cuisine_tags:
+          type: array
+          items:
+            type: string
+        cover_image:
+          type: string
+
+    RestaurantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        name_si:
+          type: string
+          nullable: true
+        name_ta:
+          type: string
+          nullable: true
+        slug:
+          type: string
+        description:
+          type: string
+        address:
+          type: string
+        cuisine_tags:
+          type: array
+          items:
+            type: string
+        cover_image:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        active_offer_count:
+          type: integer
+        distance_km:
+          type: number
+          nullable: true
+
+    RestaurantDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/RestaurantResponse"
+        - type: object
+          properties:
+            latitude:
+              type: number
+              nullable: true
+            longitude:
+              type: number
+              nullable: true
+            contact_phone:
+              type: string
+              nullable: true
+            created_at:
+              type: string
+              format: date-time
+            offers:
+              type: array
+              items:
+                $ref: "#/components/schemas/OfferResponse"
+
+    RestaurantListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RestaurantResponse"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ─── Offer ──────────────────────────────────────────────────────────────
+    CreateOfferRequest:
+      type: object
+      required: [restaurant_id, title, original_price, offer_price, end_date]
+      properties:
+        restaurant_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        title_si:
+          type: string
+        title_ta:
+          type: string
+        description:
+          type: string
+        description_si:
+          type: string
+        description_ta:
+          type: string
+        original_price:
+          type: number
+          exclusiveMinimum: 0
+        offer_price:
+          type: number
+          exclusiveMinimum: 0
+        image_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+
+    UpdateOfferRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        title_si:
+          type: string
+        title_ta:
+          type: string
+        description:
+          type: string
+        original_price:
+          type: number
+        offer_price:
+          type: number
+        image_urls:
+          type: array
+          items:
+            type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+
+    OfferResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurant:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            slug:
+              type: string
+            cover_image:
+              type: string
+              nullable: true
+        title:
+          type: string
+        title_si:
+          type: string
+          nullable: true
+        title_ta:
+          type: string
+          nullable: true
+        description:
+          type: string
+        original_price:
+          type: number
+        offer_price:
+          type: number
+        discount_percent:
+          type: integer
+        saving:
+          type: number
+        image_urls:
+          type: array
+          items:
+            type: string
+        end_date:
+          type: string
+          format: date-time
+        is_favorited:
+          type: boolean
+        distance_km:
+          type: number
+          nullable: true
+
+    OfferDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/OfferResponse"
+        - type: object
+          properties:
+            status:
+              type: string
+              enum: [pending, approved, rejected, expired]
+            view_count:
+              type: integer
+            start_date:
+              type: string
+              format: date-time
+            created_at:
+              type: string
+              format: date-time
+            restaurant:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                slug:
+                  type: string
+                address:
+                  type: string
+                cuisine_tags:
+                  type: array
+                  items:
+                    type: string
+                cover_image:
+                  type: string
+                  nullable: true
+
+    OfferListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferResponse"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ─── Search ─────────────────────────────────────────────────────────────
+    SearchResponse:
+      type: object
+      properties:
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferResponse"
+        restaurants:
+          type: array
+          items:
+            $ref: "#/components/schemas/RestaurantResponse"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ─── Notifications ─────────────────────────────────────────────────────
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+          nullable: true
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    # ─── Admin ──────────────────────────────────────────────────────────────
+    AdminStats:
+      type: object
+      properties:
+        total_users:
+          type: integer
+        total_restaurants:
+          type: integer
+        total_offers:
+          type: integer
+        pending_offers:
+          type: integer
+        pending_restaurants:
+          type: integer
+        active_offers:
+          type: integer
+        total_favorites:
+          type: integer
+        users_today:
+          type: integer
+
+    # ─── Common ────────────────────────────────────────────────────────────
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: VALIDATION_ERROR
+                  message:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+              request_id:
+                type: string
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: UNAUTHORIZED
+                  message:
+                    type: string
+    ConflictError:
+      description: Resource conflict (e.g. duplicate email)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: CONFLICT
+                  message:
+                    type: string
+    RestaurantUpdated:
+      description: Restaurant updated
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RestaurantResponse"

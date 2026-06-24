@@ -1,0 +1,288 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../core/theme/app_colors.dart';
+import '../models/offer.dart';
+import '../providers/offer_provider.dart';
+import '../utils/currency_formatter.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/favorite_button.dart';
+import '../widgets/offer_image.dart';
+
+class OfferDetailsScreen extends StatelessWidget {
+  const OfferDetailsScreen({
+    super.key,
+    required this.offerId,
+  });
+
+  final String offerId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<OfferProvider, Offer?>(
+      selector: (_, provider) => provider.offerById(offerId),
+      builder: (context, offer, child) {
+        if (offer == null) {
+          return const Scaffold(
+            body: EmptyState(
+              icon: Icons.error_outline_rounded,
+              title: 'Offer not found',
+              message: 'This deal may have been removed.',
+            ),
+          );
+        }
+
+        return _OfferDetailsContent(offer: offer);
+      },
+    );
+  }
+}
+
+class _OfferDetailsContent extends StatelessWidget {
+  const _OfferDetailsContent({required this.offer});
+
+  final Offer offer;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 310,
+            pinned: true,
+            stretch: true,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FavoriteButton(offerId: offer.id),
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: OfferImage(
+                imageUrl: offer.imageUrl,
+                heroTag: 'offer-image-${offer.id}',
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              offer.foodName,
+                              style: textTheme.headlineSmall?.copyWith(
+                                color: AppColors.cream,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              offer.restaurantName,
+                              style: textTheme.titleMedium?.copyWith(
+                                color: AppColors.coconut,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _DiscountPill(label: offer.discountLabel),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _PricePanel(offer: offer),
+                  const SizedBox(height: 22),
+                  Text(
+                    offer.description,
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: AppColors.coconut,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  _InfoRow(
+                    icon: Icons.storefront_rounded,
+                    title: 'Restaurant',
+                    value: offer.restaurantName,
+                  ),
+                  const SizedBox(height: 12),
+                  _InfoRow(
+                    icon: Icons.location_on_rounded,
+                    title: 'Location',
+                    value: offer.location,
+                  ),
+                  const SizedBox(height: 12),
+                  _InfoRow(
+                    icon: Icons.local_offer_rounded,
+                    title: 'Discount',
+                    value: offer.discountLabel,
+                  ),
+                  const SizedBox(height: 28),
+                  FavoriteButton(offerId: offer.id, showLabel: true),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PricePanel extends StatelessWidget {
+  const _PricePanel({required this.offer});
+
+  final Offer offer;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Deal price',
+                  style: textTheme.labelLarge?.copyWith(
+                    color: AppColors.muted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  CurrencyFormatter.lkr(offer.offerPrice),
+                  style: textTheme.headlineSmall?.copyWith(
+                    color: AppColors.curry,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                CurrencyFormatter.lkr(offer.originalPrice),
+                style: textTheme.bodyLarge?.copyWith(
+                  color: AppColors.muted,
+                  decoration: TextDecoration.lineThrough,
+                  decorationColor: AppColors.muted,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Save ${CurrencyFormatter.lkr(offer.saving)}',
+                style: textTheme.labelLarge?.copyWith(
+                  color: AppColors.lime,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardDark,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.ocean),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.labelMedium?.copyWith(
+                    color: AppColors.muted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: AppColors.cream,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscountPill extends StatelessWidget {
+  const _DiscountPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.curry,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: AppColors.deepCharcoal,
+              fontWeight: FontWeight.w900,
+            ),
+      ),
+    );
+  }
+}

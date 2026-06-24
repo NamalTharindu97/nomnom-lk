@@ -1,0 +1,30 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "opencode": {
+      "models": {
+        "big-pickle": {
+          "variants": {
+            "fast": {
+              "reasoningEffort": "low"
+            },
+            "balanced": {
+              "reasoningEffort": "medium"
+            },
+            "thorough": {
+              "reasoningEffort": "high"
+            }
+          }
+        }
+      }
+    }
+  },
+  "agent": {
+    "build": {
+      "variant": "balanced"
+    },
+    "plan": {
+      "variant": "thorough"
+    }
+  }
+}
