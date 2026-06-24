@@ -31,6 +31,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	offerService := services.NewOfferService(offerRepo, restaurantRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo)
 	searchService := services.NewSearchService(db)
+	uploadService, err := services.NewUploadService(&cfg.AWS)
+	if err != nil {
+		log.Warn().Err(err).Msg("upload service not available, upload routes disabled")
+		uploadService = nil
+	}
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -120,11 +125,15 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		v1.GET("/search", searchHandler.Search)
 
-		uploadGroup := v1.Group("/upload")
-		uploadGroup.Use(middleware.Auth(cfg.JWT.Secret))
-		uploadGroup.Use(middleware.RateLimit(rdb, 10, 1*time.Minute, "rl:upload"))
-		{
-			_ = uploadGroup
+		if uploadService != nil {
+			uploadHandler := handlers.NewUploadHandler(uploadService)
+			uploadGroup := v1.Group("/upload")
+			uploadGroup.Use(middleware.Auth(cfg.JWT.Secret))
+			uploadGroup.Use(middleware.RateLimit(rdb, 10, 1*time.Minute, "rl:upload"))
+			{
+				uploadGroup.POST("", uploadHandler.Upload)
+				uploadGroup.POST("/multiple", uploadHandler.UploadMultiple)
+			}
 		}
 
 		notificationsGroup := v1.Group("/notifications")
