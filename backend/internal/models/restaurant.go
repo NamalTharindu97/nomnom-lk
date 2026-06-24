@@ -30,7 +30,7 @@ type Restaurant struct {
 	Latitude     *float64         `gorm:"type:decimal(10,7)" json:"latitude,omitempty"`
 	Longitude    *float64         `gorm:"type:decimal(10,7)" json:"longitude,omitempty"`
 	ContactPhone *string          `gorm:"size:20" json:"contact_phone,omitempty"`
-	CuisineTags  []string         `gorm:"type:text[];default:'{}'" json:"cuisine_tags"`
+	CuisineTags  JSONStringSlice  `gorm:"type:jsonb;default:'[]'" json:"cuisine_tags"`
 	CoverImage   *string          `gorm:"type:text" json:"cover_image,omitempty"`
 	Translations *json.RawMessage `gorm:"type:jsonb;default:'{}'" json:"translations,omitempty"`
 	Status       RestaurantStatus `gorm:"not null;default:'pending';size:20" json:"status"`

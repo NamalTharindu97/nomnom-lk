@@ -27,7 +27,7 @@ type Offer struct {
 	OriginalPrice    float64          `gorm:"type:decimal(10,2);not null;check:original_price > 0" json:"original_price"`
 	OfferPrice       float64          `gorm:"type:decimal(10,2);not null;check:offer_price > 0" json:"offer_price"`
 	DiscountPercent  int              `gorm:"-" json:"discount_percent"`
-	ImageURLs        []string         `gorm:"type:text[];default:'{}'" json:"image_urls"`
+	ImageURLs        JSONStringSlice  `gorm:"type:jsonb;default:'[]'" json:"image_urls"`
 	Translations     *json.RawMessage `gorm:"type:jsonb;default:'{}'" json:"translations,omitempty"`
 	StartDate        *time.Time       `json:"start_date,omitempty"`
 	EndDate          time.Time        `gorm:"not null" json:"end_date"`
