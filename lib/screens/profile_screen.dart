@@ -113,7 +113,7 @@ class ProfileScreen extends StatelessWidget {
                 const _ProfileTile(
                   icon: Icons.api_rounded,
                   title: 'Backend',
-                  value: 'Mock data service',
+                  value: 'NomNom API',
                 ),
                 const SizedBox(height: 26),
                 OutlinedButton.icon(

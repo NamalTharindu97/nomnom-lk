@@ -1,29 +1,30 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/offer.dart';
-import '../services/favorites_service.dart';
-import '../services/mock_offer_service.dart';
+import '../services/api_favorites_service.dart';
+import '../services/api_offer_service.dart';
 
 class OfferProvider extends ChangeNotifier {
   OfferProvider({
-    required MockOfferService offerService,
-    required FavoritesService favoritesService,
+    required ApiOfferService offerService,
+    required ApiFavoritesService favoritesService,
   })  : _offerService = offerService,
         _favoritesService = favoritesService;
 
-  final MockOfferService _offerService;
-  final FavoritesService _favoritesService;
+  final ApiOfferService _offerService;
+  final ApiFavoritesService _favoritesService;
 
   List<Offer> _offers = const [];
-  Set<String> _favoriteIds = <String>{};
   String _searchQuery = '';
   bool _isLoading = false;
   bool _hasLoaded = false;
+  bool _isSearching = false;
 
   List<Offer> get offers => List.unmodifiable(_offers);
   bool get isLoading => _isLoading;
   bool get hasLoaded => _hasLoaded;
   String get searchQuery => _searchQuery;
+  bool get isSearching => _isSearching;
 
   List<Offer> get favoriteOffers {
     return _offers.where((offer) => offer.isFavorite).toList(growable: false);
@@ -34,9 +35,8 @@ class OfferProvider extends ChangeNotifier {
     if (query.isEmpty) {
       return offers;
     }
-
     return _offers.where((offer) {
-      return offer.foodName.toLowerCase().contains(query) ||
+      return offer.title.toLowerCase().contains(query) ||
           offer.restaurantName.toLowerCase().contains(query);
     }).toList(growable: false);
   }
@@ -47,7 +47,6 @@ class OfferProvider extends ChangeNotifier {
         return offer;
       }
     }
-
     return null;
   }
 
@@ -55,11 +54,8 @@ class OfferProvider extends ChangeNotifier {
     if (_hasLoaded && !forceRefresh) {
       return;
     }
-
     _setLoading(true);
-    final results = await _offerService.fetchOffers();
-    _favoriteIds = await _favoritesService.loadFavoriteIds();
-    _offers = _applyFavorites(results);
+    _offers = await _offerService.fetchOffers();
     _hasLoaded = true;
     _setLoading(false);
   }
@@ -69,42 +65,67 @@ class OfferProvider extends ChangeNotifier {
     await loadOffers(forceRefresh: true);
   }
 
-  Future<void> toggleFavorite(String offerId) async {
-    if (_favoriteIds.contains(offerId)) {
-      _favoriteIds.remove(offerId);
-    } else {
-      _favoriteIds.add(offerId);
+  Future<void> searchOffers(String query) async {
+    if (query.trim().isEmpty) {
+      _searchQuery = '';
+      notifyListeners();
+      return;
     }
-
-    _offers = _applyFavorites(_offers);
+    _isSearching = true;
+    _searchQuery = query;
     notifyListeners();
-    await _favoritesService.saveFavoriteIds(_favoriteIds);
+    try {
+      _offers = await _offerService.fetchOffers(query: query);
+    } catch (_) {
+      // Keep existing results on error
+    }
+    _isSearching = false;
+    notifyListeners();
+  }
+
+  Future<void> toggleFavorite(String offerId) async {
+    final index = _offers.indexWhere((o) => o.id == offerId);
+    if (index == -1) return;
+
+    final wasFavorite = _offers[index].isFavorite;
+    _offers[index] = _offers[index].copyWith(isFavorite: !wasFavorite);
+    notifyListeners();
+
+    try {
+      if (wasFavorite) {
+        await _favoritesService.removeFavorite(offerId);
+      } else {
+        await _favoritesService.addFavorite(offerId);
+      }
+    } catch (_) {
+      _offers[index] = _offers[index].copyWith(isFavorite: wasFavorite);
+      notifyListeners();
+    }
   }
 
   void updateSearchQuery(String value) {
     if (_searchQuery == value) {
       return;
     }
-
     _searchQuery = value;
     notifyListeners();
   }
 
-  List<Offer> _applyFavorites(List<Offer> offers) {
-    return offers
-        .map(
-          (offer) => offer.copyWith(
-            isFavorite: _favoriteIds.contains(offer.id),
-          ),
-        )
-        .toList(growable: false);
+  Future<void> loadFavorites() async {
+    try {
+      final favorites = await _favoritesService.fetchFavorites();
+      final favoriteIds = favorites.map((o) => o.id).toSet();
+      _offers = _offers.map((offer) {
+        return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
+      }).toList(growable: false);
+      notifyListeners();
+    } catch (_) {}
   }
 
   void _setLoading(bool value) {
     if (_isLoading == value) {
       return;
     }
-
     _isLoading = value;
     notifyListeners();
   }
