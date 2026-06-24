@@ -1,0 +1,101 @@
+package repository
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/nomnom-lk/backend/internal/models"
+	"gorm.io/gorm"
+)
+
+type OfferRepo struct {
+	db *gorm.DB
+}
+
+func NewOfferRepo(db *gorm.DB) *OfferRepo {
+	return &OfferRepo{db: db}
+}
+
+func (r *OfferRepo) Create(offer *models.Offer) error {
+	return r.db.Create(offer).Error
+}
+
+func (r *OfferRepo) FindByID(id uuid.UUID) (*models.Offer, error) {
+	var offer models.Offer
+	err := r.db.Preload("Restaurant").
+		Where("id = ?", id).First(&offer).Error
+	if err != nil {
+		return nil, err
+	}
+	return &offer, nil
+}
+
+func (r *OfferRepo) FindAll(status string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+	var offers []models.Offer
+	var total int64
+
+	query := r.db.Model(&models.Offer{})
+	if status != "" {
+		query = query.Where("offers.status = ?", status)
+	}
+	query.Count(&total)
+
+	order := "created_at DESC"
+	switch sort {
+	case "newest":
+		order = "created_at DESC"
+	case "price_low":
+		order = "offer_price ASC"
+	case "price_high":
+		order = "offer_price DESC"
+	case "ending_soon":
+		order = "end_date ASC"
+	case "popular":
+		order = "view_count DESC"
+	}
+
+	err := query.
+		Preload("Restaurant").
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Order(order).
+		Find(&offers).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return offers, total, nil
+}
+
+func (r *OfferRepo) Update(offer *models.Offer) error {
+	return r.db.Save(offer).Error
+}
+
+func (r *OfferRepo) Delete(id uuid.UUID) error {
+	return r.db.Delete(&models.Offer{}, id).Error
+}
+
+func (r *OfferRepo) UpdateStatus(id uuid.UUID, status models.OfferStatus) error {
+	return r.db.Model(&models.Offer{}).Where("id = ?", id).Update("status", status).Error
+}
+
+func (r *OfferRepo) FindByRestaurantID(restaurantID uuid.UUID) ([]models.Offer, error) {
+	var offers []models.Offer
+	err := r.db.Where("restaurant_id = ?", restaurantID).Find(&offers).Error
+	return offers, err
+}
+
+func (r *OfferRepo) FindPending(page, perPage int) ([]models.Offer, int64, error) {
+	return r.FindAll(string(models.OfferPending), page, perPage, "newest")
+}
+
+func (r *OfferRepo) ExpirePastOffers() error {
+	return r.db.Model(&models.Offer{}).
+		Where("end_date < ? AND status = ?", time.Now(), models.OfferApproved).
+		Update("status", models.OfferExpired).Error
+}
+
+func (r *OfferRepo) IncrementViewCount(id uuid.UUID) error {
+	return r.db.Model(&models.Offer{}).
+		Where("id = ?", id).
+		UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error
+}

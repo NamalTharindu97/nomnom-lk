@@ -21,12 +21,21 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	// Repositories
 	userRepo := repository.NewUserRepo(db)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(db)
+	restaurantRepo := repository.NewRestaurantRepo(db)
+	offerRepo := repository.NewOfferRepo(db)
+	favoriteRepo := repository.NewFavoriteRepo(db)
 
 	// Services
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT)
+	restaurantService := services.NewRestaurantService(restaurantRepo)
+	offerService := services.NewOfferService(offerRepo, restaurantRepo)
+	favoriteService := services.NewFavoriteService(favoriteRepo)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
+	restaurantHandler := handlers.NewRestaurantHandler(restaurantService)
+	offerHandler := handlers.NewOfferHandler(offerService)
+	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
 	r := gin.New()
 
 	r.Use(
@@ -79,18 +88,32 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		restaurantsGroup := v1.Group("/restaurants")
 		{
-			_ = restaurantsGroup
+			restaurantsGroup.GET("", restaurantHandler.List)
+			restaurantsGroup.GET("/:id", restaurantHandler.Get)
+			restaurantsGroup.POST("", middleware.Auth(cfg.JWT.Secret), restaurantHandler.Create)
+			restaurantsGroup.PUT("/:id", middleware.Auth(cfg.JWT.Secret), restaurantHandler.Update)
+			restaurantsGroup.DELETE("/:id", middleware.Auth(cfg.JWT.Secret), restaurantHandler.Delete)
+			restaurantsGroup.POST("/:id/approve", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), restaurantHandler.Approve)
+			restaurantsGroup.POST("/:id/reject", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), restaurantHandler.Reject)
 		}
 
 		offersGroup := v1.Group("/offers")
 		{
-			_ = offersGroup
+			offersGroup.GET("", offerHandler.List)
+			offersGroup.GET("/:id", offerHandler.Get)
+			offersGroup.POST("", middleware.Auth(cfg.JWT.Secret), offerHandler.Create)
+			offersGroup.PUT("/:id", middleware.Auth(cfg.JWT.Secret), offerHandler.Update)
+			offersGroup.DELETE("/:id", middleware.Auth(cfg.JWT.Secret), offerHandler.Delete)
+			offersGroup.POST("/:id/approve", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Approve)
+			offersGroup.POST("/:id/reject", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Reject)
 		}
 
 		favoritesGroup := v1.Group("/favorites")
 		favoritesGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		{
-			_ = favoritesGroup
+			favoritesGroup.GET("", favoriteHandler.List)
+			favoritesGroup.POST("", favoriteHandler.Add)
+			favoritesGroup.DELETE("/:offerId", favoriteHandler.Remove)
 		}
 
 		v1.GET("/search", func(c *gin.Context) {
