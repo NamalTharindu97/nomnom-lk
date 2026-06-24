@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type Claims struct {
@@ -61,4 +62,36 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 		c.Set("user_role", claims.Role)
 		c.Next()
 	}
+}
+
+func GetUserID(c *gin.Context) (uuid.UUID, bool) {
+	id, exists := c.Get("user_id")
+	if !exists {
+		return uuid.Nil, false
+	}
+	idStr, ok := id.(string)
+	if !ok {
+		return uuid.Nil, false
+	}
+	parsed, err := uuid.Parse(idStr)
+	if err != nil {
+		return uuid.Nil, false
+	}
+	return parsed, true
+}
+
+func GetUserEmail(c *gin.Context) (string, bool) {
+	email, exists := c.Get("user_email")
+	if !exists {
+		return "", false
+	}
+	return email.(string), true
+}
+
+func GetUserRole(c *gin.Context) (string, bool) {
+	role, exists := c.Get("user_role")
+	if !exists {
+		return "", false
+	}
+	return role.(string), true
 }

@@ -11,10 +11,22 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/nomnom-lk/backend/internal/config"
+	"github.com/nomnom-lk/backend/internal/handlers"
 	"github.com/nomnom-lk/backend/internal/middleware"
+	"github.com/nomnom-lk/backend/internal/repository"
+	"github.com/nomnom-lk/backend/internal/services"
 )
 
 func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog.Logger) *gin.Engine {
+	// Repositories
+	userRepo := repository.NewUserRepo(db)
+	refreshTokenRepo := repository.NewRefreshTokenRepo(db)
+
+	// Services
+	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT)
+
+	// Handlers
+	authHandler := handlers.NewAuthHandler(authService)
 	r := gin.New()
 
 	r.Use(
@@ -52,7 +64,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		authGroup := v1.Group("/auth")
 		authGroup.Use(middleware.RateLimit(rdb, 20, 1*time.Minute, "rl:auth"))
 		{
-			_ = authGroup
+			authGroup.POST("/register", authHandler.Register)
+			authGroup.POST("/login", authHandler.Login)
+			authGroup.POST("/firebase", authHandler.FirebaseLogin)
+			authGroup.POST("/refresh", authHandler.Refresh)
+			authGroup.POST("/logout", middleware.Auth(cfg.JWT.Secret), authHandler.Logout)
 		}
 
 		usersGroup := v1.Group("/users")
