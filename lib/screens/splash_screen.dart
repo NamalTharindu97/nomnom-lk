@@ -40,11 +40,15 @@ class _SplashScreenState extends State<SplashScreen>
     final authProvider = context.read<AuthProvider>();
     final offerProvider = context.read<OfferProvider>();
 
-    await Future.wait([
-      authProvider.restoreSession(),
-      offerProvider.loadOffers(),
-      Future<void>.delayed(const Duration(milliseconds: 1100)),
-    ]);
+    try {
+      await Future.wait([
+        authProvider.restoreSession(),
+        offerProvider.loadOffers(),
+        Future<void>.delayed(const Duration(milliseconds: 1100)),
+      ]);
+    } catch (e) {
+      debugPrint('Splash bootstrap error: $e');
+    }
 
     if (!mounted) {
       return;

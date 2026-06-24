@@ -55,8 +55,12 @@ class OfferProvider extends ChangeNotifier {
       return;
     }
     _setLoading(true);
-    _offers = await _offerService.fetchOffers();
-    _hasLoaded = true;
+    try {
+      _offers = await _offerService.fetchOffers();
+      _hasLoaded = true;
+    } catch (e) {
+      debugPrint('Failed to load offers: $e');
+    }
     _setLoading(false);
   }
 
