@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog"
@@ -48,7 +49,16 @@ func main() {
 	db := database.NewPostgresDB(&cfg.Database)
 	rdb := database.NewRedisClient(&cfg.Redis)
 
-	r := router.SetupRouter(cfg, db, rdb, logger)
+	r, cronSvc := router.SetupRouter(cfg, db, rdb, logger)
+
+	go func() {
+		cronSvc.RunAll()
+		ticker := time.NewTicker(15 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			cronSvc.RunAll()
+		}
+	}()
 
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
 	logger.Info().Str("addr", addr).Msg("Starting server")

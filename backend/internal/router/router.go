@@ -17,13 +17,15 @@ import (
 	"github.com/nomnom-lk/backend/internal/services"
 )
 
-func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog.Logger) *gin.Engine {
+func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog.Logger) (*gin.Engine, *services.CronService) {
 	// Repositories
 	userRepo := repository.NewUserRepo(db)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(db)
 	restaurantRepo := repository.NewRestaurantRepo(db)
 	offerRepo := repository.NewOfferRepo(db)
 	favoriteRepo := repository.NewFavoriteRepo(db)
+	deviceTokenRepo := repository.NewDeviceTokenRepo(db)
+	notificationRepo := repository.NewNotificationRepo(db)
 
 	// Services
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT)
@@ -31,6 +33,9 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	offerService := services.NewOfferService(offerRepo, restaurantRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo)
 	searchService := services.NewSearchService(db)
+	notificationService := services.NewNotificationService(notificationRepo, deviceTokenRepo, &cfg.Firebase)
+	cronService := services.NewCronService(db, notificationService)
+
 	uploadService, err := services.NewUploadService(&cfg.AWS)
 	if err != nil {
 		log.Warn().Err(err).Msg("upload service not available, upload routes disabled")
@@ -43,6 +48,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	offerHandler := handlers.NewOfferHandler(offerService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
 	searchHandler := handlers.NewSearchHandler(searchService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	r := gin.New()
 
 	r.Use(
@@ -139,24 +145,28 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		notificationsGroup := v1.Group("/notifications")
 		notificationsGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		{
-			_ = notificationsGroup
+			notificationsGroup.GET("", notificationHandler.List)
+			notificationsGroup.GET("/unread-count", notificationHandler.UnreadCount)
+			notificationsGroup.PUT("/:id/read", notificationHandler.MarkAsRead)
+			notificationsGroup.PUT("/read-all", notificationHandler.MarkAllAsRead)
 		}
 
 		devicesGroup := v1.Group("/devices")
 		devicesGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		{
-			_ = devicesGroup
+			devicesGroup.POST("", notificationHandler.RegisterDevice)
+			devicesGroup.DELETE("", notificationHandler.UnregisterDevice)
 		}
 
 		adminGroup := v1.Group("/admin")
 		adminGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		adminGroup.Use(middleware.RequireRole("admin"))
 		{
-			_ = adminGroup
+			adminGroup.POST("/notifications/push", notificationHandler.SendPush)
 		}
 	}
 
-	return r
+	return r, cronService
 }
 
 func errStr(err error) string {
