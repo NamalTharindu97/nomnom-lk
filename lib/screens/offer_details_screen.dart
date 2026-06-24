@@ -62,7 +62,7 @@ class _OfferDetailsContent extends StatelessWidget {
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: OfferImage(
-                imageUrl: offer.imageUrl,
+                imageUrl: offer.primaryImage,
                 heroTag: 'offer-image-${offer.id}',
                 borderRadius: BorderRadius.zero,
               ),
@@ -82,7 +82,7 @@ class _OfferDetailsContent extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              offer.foodName,
+                              offer.title,
                               style: textTheme.headlineSmall?.copyWith(
                                 color: AppColors.cream,
                                 fontWeight: FontWeight.w900,

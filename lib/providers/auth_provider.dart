@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/app_user.dart';
-import '../services/auth_service.dart';
+import '../services/api_auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider(this._authService);
 
-  final AuthService _authService;
+  final ApiAuthService _authService;
 
   AppUser? _user;
   bool _isInitialized = false;
@@ -26,23 +26,30 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(false);
   }
 
-  Future<void> signInWithGoogle() async {
+  Future<void> signInWithFirebase(String firebaseToken) async {
     _setLoading(true);
-    _user = await _authService.signInWithGoogle();
+    _user = await _authService.signInWithFirebase(firebaseToken);
+    _isInitialized = true;
+    _setLoading(false);
+  }
+
+  Future<void> signInWithEmail(String email, String password) async {
+    _setLoading(true);
+    _user = await _authService.login(email, password);
     _isInitialized = true;
     _setLoading(false);
   }
 
   Future<void> continueAsGuest() async {
     _setLoading(true);
-    _user = await _authService.continueAsGuest();
+    _user = AppUser.guest();
     _isInitialized = true;
     _setLoading(false);
   }
 
   Future<void> signOut() async {
     _setLoading(true);
-    await _authService.signOut();
+    await _authService.logout();
     _user = null;
     _isInitialized = true;
     _setLoading(false);
@@ -52,7 +59,6 @@ class AuthProvider extends ChangeNotifier {
     if (_isLoading == value) {
       return;
     }
-
     _isLoading = value;
     notifyListeners();
   }

@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,12 +11,18 @@ import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/offer_details_screen.dart';
 import 'screens/splash_screen.dart';
-import 'services/auth_service.dart';
-import 'services/favorites_service.dart';
-import 'services/mock_offer_service.dart';
+import 'services/api_auth_service.dart';
+import 'services/api_client.dart';
+import 'services/api_favorites_service.dart';
+import 'services/api_offer_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase init skipped (no config): $e');
+  }
   runApp(const NomNomBootstrap());
 }
 
@@ -24,15 +31,16 @@ class NomNomBootstrap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final apiClient = ApiClient();
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(AuthService()),
+          create: (_) => AuthProvider(ApiAuthService(apiClient)),
         ),
         ChangeNotifierProvider(
           create: (_) => OfferProvider(
-            offerService: MockOfferService(),
-            favoritesService: FavoritesService(),
+            offerService: ApiOfferService(apiClient),
+            favoritesService: ApiFavoritesService(apiClient),
           ),
         ),
       ],

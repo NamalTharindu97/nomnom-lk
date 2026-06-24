@@ -38,7 +38,7 @@ class OfferCard extends StatelessWidget {
                   AspectRatio(
                     aspectRatio: 16 / 9,
                     child: OfferImage(
-                      imageUrl: offer.imageUrl,
+                      imageUrl: offer.primaryImage,
                       borderRadius: BorderRadius.zero,
                     ),
                   ),
@@ -63,7 +63,7 @@ class OfferCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            offer.foodName,
+                            offer.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.titleMedium?.copyWith(
