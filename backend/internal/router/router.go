@@ -44,6 +44,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
+	userHandler := handlers.NewUserHandler(userRepo)
 	restaurantHandler := handlers.NewRestaurantHandler(restaurantService)
 	offerHandler := handlers.NewOfferHandler(offerService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
@@ -95,8 +96,9 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		usersGroup := v1.Group("/users")
 		usersGroup.Use(middleware.Auth(cfg.JWT.Secret))
+		usersGroup.Use(middleware.RequireRole("admin"))
 		{
-			_ = usersGroup
+			usersGroup.GET("", userHandler.List)
 		}
 
 		restaurantsGroup := v1.Group("/restaurants")

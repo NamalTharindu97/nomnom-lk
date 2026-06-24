@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { UtensilsCrossed } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useTheme } from "@/contexts/theme-context"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -14,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -32,10 +35,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">NomNom LK</CardTitle>
+    <div className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-sidebar via-background to-background" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-primary/5 blur-3xl" />
+
+      <Card className="relative w-full max-w-sm border-border/50 shadow-lg backdrop-blur-sm">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-xl bg-primary">
+            <UtensilsCrossed className="size-6 text-primary-foreground" />
+          </div>
+          <CardTitle className="text-xl">NomNom LK</CardTitle>
           <CardDescription>Admin panel sign in</CardDescription>
         </CardHeader>
         <CardContent>
@@ -48,6 +58,7 @@ export default function LoginPage() {
                 placeholder="admin@nomnom.lk"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoFocus
                 required
               />
             </div>
@@ -62,7 +73,7 @@ export default function LoginPage() {
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>

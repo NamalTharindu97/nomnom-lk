@@ -58,7 +58,7 @@ func (r *UserRepo) FindAll(page, perPage int) ([]models.User, int64, error) {
 	var total int64
 
 	r.db.Model(&models.User{}).Count(&total)
-	err := r.db.Offset((page - 1) * perPage).Limit(perPage).Find(&users).Error
+	err := r.db.Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}

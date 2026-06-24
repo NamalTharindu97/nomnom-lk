@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Plus, Pencil, Trash2 } from "lucide-react"
+import OfferDialog from "./_offer-dialog"
 
 interface Offer {
   id: string
@@ -15,11 +17,17 @@ interface Offer {
   offer_price: number
   end_date: string
   restaurant: { name: string }
+  restaurant_id: string
+  description: string
+  start_date: string
+  image_urls: string[]
 }
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
+  const [showDialog, setShowDialog] = useState(false)
+  const [editing, setEditing] = useState<Offer | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -42,6 +50,14 @@ export default function OffersPage() {
     } catch {}
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this offer?")) return
+    try {
+      await api.delete(`/offers/${id}`)
+      load()
+    } catch {}
+  }
+
   const statusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       approved: "default",
@@ -54,9 +70,15 @@ export default function OffersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Offers</h1>
-        <p className="text-muted-foreground">Manage food offers</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Offers</h1>
+          <p className="text-muted-foreground">Manage food offers</p>
+        </div>
+        <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
+          <Plus className="mr-2 size-4" />
+          New Offer
+        </Button>
       </div>
 
       <Card>
@@ -104,19 +126,24 @@ export default function OffersPage() {
                       {new Date(o.end_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {o.status === "pending" && (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" onClick={() => updateStatus(o.id, "approve")}>
-                            Approve
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => updateStatus(o.id, "reject")}>
-                            Reject
-                          </Button>
-                        </div>
-                      )}
-                      {o.status !== "pending" && (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditing(o); setShowDialog(true) }}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDelete(o.id)}>
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                        {o.status === "pending" && (
+                          <>
+                            <Button size="sm" onClick={() => updateStatus(o.id, "approve")}>
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => updateStatus(o.id, "reject")}>
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -125,6 +152,13 @@ export default function OffersPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <OfferDialog
+        open={showDialog}
+        onClose={() => setShowDialog(false)}
+        onSaved={load}
+        offer={editing}
+      />
     </div>
   )
 }
