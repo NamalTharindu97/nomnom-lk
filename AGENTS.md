@@ -1,104 +1,37 @@
-# NomNom LK — Project Context
+## Session Context Protocol
+- This file must be updated at the end of every completed phase before committing.
+- After updating, commit this file with the phase commit message (e.g., `feat: P3 Core CRUD ...`).
+- When resuming work, read this file first to restore full context — then delete this section.
 
-## App Description
-Sri Lanka-focused food offers discovery app (Flutter). Surfaces discounted food items from local Sri Lankan restaurants.
+## Goal
+- Build a Go backend for NomNom LK, a Sri Lanka-focused food offers discovery app (Flutter frontend exists, currently mock-data-only).
 
-## Tech Stack
-- **Frontend:** Flutter + Provider + SharedPreferences
-- **Backend:** Go + Gin + GORM + PostgreSQL 16 + Redis 7
-- **Auth:** Firebase Auth (Google OAuth + email/password) + custom JWT
-- **Storage:** S3-compatible (MinIO for dev)
-- **Push:** Firebase Cloud Messaging
-- **Admin Dashboard:** Next.js 14 + Tailwind + shadcn/ui
-- **Deployment:** Railway (Docker)
-- **Error Monitoring:** Sentry
-- **API Docs:** Swagger/OpenAPI 3.0
+## Constraints & Preferences
+- **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + Firebase Auth + JWT + Sentry + Docker/Railway.
+- **Build order & sign-off:** Phase-by-phase; each phase completed, tested, committed, and merged to master via feature branches before next phase starts.
+- **Git workflow:** Feature branches per phase (`phase/N-name`), merge to master after completion, branches preserved.
+- **Architecture:** Standard struct-based DI; roles (user, restaurant_owner, admin); approval workflow (owner submits → admin approves); localization via JSONB translations; PostgreSQL full-text search; upload originals only; rate limiting (20 auth, 60 general, 10 upload).
+- **Documentation:** OpenAPI 3.0 YAML spec, DB schema, Flutter integration guide, README, architecture doc — all saved before build.
 
-## Build Order
-```
-P1: Foundation      → Go project, GORM models, config, DB/Redis, Docker, Makefile
-P2: Auth            → Firebase, JWT, auth endpoints, middleware, rate limiting
-P3: Core CRUD       → Restaurants, Offers, Favorites, approval workflow, localization
-P4: Search          → PostgreSQL full-text search, filters, sort, nearby
-P5: Upload          → S3/MinIO upload endpoint
-P6: Notifications   → FCM, device tokens, cron jobs
-P7: Admin Dashboard → Next.js app
-P8: Flutter Integ.  → Update Flutter app to use real API
-P9: Testing         → Handler/service/repo tests, Swagger docs
-P10: Deploy         → Railway setup, seed data
-```
+## Progress
+### Done
+- **P1: Foundation** — Go project init, config (viper), GORM models (User, Restaurant, Offer, Favorite, Notification, DeviceToken, RefreshToken), Postgres/Redis connections, AutoMigrate, 8 middleware (Auth, CORS, Logger, Recovery, RequestID, Role, RateLimit, Localization), JWT + bcrypt + pagination + response utils, Docker Compose (Postgres 16 + Redis 7 + MinIO), Dockerfile (multi-stage), Makefile, 12 migration SQL files, seed script, all 5 documentation files saved.
+- **P2: Auth** — Auth service (register, login, firebase, refresh, logout), user repo, refresh token repo with rotation, auth handler, routes wired in router, rate limiting on auth routes (20/min). Handlers stubbed for Firebase token verification (mock claims until Firebase SDK connected).
+- **P3: Core CRUD** — Repos (restaurant, offer, favorite), services (restaurant, offer, favorite), handlers (restaurant, offer, favorite), DTOs (all request types), locale pkg. Routes: full CRUD + approve/reject for restaurants/offers, add/remove/list for favorites. Built on `phase/3-core-crud`, merged to master.
+- **P4: Search** — Search service with PostgreSQL full-text search (tsvector + GIN index on offers), restaurant ILIKE search, cuisine tag filter, nearby haversine filter, sort (newest/oldest/discount/price_low/price_high/nearest), pagination. `GET /api/v1/search` with `q`, `type`, `lat`, `lng`, `radius_km`, `cuisine`, `sort` params. Built on `phase/4-search`, merged to master.
+- **P5: Upload** — Upload service using minio-go (S3-compatible, MinIO for dev). Single and multi-file upload with validation (5MB max, image types only). `POST /api/v1/upload` and `POST /api/v1/upload/multiple`. Auto-creates bucket. Returns URL paths. Built on `phase/5-upload`, merged to master.
+- **P6: Notifications** — Device token repo + notification repo. Notification service with Firebase Admin SDK FCM integration (graceful fallback if credentials missing). Device register/unregister. List notifications, mark read, unread count. Admin push to all or specific user. Cron service: marks expired offers, notifies users of offers expiring within 24h. Cron runs every 15 min via goroutine in main.go. Routes: `POST/DELETE /devices`, `GET /notifications`, `PUT /notifications/:id/read`, `PUT /notifications/read-all`, `GET /notifications/unread-count`, `POST /admin/notifications/push`. Built on `phase/6-notifications`, merged to master.
+
+### Blocked
+- (none)
 
 ## Key Decisions
-- **Go + Gin** framework
-- **GORM** ORM (your choice)
-- **Firebase Auth** for Google OAuth + email/password
-- **Standard struct-based DI** — repos → services → handlers
-- **Rate limiting:** 20 req/min auth, 60 req/min general (Redis sliding window)
-- **Image upload:** originals only (no server-side resize)
-- **Localization:** JSONB `translations` columns on offers/restaurants
-- **Approval workflow:** restaurant_owner submits → admin approves/rejects
-- **PostgreSQL full-text search** (tsvector + GIN index)
-- **Nearby:** haversine formula in SQL (no PostGIS for MVP)
+- Feature branches `phase/3-core-crud`, `phase/4-search`, `phase/5-upload`, `phase/6-notifications` all created and merged to master.
+- GitHub remote: `https://github.com/NamalTharindu97/nomnom-lk`
+- Firebase Admin SDK (`firebase.google.com/go/v4`) installed for FCM push notifications.
+- Cron runs inline goroutine in main.go (15-min ticker); can be extracted to standalone scheduler later.
+- Firebase token verification still mocked (real Firebase Auth SDK init deferred).
+- Upload uses minio-go v7 (works with both MinIO and AWS S3).
 
-## Roles
-- `user` — browse, favorite, manage profile
-- `restaurant_owner` — manage own restaurant + offers (pending approval)
-- `admin` — approve/reject, manage users, stats, send notifications
-
-## Flutter Models — Field Mapping
-
-### Offer (current → API)
-| Current Field | API Field | Notes |
-|---|---|---|
-| `id` | `id` | |
-| `restaurantName` | `restaurant.name` | Nested object |
-| `foodName` | `title` | Renamed |
-| `description` | `description` | |
-| `originalPrice` | `original_price` | |
-| `offerPrice` | `offer_price` | |
-| `discountLabel` | `discount_percent` | Computed by DB |
-| `imageUrl` (single) | `image_urls` (array) | Was single string, now array |
-| `location` | `restaurant.address` | Moved to nested |
-| `isFavorite` | `is_favorited` | From /favorites |
-| *(missing)* | `end_date` | New required field |
-| *(missing)* | `restaurant.id` | For linking |
-| *(missing)* | `restaurant.slug` | For URLs |
-
-### AppUser (current → API)
-| Current | API | Notes |
-|---|---|---|
-| `id` | `id` | |
-| `name` | `name` | |
-| `email` | `email` | |
-| `isLoggedIn` | `role != null` | Inferred |
-| `isGuest` | `role == null` | Local only |
-
-## Go Project Structure
-```
-backend/
-├── cmd/server/main.go
-├── internal/
-│   ├── config/config.go
-│   ├── database/{postgres,redis}.go
-│   ├── models/{user,restaurant,offer,favorite,notification,device_token}.go
-│   ├── repository/{user,restaurant,offer,favorite,notification,device}_repo.go
-│   ├── services/{auth,user,restaurant,offer,favorite,search,upload,notification,admin}.go
-│   ├── handlers/{auth,user,restaurant,offer,favorite,search,upload,notification,admin}.go
-│   ├── middleware/{auth,role,ratelimit,localization,cors,logger,recovery,request_id}.go
-│   ├── dto/request/{auth,offer,restaurant,search,favorite,notification}_request.go
-│   ├── dto/response/{auth,offer,restaurant,pagination,error}.go
-│   └── router/router.go
-├── pkg/{jwt,hash,locale,pagination,response}/*.go
-├── migrations/*.sql
-├── scripts/{seed,migrate}.go
-├── docs/swagger/
-├── Dockerfile
-├── docker-compose.yml
-├── .env.example
-├── go.mod / go.sum
-└── Makefile
-```
-
-## Current Status
-- Build in progress
-- Always ask before moving to next phase
+## Next Steps
+**P7: Admin Dashboard** — Next.js 14 + Tailwind + shadcn/ui frontend for admin operations.
