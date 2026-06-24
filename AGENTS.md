@@ -1,38 +1,31 @@
-## Session Context Protocol
-- This file must be updated at the end of every completed phase before committing.
-- After updating, commit this file with the phase commit message (e.g., `feat: P3 Core CRUD ...`).
-- When resuming work, read this file first to restore full context — then delete this section.
-
 ## Goal
-- Build a Go backend for NomNom LK, a Sri Lanka-focused food offers discovery app (Flutter frontend exists, currently mock-data-only).
+- Build a Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lanka-focused food offers discovery app.
 
 ## Constraints & Preferences
-- **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + Firebase Auth + JWT + Sentry + Docker/Railway.
-- **Build order & sign-off:** Phase-by-phase; each phase completed, tested, committed, and merged to master via feature branches before next phase starts.
-- **Git workflow:** Feature branches per phase (`phase/N-name`), merge to master after completion, branches preserved.
+- **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + Firebase Auth + JWT + Sentry + Docker/Railway + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio.
+- **Build order & sign-off:** Phase-by-phase via feature branches (`phase/N-name`), merge to master after completion, branches preserved on remote.
+- **Session context:** AGENTS.md updated and committed at end of every phase; read at session start to restore full context.
 - **Architecture:** Standard struct-based DI; roles (user, restaurant_owner, admin); approval workflow (owner submits → admin approves); localization via JSONB translations; PostgreSQL full-text search; upload originals only; rate limiting (20 auth, 60 general, 10 upload).
-- **Documentation:** OpenAPI 3.0 YAML spec, DB schema, Flutter integration guide, README, architecture doc — all saved before build.
 
 ## Progress
 ### Done
-- **P1: Foundation** — Go project init, config (viper), GORM models (User, Restaurant, Offer, Favorite, Notification, DeviceToken, RefreshToken), Postgres/Redis connections, AutoMigrate, 8 middleware (Auth, CORS, Logger, Recovery, RequestID, Role, RateLimit, Localization), JWT + bcrypt + pagination + response utils, Docker Compose (Postgres 16 + Redis 7 + MinIO), Dockerfile (multi-stage), Makefile, 12 migration SQL files, seed script, all 5 documentation files saved.
-- **P2: Auth** — Auth service (register, login, firebase, refresh, logout), user repo, refresh token repo with rotation, auth handler, routes wired in router, rate limiting on auth routes (20/min). Handlers stubbed for Firebase token verification (mock claims until Firebase SDK connected).
-- **P3: Core CRUD** — Repos (restaurant, offer, favorite), services (restaurant, offer, favorite), handlers (restaurant, offer, favorite), DTOs (all request types), locale pkg. Routes: full CRUD + approve/reject for restaurants/offers, add/remove/list for favorites. Built on `phase/3-core-crud`, merged to master.
-- **P4: Search** — Search service with PostgreSQL full-text search (tsvector + GIN index on offers), restaurant ILIKE search, cuisine tag filter, nearby haversine filter, sort (newest/oldest/discount/price_low/price_high/nearest), pagination. `GET /api/v1/search` with `q`, `type`, `lat`, `lng`, `radius_km`, `cuisine`, `sort` params. Built on `phase/4-search`, merged to master.
-- **P5: Upload** — Upload service using minio-go (S3-compatible, MinIO for dev). Single and multi-file upload with validation (5MB max, image types only). `POST /api/v1/upload` and `POST /api/v1/upload/multiple`. Auto-creates bucket. Returns URL paths. Built on `phase/5-upload`, merged to master.
-- **P6: Notifications** — Device token repo + notification repo. Notification service with Firebase Admin SDK FCM integration (graceful fallback if credentials missing). Device register/unregister. List notifications, mark read, unread count. Admin push to all or specific user. Cron service: marks expired offers, notifies users of offers expiring within 24h. Cron runs every 15 min via goroutine in main.go. Routes: `POST/DELETE /devices`, `GET /notifications`, `PUT /notifications/:id/read`, `PUT /notifications/read-all`, `GET /notifications/unread-count`, `POST /admin/notifications/push`. Built on `phase/6-notifications`, merged to master.
-- **P7: Admin Dashboard** — Next.js 16 (not 14 — breaking changes from 14) + Tailwind v4 + shadcn/ui admin frontend. Pages: login, dashboard overview, restaurants (list + approve/reject), offers (list + approve/reject), users (list), push notifications (form). Uses AuthProvider context, localStorage-based JWT auth, API client (`src/lib/api.ts`). `NEXT_PUBLIC_API_URL` env var for backend URL. Built on `phase/7-admin-dashboard`, merged to master.
+- **P1–P6:** See prior phases (Foundation, Auth, Core CRUD, Search, Upload, Notifications).
+- **P7: Admin Dashboard** — Next.js 16 + Tailwind v4 + shadcn/ui. Pages: login, dashboard, restaurants (approve/reject), offers, users, push notifications. Auth context with localStorage JWT. Built on `phase/7-admin-dashboard`, merged to master.
+- **P8: Flutter Integration** — Replaced mock services with API-backed services. New: `ApiClient` (Dio + JWT interceptor), `ApiAuthService` (Firebase + backend), `ApiOfferService`, `ApiFavoritesService`. Updated `Offer` model with `fromJson` (title, imageUrls, endDate, distanceKm), `AppUser` with `fromJson`. Updated providers, login screen (Firebase Google Sign-In), wired everything in `main.dart`. Firebase init graceful-fallback. `phase/8-flutter-integration` branch, merged to master.
 
 ### Blocked
 - (none)
 
 ## Key Decisions
-- Feature branches `phase/3-core-crud`, `phase/4-search`, `phase/5-upload`, `phase/6-notifications`, `phase/7-admin-dashboard` all created and merged to master.
-- GitHub remote: `https://github.com/NamalTharindu97/nomnom-lk`
-- Firebase Admin SDK (`firebase.google.com/go/v4`) installed for FCM push notifications.
-- Cron runs inline goroutine in main.go (15-min ticker); can be extracted to standalone scheduler later.
-- Firebase token verification still mocked (real Firebase Auth SDK init deferred).
-- Upload uses minio-go v7 (works with both MinIO and AWS S3).
+- All phase branches (`phase/3-core-crud` through `phase/8-flutter-integration`) created and merged to master, preserved on remote.
+- Firebase token verification still mocked on backend (real Firebase Admin SDK init deferred).
+- Flutter uses `dio` + `flutter_secure_storage` for API calls; Firebase Auth for Google Sign-In only (email/password goes directly to backend).
+- Firebase init is wrapped in try-catch so app works without config files.
+- `API_BASE_URL` env var configures backend URL (defaults to `http://localhost:8080/api/v1`).
 
 ## Next Steps
-**P8: Flutter Integration** — Connect Flutter mobile app to the Go backend API.
+- **End-to-end testing:** Run backend + Flutter app + admin dashboard against the same API.
+- **Firebase setup:** Add `GoogleService-Info.plist` (iOS) and `google-services.json` (Android) from Firebase Console, then run `flutterfire configure`.
+- **Push notifications:** Connect Flutter device token registration to backend `/devices` endpoint.
+- **Pagination & infinite scroll** in Flutter offer lists.
+- **Localization** using the backend's JSONB translations.
