@@ -30,12 +30,14 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	restaurantService := services.NewRestaurantService(restaurantRepo)
 	offerService := services.NewOfferService(offerRepo, restaurantRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo)
+	searchService := services.NewSearchService(db)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	restaurantHandler := handlers.NewRestaurantHandler(restaurantService)
 	offerHandler := handlers.NewOfferHandler(offerService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
+	searchHandler := handlers.NewSearchHandler(searchService)
 	r := gin.New()
 
 	r.Use(
@@ -116,9 +118,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			favoritesGroup.DELETE("/:offerId", favoriteHandler.Remove)
 		}
 
-		v1.GET("/search", func(c *gin.Context) {
-			c.JSON(200, gin.H{"data": []interface{}{}, "pagination": gin.H{}})
-		})
+		v1.GET("/search", searchHandler.Search)
 
 		uploadGroup := v1.Group("/upload")
 		uploadGroup.Use(middleware.Auth(cfg.JWT.Secret))
