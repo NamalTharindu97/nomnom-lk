@@ -21,12 +21,13 @@
 - **P4: Search** — Search service with PostgreSQL full-text search (tsvector + GIN index on offers), restaurant ILIKE search, cuisine tag filter, nearby haversine filter, sort (newest/oldest/discount/price_low/price_high/nearest), pagination. `GET /api/v1/search` with `q`, `type`, `lat`, `lng`, `radius_km`, `cuisine`, `sort` params. Built on `phase/4-search`, merged to master.
 - **P5: Upload** — Upload service using minio-go (S3-compatible, MinIO for dev). Single and multi-file upload with validation (5MB max, image types only). `POST /api/v1/upload` and `POST /api/v1/upload/multiple`. Auto-creates bucket. Returns URL paths. Built on `phase/5-upload`, merged to master.
 - **P6: Notifications** — Device token repo + notification repo. Notification service with Firebase Admin SDK FCM integration (graceful fallback if credentials missing). Device register/unregister. List notifications, mark read, unread count. Admin push to all or specific user. Cron service: marks expired offers, notifies users of offers expiring within 24h. Cron runs every 15 min via goroutine in main.go. Routes: `POST/DELETE /devices`, `GET /notifications`, `PUT /notifications/:id/read`, `PUT /notifications/read-all`, `GET /notifications/unread-count`, `POST /admin/notifications/push`. Built on `phase/6-notifications`, merged to master.
+- **P7: Admin Dashboard** — Next.js 16 (not 14 — breaking changes from 14) + Tailwind v4 + shadcn/ui admin frontend. Pages: login, dashboard overview, restaurants (list + approve/reject), offers (list + approve/reject), users (list), push notifications (form). Uses AuthProvider context, localStorage-based JWT auth, API client (`src/lib/api.ts`). `NEXT_PUBLIC_API_URL` env var for backend URL. Built on `phase/7-admin-dashboard`, merged to master.
 
 ### Blocked
 - (none)
 
 ## Key Decisions
-- Feature branches `phase/3-core-crud`, `phase/4-search`, `phase/5-upload`, `phase/6-notifications` all created and merged to master.
+- Feature branches `phase/3-core-crud`, `phase/4-search`, `phase/5-upload`, `phase/6-notifications`, `phase/7-admin-dashboard` all created and merged to master.
 - GitHub remote: `https://github.com/NamalTharindu97/nomnom-lk`
 - Firebase Admin SDK (`firebase.google.com/go/v4`) installed for FCM push notifications.
 - Cron runs inline goroutine in main.go (15-min ticker); can be extracted to standalone scheduler later.
@@ -34,4 +35,4 @@
 - Upload uses minio-go v7 (works with both MinIO and AWS S3).
 
 ## Next Steps
-**P7: Admin Dashboard** — Next.js 14 + Tailwind + shadcn/ui frontend for admin operations.
+**P8: Flutter Integration** — Connect Flutter mobile app to the Go backend API.
