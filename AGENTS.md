@@ -29,7 +29,12 @@
 - **P16: Dev Environment — Background Processes + Hot Reload** — Backend auto-restart via `air` (Go hot reload, configured in `backend/.air.toml`); admin dashboard runs with `next dev` (HMR built-in); Flutter runs on iPhone 17 Pro simulator in debug mode; all three run as background `nohup` processes with logs routed to `*/logs/*.log`; `.gitignore` updated to exclude log dirs.
 
 ### In Progress
-- (none — Phase 16 complete)
+- **P17: Seed Data with MinIO Images + Data Loading Optimization** — Phase split into sub-steps:
+  1. ✅ Seed script with MinIO image upload (Unsplash food photos → MinIO → DB records)
+  2. ✅ Fix offer dialog field name mismatch (`desc_si`/`desc_ta` → `description_si`/`description_ta`)
+  3. ✅ Image caching (Flutter `Image.network` → `CachedNetworkImage`)
+  4. ✅ Data caching (Dio interceptor with 2-min TTL + SSE cache invalidation)
+  5. ⬜ Pagination metadata + shimmer + retry + restaurant upload
 
 ### Blocked
 - (none)
@@ -53,7 +58,7 @@
 - **Background process management:** All three services (backend, admin, Flutter) run as `nohup` background processes; logs go to `*/logs/*.log`.
 
 ## Next Steps
-- (none — all 16 phases complete and merged to master)
+- (none — all 16 phases complete, P17 in progress on master)
 
 ## Critical Context
 - All branches P1–P16 merged to master and preserved on remote.

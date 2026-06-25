@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
@@ -25,19 +26,11 @@ class OfferImage extends StatelessWidget {
       child: SizedBox(
         height: height,
         width: width,
-        child: Image.network(
-          imageUrl,
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
           fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) {
-              return child;
-            }
-
-            return const _ImageFallback(isLoading: true);
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return const _ImageFallback();
-          },
+          placeholder: (context, url) => const _ImageFallback(isLoading: true),
+          errorWidget: (context, url, error) => const _ImageFallback(),
         ),
       ),
     );

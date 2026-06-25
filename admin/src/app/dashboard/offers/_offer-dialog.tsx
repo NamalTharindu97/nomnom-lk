@@ -23,8 +23,8 @@ const offerSchema = z.object({
   restaurant_id: z.string().min(1, "Restaurant is required"),
   title_si: z.string().optional(),
   title_ta: z.string().optional(),
-  desc_si: z.string().optional(),
-  desc_ta: z.string().optional(),
+  description_si: z.string().optional(),
+  description_ta: z.string().optional(),
 })
 
 type OfferForm = z.infer<typeof offerSchema>
@@ -67,8 +67,8 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
       restaurant_id: "",
       title_si: "",
       title_ta: "",
-      desc_si: "",
-      desc_ta: "",
+      description_si: "",
+      description_ta: "",
     },
   })
 
@@ -90,8 +90,8 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
         restaurant_id: offer.restaurant_id || "",
         title_si: offer.title_si || "",
         title_ta: offer.title_ta || "",
-        desc_si: offer.desc_si || "",
-        desc_ta: offer.desc_ta || "",
+        description_si: offer.description_si || "",
+        description_ta: offer.description_ta || "",
       })
     } else {
       reset({
@@ -104,8 +104,8 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
         restaurant_id: "",
         title_si: "",
         title_ta: "",
-        desc_si: "",
-        desc_ta: "",
+        description_si: "",
+        description_ta: "",
       })
       setImageFiles([])
     }
@@ -274,11 +274,11 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                     <Input id="title_si" {...register("title_si")} />
                   </div>
                   <div className="grid gap-1">
-                    <Label htmlFor="desc_si">Description (SI)</Label>
+                    <Label htmlFor="description_si">Description (SI)</Label>
                     <textarea
-                      id="desc_si"
+                      id="description_si"
                       className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
-                      {...register("desc_si")}
+                      {...register("description_si")}
                     />
                   </div>
                 </div>
@@ -291,11 +291,11 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                     <Input id="title_ta" {...register("title_ta")} />
                   </div>
                   <div className="grid gap-1">
-                    <Label htmlFor="desc_ta">Description (TA)</Label>
+                    <Label htmlFor="description_ta">Description (TA)</Label>
                     <textarea
-                      id="desc_ta"
+                      id="description_ta"
                       className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
-                      {...register("desc_ta")}
+                      {...register("description_ta")}
                     />
                   </div>
                 </div>

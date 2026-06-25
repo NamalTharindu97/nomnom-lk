@@ -83,6 +83,34 @@ func (s *UploadService) UploadSingle(file *multipart.FileHeader, folder string) 
 	return url, nil
 }
 
+func (s *UploadService) UploadReader(reader io.Reader, size int64, filename, folder string) (string, error) {
+	ext := strings.ToLower(filepath.Ext(filename))
+	objectKey := fmt.Sprintf("%s/%s/%s%s", s.prefix, folder, uuid.New().String(), ext)
+
+	contentType := "image/jpeg"
+	switch ext {
+	case ".png":
+		contentType = "image/png"
+	case ".gif":
+		contentType = "image/gif"
+	case ".webp":
+		contentType = "image/webp"
+	case ".svg":
+		contentType = "image/svg+xml"
+	}
+
+	ctx := context.Background()
+	_, err := s.client.PutObject(ctx, s.bucket, objectKey, reader, size, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload file: %w", err)
+	}
+
+	url := fmt.Sprintf("/api/v1/uploads/%s", objectKey)
+	return url, nil
+}
+
 func (s *UploadService) UploadMultiple(files []*multipart.FileHeader, folder string) ([]string, error) {
 	urls := make([]string, 0, len(files))
 	for _, file := range files {

@@ -44,6 +44,7 @@ class NomNomBootstrap extends StatelessWidget {
     final apiClient = ApiClient();
     return MultiProvider(
       providers: [
+        Provider<ApiClient>.value(value: apiClient),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(ApiAuthService(apiClient)),
         ),
@@ -140,17 +141,20 @@ class _SseListenerState extends State<_SseListener> {
   }
 
   void _handleEvent(SSEEvent event) {
+    final apiClient = context.read<ApiClient>();
     switch (event.event) {
       case 'offer.created':
       case 'offer.approved':
       case 'offer.updated':
       case 'offer.deleted':
+        apiClient.invalidateCache('/offers');
         context.read<OfferProvider>().refreshOffers();
         break;
       case 'restaurant.created':
       case 'restaurant.approved':
       case 'restaurant.updated':
       case 'restaurant.deleted':
+        apiClient.invalidateCache('/restaurants');
         context.read<RestaurantProvider>().loadRestaurants();
         break;
     }
