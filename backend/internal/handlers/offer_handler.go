@@ -15,11 +15,15 @@ import (
 )
 
 type OfferHandler struct {
-	service *services.OfferService
+	service    *services.OfferService
+	sseService *services.SSEService
 }
 
-func NewOfferHandler(service *services.OfferService) *OfferHandler {
-	return &OfferHandler{service: service}
+func NewOfferHandler(service *services.OfferService, sseService *services.SSEService) *OfferHandler {
+	return &OfferHandler{
+		service:    service,
+		sseService: sseService,
+	}
 }
 
 func (h *OfferHandler) List(c *gin.Context) {
@@ -79,6 +83,7 @@ func (h *OfferHandler) Create(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("offer.created", gin.H{"id": offer.ID, "title": offer.Title})
 	c.JSON(http.StatusCreated, h.offerToMap(offer, c))
 }
 
@@ -109,6 +114,7 @@ func (h *OfferHandler) Update(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("offer.updated", gin.H{"id": offer.ID, "title": offer.Title})
 	response.Success(c, h.offerToMap(offer, c))
 }
 
@@ -130,6 +136,7 @@ func (h *OfferHandler) Delete(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("offer.deleted", gin.H{"id": id})
 	c.Status(http.StatusNoContent)
 }
 
@@ -148,6 +155,7 @@ func (h *OfferHandler) Approve(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("offer.approved", gin.H{"id": offer.ID})
 	response.Success(c, gin.H{"id": offer.ID, "status": offer.Status})
 }
 
@@ -166,6 +174,7 @@ func (h *OfferHandler) Reject(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("offer.rejected", gin.H{"id": offer.ID})
 	response.Success(c, gin.H{"id": offer.ID, "status": offer.Status})
 }
 
@@ -174,9 +183,10 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 	m := gin.H{
 		"id": o.ID,
 		"restaurant": gin.H{
-			"id":   o.RestaurantID,
-			"name": o.Restaurant.Name,
-			"slug": o.Restaurant.Slug,
+			"id":      o.RestaurantID,
+			"name":    o.Restaurant.Name,
+			"slug":    o.Restaurant.Slug,
+			"address": o.Restaurant.Address,
 		},
 		"title":            o.Title,
 		"description":      o.Description,

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"path/filepath"
 	"strings"
@@ -106,6 +107,22 @@ func (s *UploadService) PresignedURL(key string, expiry time.Duration) (string, 
 		return "", fmt.Errorf("failed to generate presigned url: %w", err)
 	}
 	return url.String(), nil
+}
+
+func (s *UploadService) GetFile(key string) (io.ReadCloser, string, error) {
+	ctx := context.Background()
+	object, err := s.client.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get file: %w", err)
+	}
+
+	stat, err := object.Stat()
+	if err != nil {
+		object.Close()
+		return nil, "", fmt.Errorf("file not found: %w", err)
+	}
+
+	return object, stat.ContentType, nil
 }
 
 func (s *UploadService) ListObjects(folder string) ([]string, error) {

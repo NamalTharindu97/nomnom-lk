@@ -99,7 +99,7 @@ func Load() (*Config, error) {
 	v.SetDefault("AWS_ACCESS_KEY_ID", "minioadmin")
 	v.SetDefault("AWS_SECRET_ACCESS_KEY", "minioadmin")
 	v.SetDefault("AWS_S3_BUCKET", "nomnom-images")
-	v.SetDefault("AWS_S3_ENDPOINT", "http://localhost:9000")
+	v.SetDefault("AWS_S3_ENDPOINT", "localhost:9000")
 	v.SetDefault("AWS_S3_FORCE_PATH_STYLE", true)
 
 	v.SetDefault("SENTRY_DSN", "")

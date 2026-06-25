@@ -64,8 +64,8 @@ func (s *NotificationService) RegisterDevice(userID uuid.UUID, token, platform s
 	return s.deviceTokenRepo.Upsert(device)
 }
 
-func (s *NotificationService) UnregisterDevice(userID uuid.UUID) error {
-	return s.deviceTokenRepo.Delete(userID)
+func (s *NotificationService) UnregisterDevice(userID uuid.UUID, token string) error {
+	return s.deviceTokenRepo.DeleteByToken(userID, token)
 }
 
 func (s *NotificationService) ListNotifications(userID uuid.UUID, params pagination.Params) ([]models.Notification, int64, error) {

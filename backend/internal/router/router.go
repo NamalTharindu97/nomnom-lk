@@ -28,6 +28,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	notificationRepo := repository.NewNotificationRepo(db)
 
 	// Services
+	sseService := services.NewSSEService()
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT)
 	restaurantService := services.NewRestaurantService(restaurantRepo)
 	offerService := services.NewOfferService(offerRepo, restaurantRepo)
@@ -43,11 +44,12 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	}
 
 	// Handlers
-	authHandler := handlers.NewAuthHandler(authService)
+	firebaseService := services.NewFirebaseService(&cfg.Firebase)
+	authHandler := handlers.NewAuthHandler(authService, firebaseService)
 	userHandler := handlers.NewUserHandler(userRepo)
-	restaurantHandler := handlers.NewRestaurantHandler(restaurantService)
-	offerHandler := handlers.NewOfferHandler(offerService)
-	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
+	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService)
+	offerHandler := handlers.NewOfferHandler(offerService, sseService)
+	favoriteHandler := handlers.NewFavoriteHandler(favoriteService, sseService)
 	searchHandler := handlers.NewSearchHandler(searchService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	r := gin.New()
@@ -84,6 +86,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 	v1 := r.Group("/api/v1")
 	{
+		v1.GET("/events", sseService.HandleSSE)
 		authGroup := v1.Group("/auth")
 		authGroup.Use(middleware.RateLimit(rdb, 20, 1*time.Minute, "rl:auth"))
 		{
@@ -96,9 +99,14 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		usersGroup := v1.Group("/users")
 		usersGroup.Use(middleware.Auth(cfg.JWT.Secret))
-		usersGroup.Use(middleware.RequireRole("admin"))
 		{
-			usersGroup.GET("", userHandler.List)
+			usersGroup.GET("/me", userHandler.Me)
+		}
+
+		adminUsers := usersGroup.Group("")
+		adminUsers.Use(middleware.RequireRole("admin"))
+		{
+			adminUsers.GET("", userHandler.List)
 		}
 
 		restaurantsGroup := v1.Group("/restaurants")
@@ -133,8 +141,9 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		v1.GET("/search", searchHandler.Search)
 
+		var uploadHandler *handlers.UploadHandler
 		if uploadService != nil {
-			uploadHandler := handlers.NewUploadHandler(uploadService)
+			uploadHandler = handlers.NewUploadHandler(uploadService)
 			uploadGroup := v1.Group("/upload")
 			uploadGroup.Use(middleware.Auth(cfg.JWT.Secret))
 			uploadGroup.Use(middleware.RateLimit(rdb, 10, 1*time.Minute, "rl:upload"))
@@ -142,6 +151,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 				uploadGroup.POST("", uploadHandler.Upload)
 				uploadGroup.POST("/multiple", uploadHandler.UploadMultiple)
 			}
+
+			v1.GET("/uploads/*key", uploadHandler.ServeFile)
 		}
 
 		notificationsGroup := v1.Group("/notifications")

@@ -5,6 +5,10 @@ type RegisterDeviceRequest struct {
 	Platform string `json:"platform" binding:"required,oneof=ios android"`
 }
 
+type UnregisterDeviceRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
 type SendPushRequest struct {
 	Title  string `json:"title" binding:"required"`
 	Body   string `json:"body" binding:"required"`

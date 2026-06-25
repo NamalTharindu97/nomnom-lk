@@ -38,9 +38,17 @@ func (h *NotificationHandler) RegisterDevice(c *gin.Context) {
 }
 
 func (h *NotificationHandler) UnregisterDevice(c *gin.Context) {
+	var req request.UnregisterDeviceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, []response.ErrorDetail{
+			{Field: "body", Message: err.Error()},
+		})
+		return
+	}
+
 	userID, _ := middleware.GetUserID(c)
 
-	if err := h.service.UnregisterDevice(userID); err != nil {
+	if err := h.service.UnregisterDevice(userID, req.Token); err != nil {
 		response.InternalError(c, "failed to unregister device")
 		return
 	}

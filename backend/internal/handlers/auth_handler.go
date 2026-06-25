@@ -11,11 +11,15 @@ import (
 )
 
 type AuthHandler struct {
-	authService *services.AuthService
+	authService     *services.AuthService
+	firebaseService *services.FirebaseService
 }
 
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *services.AuthService, firebaseService *services.FirebaseService) *AuthHandler {
+	return &AuthHandler{
+		authService:     authService,
+		firebaseService: firebaseService,
+	}
 }
 
 // Register creates a new user with email & password.
@@ -94,13 +98,22 @@ func (h *AuthHandler) FirebaseLogin(c *gin.Context) {
 		return
 	}
 
-	// TODO: Verify Firebase token using firebase-admin-go SDK
-	// For now, extract mock claims from context
-	firebaseUID := c.GetString("firebase_uid")
-	email := c.GetString("firebase_email")
-	name := c.GetString("firebase_name")
+	var firebaseUID, email, name string
 
-	if firebaseUID == "" {
+	if h.firebaseService.IsEnabled() {
+		token, err := h.firebaseService.VerifyIDToken(req.FirebaseToken)
+		if err != nil {
+			response.Error(c, http.StatusUnauthorized, "UNAUTHORIZED", "invalid firebase token")
+			return
+		}
+		firebaseUID = token.UID
+		if claims, ok := token.Claims["email"]; ok {
+			email, _ = claims.(string)
+		}
+		if claims, ok := token.Claims["name"]; ok {
+			name, _ = claims.(string)
+		}
+	} else {
 		firebaseUID = req.FirebaseToken
 		email = "user@firebase.com"
 		name = "Firebase User"

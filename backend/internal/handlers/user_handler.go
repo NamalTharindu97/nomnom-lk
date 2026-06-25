@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
@@ -13,6 +14,31 @@ type UserHandler struct {
 
 func NewUserHandler(repo *repository.UserRepo) *UserHandler {
 	return &UserHandler{repo: repo}
+}
+
+func (h *UserHandler) Me(c *gin.Context) {
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
+	user, err := h.repo.FindByID(userID)
+	if err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"id":           user.ID,
+		"email":        user.Email,
+		"name":         user.Name,
+		"avatar_url":   user.AvatarURL,
+		"phone":        user.Phone,
+		"role":         user.Role,
+		"is_onboarded": true,
+		"created_at":   user.CreatedAt,
+	})
 }
 
 func (h *UserHandler) List(c *gin.Context) {

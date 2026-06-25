@@ -27,6 +27,11 @@ func (r *DeviceTokenRepo) Delete(userID uuid.UUID) error {
 		Delete(&models.DeviceToken{}).Error
 }
 
+func (r *DeviceTokenRepo) DeleteByToken(userID uuid.UUID, token string) error {
+	return r.db.Where("user_id = ? AND token = ?", userID, token).
+		Delete(&models.DeviceToken{}).Error
+}
+
 func (r *DeviceTokenRepo) FindByUserID(userID uuid.UUID) ([]models.DeviceToken, error) {
 	var tokens []models.DeviceToken
 	err := r.db.Where("user_id = ?", userID).Find(&tokens).Error

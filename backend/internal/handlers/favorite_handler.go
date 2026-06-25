@@ -13,11 +13,15 @@ import (
 )
 
 type FavoriteHandler struct {
-	service *services.FavoriteService
+	service    *services.FavoriteService
+	sseService *services.SSEService
 }
 
-func NewFavoriteHandler(service *services.FavoriteService) *FavoriteHandler {
-	return &FavoriteHandler{service: service}
+func NewFavoriteHandler(service *services.FavoriteService, sseService *services.SSEService) *FavoriteHandler {
+	return &FavoriteHandler{
+		service:    service,
+		sseService: sseService,
+	}
 }
 
 func (h *FavoriteHandler) List(c *gin.Context) {
@@ -70,6 +74,7 @@ func (h *FavoriteHandler) Add(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("favorite.added", gin.H{"user_id": userID, "offer_id": offerID})
 	c.Status(http.StatusCreated)
 }
 
@@ -89,5 +94,6 @@ func (h *FavoriteHandler) Remove(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("favorite.removed", gin.H{"user_id": userID, "offer_id": offerID})
 	c.Status(http.StatusNoContent)
 }

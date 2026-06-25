@@ -9,16 +9,21 @@ import (
 	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/services"
+	"github.com/nomnom-lk/backend/pkg/locale"
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
 )
 
 type RestaurantHandler struct {
-	service *services.RestaurantService
+	service    *services.RestaurantService
+	sseService *services.SSEService
 }
 
-func NewRestaurantHandler(service *services.RestaurantService) *RestaurantHandler {
-	return &RestaurantHandler{service: service}
+func NewRestaurantHandler(service *services.RestaurantService, sseService *services.SSEService) *RestaurantHandler {
+	return &RestaurantHandler{
+		service:    service,
+		sseService: sseService,
+	}
 }
 
 func (h *RestaurantHandler) List(c *gin.Context) {
@@ -33,7 +38,7 @@ func (h *RestaurantHandler) List(c *gin.Context) {
 
 	data := make([]gin.H, len(restaurants))
 	for i, r := range restaurants {
-		data[i] = h.restaurantToMap(&r)
+		data[i] = h.restaurantToMap(&r, c)
 	}
 
 	response.SuccessPaginated(c, data, pagination.Meta(params, total))
@@ -54,7 +59,7 @@ func (h *RestaurantHandler) Get(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, h.restaurantDetailToMap(restaurant))
+	response.Success(c, h.restaurantDetailToMap(restaurant, c))
 }
 
 func (h *RestaurantHandler) Create(c *gin.Context) {
@@ -76,7 +81,8 @@ func (h *RestaurantHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, h.restaurantToMap(restaurant))
+	h.sseService.Emit("restaurant.created", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+	c.JSON(http.StatusCreated, h.restaurantToMap(restaurant, c))
 }
 
 func (h *RestaurantHandler) Update(c *gin.Context) {
@@ -106,7 +112,8 @@ func (h *RestaurantHandler) Update(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, h.restaurantToMap(restaurant))
+	h.sseService.Emit("restaurant.updated", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+	response.Success(c, h.restaurantToMap(restaurant, c))
 }
 
 func (h *RestaurantHandler) Delete(c *gin.Context) {
@@ -123,6 +130,7 @@ func (h *RestaurantHandler) Delete(c *gin.Context) {
 		return
 	}
 
+	h.sseService.Emit("restaurant.deleted", gin.H{"id": id})
 	c.Status(http.StatusNoContent)
 }
 
@@ -141,7 +149,8 @@ func (h *RestaurantHandler) Approve(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, h.restaurantToMap(restaurant))
+	h.sseService.Emit("restaurant.approved", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+	response.Success(c, h.restaurantToMap(restaurant, c))
 }
 
 func (h *RestaurantHandler) Reject(c *gin.Context) {
@@ -159,35 +168,50 @@ func (h *RestaurantHandler) Reject(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, h.restaurantToMap(restaurant))
+	h.sseService.Emit("restaurant.rejected", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+	response.Success(c, h.restaurantToMap(restaurant, c))
 }
 
-func (h *RestaurantHandler) restaurantToMap(r *models.Restaurant) gin.H {
-	return gin.H{
-		"id":        r.ID,
-		"name":      r.Name,
-		"slug":      r.Slug,
-		"address":   r.Address,
-		"cuisine_tags": r.CuisineTags,
-		"cover_image": r.CoverImage,
-		"status":    r.Status,
+func (h *RestaurantHandler) restaurantToMap(r *models.Restaurant, c *gin.Context) gin.H {
+	lang := middleware.GetLanguage(c)
+	m := gin.H{
+		"id":               r.ID,
+		"name":             r.Name,
+		"slug":             r.Slug,
+		"address":          r.Address,
+		"cuisine_tags":     r.CuisineTags,
+		"cover_image":      r.CoverImage,
+		"status":           r.Status,
 		"active_offer_count": len(r.Offers),
 	}
+
+	if r.Translations != nil {
+		locale.MergeTranslations(m, r.Translations, lang)
+	}
+
+	return m
 }
 
-func (h *RestaurantHandler) restaurantDetailToMap(r *models.Restaurant) gin.H {
-	return gin.H{
-		"id":           r.ID,
-		"name":         r.Name,
-		"slug":         r.Slug,
-		"description":  r.Description,
-		"address":      r.Address,
-		"latitude":     r.Latitude,
-		"longitude":    r.Longitude,
+func (h *RestaurantHandler) restaurantDetailToMap(r *models.Restaurant, c *gin.Context) gin.H {
+	lang := middleware.GetLanguage(c)
+	m := gin.H{
+		"id":            r.ID,
+		"name":          r.Name,
+		"slug":          r.Slug,
+		"description":   r.Description,
+		"address":       r.Address,
+		"latitude":      r.Latitude,
+		"longitude":     r.Longitude,
 		"contact_phone": r.ContactPhone,
-		"cuisine_tags": r.CuisineTags,
-		"cover_image":  r.CoverImage,
-		"status":       r.Status,
-		"created_at":   r.CreatedAt,
+		"cuisine_tags":  r.CuisineTags,
+		"cover_image":   r.CoverImage,
+		"status":        r.Status,
+		"created_at":    r.CreatedAt,
 	}
+
+	if r.Translations != nil {
+		locale.MergeTranslations(m, r.Translations, lang)
+	}
+
+	return m
 }

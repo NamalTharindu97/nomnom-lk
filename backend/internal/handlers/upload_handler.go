@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"io"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -15,6 +17,26 @@ type UploadHandler struct {
 
 func NewUploadHandler(service *services.UploadService) *UploadHandler {
 	return &UploadHandler{service: service}
+}
+
+func (h *UploadHandler) ServeFile(c *gin.Context) {
+	key := c.Param("key")
+	if key == "" {
+		response.NotFound(c, "file not found")
+		return
+	}
+
+	reader, contentType, err := h.service.GetFile(key)
+	if err != nil {
+		response.NotFound(c, "file not found")
+		return
+	}
+	defer reader.Close()
+
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "public, max-age=31536000")
+	c.Status(http.StatusOK)
+	io.Copy(c.Writer, reader)
 }
 
 func (h *UploadHandler) Upload(c *gin.Context) {
