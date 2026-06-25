@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "583753598060",
+    "project_id": "nomnom-cfe32",
+    "storage_bucket": "nomnom-cfe32.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:583753598060:android:ab8d5912ccadcc64d54449",
+        "android_client_info": {
+          "package_name": "com.nomnomlk.nomnom_lk"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "583753598060-t229iub1a1rqc52k4ctjoht3aa6fvti0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nomnomlk.nomnom_lk",
+            "certificate_hash": "0baa65d84e5b2a6a345d27c0ae3d3be52de3ecec"
+          }
+        },
+        {
+          "client_id": "583753598060-bos92ckah4ske3jigj8lft5eo52vs5d6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpyi7uJowFWgBlJNjus4Zxe7I_6lnnS3Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "583753598060-bos92ckah4ske3jigj8lft5eo52vs5d6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "583753598060-0gtbr2gbju6r1hv2ej9codlmil1fiiqn.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.nomnomlk.nomnomLk"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

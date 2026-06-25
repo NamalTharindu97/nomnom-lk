@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/app_user.dart';
 import '../services/api_auth_service.dart';
+import '../services/fcm_messaging_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider(this._authService);
@@ -49,6 +50,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     _setLoading(true);
+    await fcmService?.unregisterToken();
     await _authService.logout();
     _user = null;
     _isInitialized = true;

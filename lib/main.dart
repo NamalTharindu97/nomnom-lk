@@ -20,6 +20,7 @@ import 'services/api_favorites_service.dart';
 import 'services/api_notification_service.dart';
 import 'services/api_offer_service.dart';
 import 'services/api_restaurant_service.dart';
+import 'services/fcm_messaging_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,9 +60,54 @@ class NomNomBootstrap extends StatelessWidget {
           ),
         ),
       ],
-      child: const NomNomApp(),
+      child: const _FcmInitializer(child: NomNomApp()),
     );
   }
+}
+
+class _FcmInitializer extends StatefulWidget {
+  final Widget child;
+  const _FcmInitializer({required this.child});
+
+  @override
+  State<_FcmInitializer> createState() => _FcmInitializerState();
+}
+
+class _FcmInitializerState extends State<_FcmInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initFcm());
+  }
+
+  void _navigateToNotifications() {
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) {
+      nav.pushNamed(AppRoutes.home);
+    } else {
+      nav.pushNamed(AppRoutes.home);
+    }
+  }
+
+  Future<void> _initFcm() async {
+    final notificationProvider = context.read<NotificationProvider>();
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {}
+    try {
+      final apiClient = ApiClient();
+      final fcm = FcmMessagingService(
+        apiClient: apiClient,
+        notificationProvider: notificationProvider,
+      );
+      await fcm.initialize(onNavigate: _navigateToNotifications);
+    } catch (e) {
+      debugPrint('FCM init skipped: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class NomNomApp extends StatelessWidget {
