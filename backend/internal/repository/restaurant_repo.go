@@ -36,7 +36,7 @@ func (r *RestaurantRepo) FindAll(status string, page, perPage int) ([]models.Res
 	var total int64
 
 	query := r.db.Model(&models.Restaurant{})
-	if status != "" {
+	if status != "" && status != "all" {
 		query = query.Where("status = ?", status)
 	}
 	query.Count(&total)

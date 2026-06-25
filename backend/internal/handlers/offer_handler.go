@@ -200,6 +200,7 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 		"discount_percent": int((1 - o.OfferPrice/o.OriginalPrice) * 100),
 		"saving":           o.OriginalPrice - o.OfferPrice,
 		"image_urls":       o.ImageURLs,
+		"status":           o.Status,
 		"end_date":         o.EndDate,
 		"is_favorited":     false,
 	}

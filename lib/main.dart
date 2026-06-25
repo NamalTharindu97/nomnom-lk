@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/api_config.dart';
 import 'core/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'models/offer.dart';
@@ -21,6 +24,7 @@ import 'services/api_notification_service.dart';
 import 'services/api_offer_service.dart';
 import 'services/api_restaurant_service.dart';
 import 'services/fcm_messaging_service.dart';
+import 'services/sse_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,6 +108,59 @@ class _FcmInitializerState extends State<_FcmInitializer> {
     } catch (e) {
       debugPrint('FCM init skipped: $e');
     }
+  }
+
+  @override
+  Widget build(BuildContext context) => _SseListener(child: widget.child);
+}
+
+class _SseListener extends StatefulWidget {
+  final Widget child;
+  const _SseListener({required this.child});
+
+  @override
+  State<_SseListener> createState() => _SseListenerState();
+}
+
+class _SseListenerState extends State<_SseListener> {
+  SSEService? _sseService;
+  StreamSubscription<SSEEvent>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initSse());
+  }
+
+  Future<void> _initSse() async {
+    final sse = SSEService(ApiConfig.baseUrl);
+    _sseService = sse;
+    await sse.connect();
+    _subscription = sse.events.listen(_handleEvent);
+  }
+
+  void _handleEvent(SSEEvent event) {
+    switch (event.event) {
+      case 'offer.created':
+      case 'offer.approved':
+      case 'offer.updated':
+      case 'offer.deleted':
+        context.read<OfferProvider>().refreshOffers();
+        break;
+      case 'restaurant.created':
+      case 'restaurant.approved':
+      case 'restaurant.updated':
+      case 'restaurant.deleted':
+        context.read<RestaurantProvider>().loadRestaurants();
+        break;
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _sseService?.dispose();
+    super.dispose();
   }
 
   @override

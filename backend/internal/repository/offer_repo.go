@@ -36,7 +36,7 @@ func (r *OfferRepo) FindAll(status string, page, perPage int, sort string) ([]mo
 	var total int64
 
 	query := r.db.Model(&models.Offer{})
-	if status != "" {
+	if status != "" && status != "all" {
 		query = query.Where("offers.status = ?", status)
 	}
 	query.Count(&total)

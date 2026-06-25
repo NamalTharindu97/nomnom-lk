@@ -39,7 +39,7 @@ export default function OffersPage() {
     setLoading(true)
     try {
       const res = await api.get<{ data: Offer[]; pagination: { total: number } }>(
-        `/offers?page=${page}&per_page=${PER_PAGE}`
+        `/offers?page=${page}&per_page=${PER_PAGE}&status=all`
       )
       setOffers(res.data || [])
       setTotal(res.pagination?.total || 0)

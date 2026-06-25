@@ -35,7 +35,7 @@ export default function RestaurantsPage() {
     setLoading(true)
     try {
       const res = await api.get<{ data: Restaurant[]; pagination: { total: number } }>(
-        `/restaurants?page=${page}&per_page=${PER_PAGE}`
+        `/restaurants?page=${page}&per_page=${PER_PAGE}&status=all`
       )
       setRestaurants(res.data || [])
       setTotal(res.pagination?.total || 0)
