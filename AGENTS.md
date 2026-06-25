@@ -18,33 +18,20 @@
 ## Progress
 ### Done
 - **P10: Backend Foundation Fixes** — `/users/me`, Firebase Admin SDK, upload serving, SSE, translation merging. Merged to master.
-- **P11: Admin Dashboard Full CRUD** — Branch `phase/11-admin-full-crud`, merged to master.
-  - **Backend:** `GET /admin/stats` (restaurant/offer/user/pending counts), `GET /admin/notifications` (all-users history), `PUT /users/:id` (role/name edit), `DELETE /users/:id` (soft-delete). Count methods on repos. Build tags on scripts. Makefile updated with `-tags`.
-  - **Admin Dashboard:** 401 auto-logout interceptor in `api.ts`. Toast via `@radix-ui/react-toast`. Dashboard uses real stats. Restaurant CRUD dialog. User role dropdown + soft-delete. Offer pagination + zod+react-hook-form validation + file upload. Notification history table. `PaginationBar` shared component.
-- **P12: Flutter Full CRUD & Sync** — Branch `phase/12-flutter-full-crud`, merged to master.
-  - Favorites fix, infinite scroll pagination, server-side search, error states, offer detail API, notification provider/list, restaurant model/list, SSE client, 5-tab bottom nav with unread badge.
-- **P13: Push Notifications End-to-End** — Branch `phase/13-push-notifications`, completed and ready to merge to master.
-  - Added `firebase_messaging: ^15.2.10` + `flutter_local_notifications` to pubspec.yaml.
-  - Created `FcmMessagingService` with token get/register, permission request, token refresh listener, foreground/background message handlers.
-  - Local notification display via `flutter_local_notifications` on foreground FCM messages.
-  - Notification tap handling: foreground (local notification tap), background (`onMessageOpenedApp`), terminated (`getInitialMessage`) — all navigate to home.
-  - `ApiClient.delete()` updated to support optional `data` body.
-  - `main.dart` wrapped in `_FcmInitializer` widget that initializes FCM after first frame, reuses `NotificationProvider` to refresh unread badge on notification receipt.
-  - `AuthProvider.signOut()` now calls `fcmService?.unregisterToken()` before backend logout.
-  - Global `fcmService` variable for logout access.
-  - Android: enabled core library desugaring + set `minSdk = 23` for Firebase compatibility.
-  - iOS: added `GoogleService-Info.plist` to Xcode project and Resources build phase.
-  - iOS: created `Runner.entitlements` with `aps-environment = development` for APNs token.
-  - Verified end-to-end: backend FCM client initializes, admin push sends via FCM API, `simctl push` delivers to iOS simulator.
+- **P11: Admin Dashboard Full CRUD** — `GET /admin/stats`, `GET /admin/notifications`, `PUT /users/:id`, `DELETE /users/:id`, restaurant CRUD dialog, OfferDialog, user role dropdown, PaginationBar, 401 auto-logout interceptor, toast notifications. Merged to master.
+- **P12: Flutter Full CRUD & Sync** — Favorites fix, infinite scroll pagination, server-side search with debounce, error states + retry, offer detail API, notification provider/list, restaurant model/list, SSE client, 5-tab bottom nav with unread badge. Merged to master.
+- **P13: Push Notifications End-to-End** — `FcmMessagingService` with token get/register, permission, token refresh, foreground/background handlers, local notifications via `flutter_local_notifications`, tap nav (foreground/background/terminated → home). Android: minSdk=23 + desugaring. iOS: GoogleService-Info.plist + Runner.entitlements. Merged to master.
+- **P14: Admin UX Polish & Localization** — `GET /admin/stats/timeline` with daily offer & restaurant counts; translation fields (`_si`/`_ta`) in restaurant and offer dialogs; real chart data with dual bars; loading skeletons on dashboard cards. Merged to master.
+- **E2E Fixes (on master):** Offer create nil `Restaurant` pointer fix (reload after create); `search_vector` TSVECTOR migration; timeline `DATE::text` cast for GORM scan.
 
 ### In Progress
-- **Phase 14: Admin UX Polish & Localization** — Backend `GET /admin/stats/timeline` endpoint. Translation fields (`_si`, `_ta`) added to restaurant and offer dialogs. Real chart data from timeline endpoint with offers + restaurants bars. Loading skeletons on dashboard. Animate-pulse placeholders on stats cards.
+- (none — Phase 14 complete)
 
 ### Blocked
 - (none)
 
 ## Key Decisions
-- All phase branches merged to master; `phase/13-push-notifications` is current active branch.
+- All phase branches merged to master; master is current active branch.
 - **SSE for real-time sync:** Chose Server-Sent Events over WebSocket for simpler server→client streaming with Gin's `c.Stream()`.
 - **Firebase graceful fallback:** Both Auth token verification and FCM client follow same pattern — init from credentials file, skip if missing, log a warning.
 - **Toast notifications in admin:** `@radix-ui/react-toast` with custom `ToastProvider` avoids extra dependencies.
@@ -58,17 +45,17 @@
 - **iOS entitlements:** `Runner.entitlements` with `aps-environment = development` required for APNs token. Added to Xcode project via pbxproj edits (CODE_SIGN_ENTITLEMENTS build setting + file reference).
 
 ## Next Steps
-- **Phase 14:** Admin UX polish & localization forms.
 - **Phase 15:** Final polish & deployment to Railway.
 
 ## Critical Context
-- All branches P1–P12 merged to master and preserved on remote.
+- All branches P1–P14 merged to master and preserved on remote.
 - Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on iPhone 17 Pro simulator.
 - Docker services (postgres 16, redis 7, minio) running with seeded data.
 - Backend FCM client already initialized in `NotificationService` — `POST /admin/notifications/push` already sends via FCM in real goroutine.
 - `Flutter` `pubspec.yaml` has `firebase_messaging: ^15.2.10` resolved.
 - API routes confirmable at startup logs: `GET /admin/stats`, `GET /admin/stats/timeline`, `GET /admin/notifications`, `POST /admin/notifications/push`, `POST /devices`, `DELETE /devices`.
 - Translations stored as JSONB column on restaurants/offers. Admin dialog sends `name_si`, `name_ta`, `description_si`, `description_ta` for restaurant and `title_si`, `title_ta`, `desc_si`, `desc_ta` for offer — merged into JSONB by backend `TranslationService`.
+- **Offer dialog field name mismatch:** The admin offer dialog sends `desc_si`/`desc_ta` but the backend DTO expects `description_si`/`description_ta`. The dialog needs updating to match backend field names.
 
 ## Relevant Files
 ### Backend (all P10+P11+P14)
