@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -97,32 +98,39 @@ func (r *OfferRepo) CountByStatus(status string, count *int64) error {
 }
 
 func (r *OfferRepo) CountByDate(days int) ([]map[string]interface{}, error) {
-	type DailyCount struct {
-		Date  string `json:"date"`
-		Count int64  `json:"count"`
-	}
-	var results []DailyCount
-	err := r.db.Raw(
-		"SELECT DATE(created_at) as date, COUNT(*) as count FROM offers WHERE created_at >= NOW() - INTERVAL '1 day' * ? GROUP BY DATE(created_at) ORDER BY date",
+	sql := fmt.Sprintf(
+		"SELECT DATE(created_at)::text as date, COUNT(*)::bigint as count FROM offers WHERE created_at >= NOW() - INTERVAL '1 day' * %d GROUP BY DATE(created_at) ORDER BY date",
 		days,
-	).Scan(&results).Error
+	)
+	rows, err := r.db.Raw(sql).Rows()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	// Fill in missing days with zeroes
-	type fillEntry struct {
-		Date  string `json:"date"`
-		Count int64  `json:"count"`
+	results := make([]map[string]interface{}, 0)
+	for rows.Next() {
+		var dateStr string
+		var count int64
+		if err := rows.Scan(&dateStr, &count); err != nil {
+			return nil, err
+		}
+		results = append(results, map[string]interface{}{
+			"date":  dateStr,
+			"count": count,
+		})
 	}
+
 	filled := make([]map[string]interface{}, 0)
 	for i := days - 1; i >= 0; i-- {
 		t := time.Now().AddDate(0, 0, -i)
 		dateStr := t.Format("2006-01-02")
 		count := int64(0)
 		for _, r := range results {
-			if r.Date == dateStr {
-				count = r.Count
+			if r["date"] == dateStr {
+				if c, ok := r["count"].(int64); ok {
+					count = c
+				}
 				break
 			}
 		}
