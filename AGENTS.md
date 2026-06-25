@@ -23,9 +23,10 @@
 - **P13: Push Notifications End-to-End** — `FcmMessagingService` with token get/register, permission, token refresh, foreground/background handlers, local notifications via `flutter_local_notifications`, tap nav (foreground/background/terminated → home). Android: minSdk=23 + desugaring. iOS: GoogleService-Info.plist + Runner.entitlements. Merged to master.
 - **P14: Admin UX Polish & Localization** — `GET /admin/stats/timeline` with daily offer & restaurant counts; translation fields (`_si`/`_ta`) in restaurant and offer dialogs; real chart data with dual bars; loading skeletons on dashboard cards. Merged to master.
 - **E2E Fixes (on master):** Offer create nil `Restaurant` pointer fix (reload after create); `search_vector` TSVECTOR migration; timeline `DATE::text` cast for GORM scan.
+- **P15: Real-Time Sync via SSE** — Flutter SSE listener wired up (`_SseListener` widget in `main.dart`); `SSEService` rewritten to parse `event:` lines and emit typed `SSEEvent` objects with auto-reconnect; admin offers/restaurants pages pass `status=all` to see all statuses; backend `status=all` support in `offer_repo.go` and `restaurant_repo.go`; `status` field added to `offerToMap` response.
 
 ### In Progress
-- (none — Phase 14 complete)
+- (none — Phase 15 complete)
 
 ### Blocked
 - (none)
@@ -43,12 +44,14 @@
 - **Android minSdk:** Set to 23 for Firebase Auth compatibility (firebase-auth 23.x requires 23). Core library desugaring enabled for `flutter_local_notifications`.
 - **Notification tap nav:** All three tap scenarios (foreground local notification, background `onMessageOpenedApp`, terminated `getInitialMessage`) route to home screen via an `onNavigate` callback.
 - **iOS entitlements:** `Runner.entitlements` with `aps-environment = development` required for APNs token. Added to Xcode project via pbxproj edits (CODE_SIGN_ENTITLEMENTS build setting + file reference).
+- **SSE listener in Flutter:** `_SseListener` widget in `main.dart` creates `SSEService`, connects on init, listens for `offer.*` and `restaurant.*` events, and calls `OfferProvider.refreshOffers()` / `RestaurantProvider.loadRestaurants()` automatically — no user action needed.
+- **Admin page status filter:** Both offers and restaurants pages pass `status=all` to the backend to display all statuses (approved, pending, rejected) so admins can manage them.
 
 ## Next Steps
-- **Phase 15:** Final polish & deployment to Railway.
+- (none — all 15 phases complete and merged to master)
 
 ## Critical Context
-- All branches P1–P14 merged to master and preserved on remote.
+- All branches P1–P15 merged to master and preserved on remote.
 - Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on iPhone 17 Pro simulator.
 - Docker services (postgres 16, redis 7, minio) running with seeded data.
 - Backend FCM client already initialized in `NotificationService` — `POST /admin/notifications/push` already sends via FCM in real goroutine.
@@ -56,19 +59,23 @@
 - API routes confirmable at startup logs: `GET /admin/stats`, `GET /admin/stats/timeline`, `GET /admin/notifications`, `POST /admin/notifications/push`, `POST /devices`, `DELETE /devices`.
 - Translations stored as JSONB column on restaurants/offers. Admin dialog sends `name_si`, `name_ta`, `description_si`, `description_ta` for restaurant and `title_si`, `title_ta`, `desc_si`, `desc_ta` for offer — merged into JSONB by backend `TranslationService`.
 - **Offer dialog field name mismatch:** The admin offer dialog sends `desc_si`/`desc_ta` but the backend DTO expects `description_si`/`description_ta`. The dialog needs updating to match backend field names.
+- **Real-time SSE sync working:** Backend emits `offer.*` and `restaurant.*` events on all CRUD operations. Flutter `_SseListener` widget connects, parses events, and refreshes providers automatically. Admin offers/restaurants pages pass `?status=all` to see pending/rejected items for moderation.
 
 ## Relevant Files
-### Backend (all P10+P11+P14)
+### Backend (all P10+P11+P14+P15)
 - `backend/internal/handlers/admin_handler.go` — `Stats()`, `StatsTimeline()`, `ListNotifications()`
 - `backend/internal/handlers/user_handler.go` — `Me()`, `List()`, `Update()`, `Delete()`
 - `backend/internal/handlers/notification_handler.go` — `SendPush`, `RegisterDevice`, `UnregisterDevice`
+- `backend/internal/handlers/offer_handler.go` — `offerToMap` now includes `status` field; SSE emits on CRUD
+- `backend/internal/handlers/restaurant_handler.go` — SSE emits on CRUD
 - `backend/internal/services/notification_service.go` — FCM `initFCMClient`, `SendPush()` goroutine
 - `backend/internal/services/translation_service.go` — `MergeIntoJSONB()` helper
+- `backend/internal/services/sse_service.go` — `HandleSSE()`, `Broadcast()`, `Emit()`
 - `backend/internal/repository/notification_repo.go` — `FindAllAdmin()` for history
 - `backend/internal/repository/device_token_repo.go` — `Upsert()`, `DeleteByToken()`
-- `backend/internal/repository/offer_repo.go` — CRUD + CountAll + CountByStatus + CountByDate
-- `backend/internal/repository/restaurant_repo.go` — CRUD + CountAll + CountByStatus + CountByDate
-- `backend/internal/router/router.go` — Admin routes, `/users/:id` PUT/DELETE, `/admin/stats/timeline`
+- `backend/internal/repository/offer_repo.go` — `FindAll` supports `status=all` (no filter)
+- `backend/internal/repository/restaurant_repo.go` — `FindAll` supports `status=all` (no filter)
+- `backend/internal/router/router.go` — Admin routes, `/users/:id` PUT/DELETE, `/admin/stats/timeline`, `/events`
 - `backend/internal/models/restaurant.go` — `Translations *json.RawMessage`
 - `backend/internal/models/offer.go` — `Translations *json.RawMessage`
 - `backend/internal/dto/request/restaurant_request.go` — `NameSi`, `NameTa`, `DescSi`, `DescTa`
@@ -77,24 +84,25 @@
 - `backend/scripts/migrate.go` — `//go:build migration`
 - `backend/Makefile` — targets with `-tags`
 
-### Admin Dashboard (P11+P14)
+### Admin Dashboard (P11+P14+P15)
 - `admin/src/lib/api.ts` — 401 auto-logout interceptor
 - `admin/src/components/ui/toast.tsx` — ToastProvider + notify()
 - `admin/src/components/ui/pagination-bar.tsx` — Reusable pagination
 - `admin/src/app/dashboard/page.tsx` — Real stats from `/admin/stats`, chart from `/admin/stats/timeline`, loading skeletons
+- `admin/src/app/dashboard/restaurants/page.tsx` — CRUD table, passes `status=all`
 - `admin/src/app/dashboard/restaurants/_restaurant-dialog.tsx` — Create/edit modal with Sinhala/Tamil translation fields
-- `admin/src/app/dashboard/offers/page.tsx` — Offer CRUD table
+- `admin/src/app/dashboard/offers/page.tsx` — CRUD table, passes `status=all`
 - `admin/src/app/dashboard/offers/_offer-dialog.tsx` — Zod + react-hook-form + file upload + translation fields
 - `admin/src/app/dashboard/users/page.tsx` — Role dropdown + soft-delete
 - `admin/src/app/dashboard/notifications/page.tsx` — Send form + history table
 
-### Flutter (P12+P13)
+### Flutter (P12+P13+P15)
 - `lib/services/fcm_messaging_service.dart` — FCM token management, handlers, permission, local notifications, tap navigation
 - `lib/services/api_client.dart` — HTTP client with `delete()` data body support
-- `lib/main.dart` — `_FcmInitializer` widget, FCM init on first frame
-- `lib/services/api_notification_service.dart` — fetch/mark notifications
-- `lib/services/sse_service.dart` — SSE stream via `dart:io`
+- `lib/services/sse_service.dart` — SSE stream via `dart:io`, parses `event:` / `data:` lines, emits `SSEEvent` objects, auto-reconnect
 - `lib/services/api_restaurant_service.dart` — Restaurant API
+- `lib/services/api_notification_service.dart` — fetch/mark notifications
+- `lib/main.dart` — `_FcmInitializer` widget (FCM init) + `_SseListener` widget (SSE real-time sync)
 - `lib/providers/notification_provider.dart` — Notification state + unread count
 - `lib/providers/auth_provider.dart` — Sign-out calls fcmService?.unregisterToken()
 - `lib/providers/restaurant_provider.dart` — Restaurant list state
@@ -102,4 +110,5 @@
 - `lib/screens/notifications_screen.dart` — Notification list with read/unread
 - `lib/screens/restaurants_screen.dart` — Restaurant list with cuisine tags
 - `lib/screens/main_shell.dart` — 5-tab bottom nav with unread badge
+- `lib/core/api_config.dart` — Base URL configuration
 - `lib/core/app_routes.dart` — All named routes
