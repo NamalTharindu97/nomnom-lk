@@ -21,6 +21,10 @@ const offerSchema = z.object({
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
   restaurant_id: z.string().min(1, "Restaurant is required"),
+  title_si: z.string().optional(),
+  title_ta: z.string().optional(),
+  desc_si: z.string().optional(),
+  desc_ta: z.string().optional(),
 })
 
 type OfferForm = z.infer<typeof offerSchema>
@@ -61,6 +65,10 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
       start_date: "",
       end_date: "",
       restaurant_id: "",
+      title_si: "",
+      title_ta: "",
+      desc_si: "",
+      desc_ta: "",
     },
   })
 
@@ -80,6 +88,10 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
         start_date: offer.start_date ? offer.start_date.slice(0, 10) : "",
         end_date: offer.end_date ? offer.end_date.slice(0, 10) : "",
         restaurant_id: offer.restaurant_id || "",
+        title_si: offer.title_si || "",
+        title_ta: offer.title_ta || "",
+        desc_si: offer.desc_si || "",
+        desc_ta: offer.desc_ta || "",
       })
     } else {
       reset({
@@ -90,6 +102,10 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
         start_date: "",
         end_date: "",
         restaurant_id: "",
+        title_si: "",
+        title_ta: "",
+        desc_si: "",
+        desc_ta: "",
       })
       setImageFiles([])
     }
@@ -245,6 +261,46 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-semibold mb-3">Translations</h4>
+            <div className="grid gap-4">
+              <div>
+                <h5 className="text-xs font-medium text-muted-foreground mb-2">Sinhala (සිංහල)</h5>
+                <div className="grid gap-2">
+                  <div className="grid gap-1">
+                    <Label htmlFor="title_si">Title (SI)</Label>
+                    <Input id="title_si" {...register("title_si")} />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="desc_si">Description (SI)</Label>
+                    <textarea
+                      id="desc_si"
+                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                      {...register("desc_si")}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h5 className="text-xs font-medium text-muted-foreground mb-2">Tamil (தமிழ்)</h5>
+                <div className="grid gap-2">
+                  <div className="grid gap-1">
+                    <Label htmlFor="title_ta">Title (TA)</Label>
+                    <Input id="title_ta" {...register("title_ta")} />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="desc_ta">Description (TA)</Label>
+                    <textarea
+                      id="desc_ta"
+                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                      {...register("desc_ta")}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>

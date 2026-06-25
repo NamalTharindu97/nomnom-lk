@@ -179,6 +179,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		adminGroup.Use(middleware.RequireRole("admin"))
 		{
 			adminGroup.GET("/stats", adminHandler.Stats)
+			adminGroup.GET("/stats/timeline", adminHandler.StatsTimeline)
 			adminGroup.GET("/notifications", adminHandler.ListNotifications)
 			adminGroup.POST("/notifications/push", notificationHandler.SendPush)
 		}

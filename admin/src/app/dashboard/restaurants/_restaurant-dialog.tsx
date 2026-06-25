@@ -16,6 +16,10 @@ interface RestaurantForm {
   cuisine_tags: string
   description: string
   phone: string
+  name_si: string
+  name_ta: string
+  description_si: string
+  description_ta: string
 }
 
 const emptyForm: RestaurantForm = {
@@ -25,6 +29,10 @@ const emptyForm: RestaurantForm = {
   cuisine_tags: "",
   description: "",
   phone: "",
+  name_si: "",
+  name_ta: "",
+  description_si: "",
+  description_ta: "",
 }
 
 interface RestaurantDialogProps {
@@ -49,6 +57,10 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         cuisine_tags: (restaurant.cuisine_tags || []).join(", "),
         description: restaurant.description || "",
         phone: restaurant.phone || "",
+        name_si: restaurant.name_si || "",
+        name_ta: restaurant.name_ta || "",
+        description_si: restaurant.description_si || "",
+        description_ta: restaurant.description_ta || "",
       })
     } else {
       setForm(emptyForm)
@@ -126,6 +138,48 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
             />
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-semibold mb-3">Translations</h4>
+            <div className="grid gap-4">
+              <div>
+                <h5 className="text-xs font-medium text-muted-foreground mb-2">Sinhala (සිංහල)</h5>
+                <div className="grid gap-2">
+                  <div className="grid gap-1">
+                    <Label htmlFor="name_si">Name (SI)</Label>
+                    <Input id="name_si" value={form.name_si} onChange={(e) => set("name_si", e.target.value)} />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="description_si">Description (SI)</Label>
+                    <textarea
+                      id="description_si"
+                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                      value={form.description_si}
+                      onChange={(e) => set("description_si", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h5 className="text-xs font-medium text-muted-foreground mb-2">Tamil (தமிழ்)</h5>
+                <div className="grid gap-2">
+                  <div className="grid gap-1">
+                    <Label htmlFor="name_ta">Name (TA)</Label>
+                    <Input id="name_ta" value={form.name_ta} onChange={(e) => set("name_ta", e.target.value)} />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="description_ta">Description (TA)</Label>
+                    <textarea
+                      id="description_ta"
+                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                      value={form.description_ta}
+                      onChange={(e) => set("description_ta", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

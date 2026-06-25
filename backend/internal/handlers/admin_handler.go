@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
-
 )
 
 type AdminHandler struct {
@@ -44,6 +45,31 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 		"total_users":         totalUsers,
 		"pending_restaurants": pendingRestaurants,
 		"pending_offers":      pendingOffers,
+	})
+}
+
+func (h *AdminHandler) StatsTimeline(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "7")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days < 1 || days > 90 {
+		days = 7
+	}
+
+	offers, err := h.offerRepo.CountByDate(days)
+	if err != nil {
+		response.InternalError(c, "failed to get offer timeline")
+		return
+	}
+
+	restaurants, err := h.restaurantRepo.CountByDate(days)
+	if err != nil {
+		response.InternalError(c, "failed to get restaurant timeline")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"offers":      offers,
+		"restaurants": restaurants,
 	})
 }
 

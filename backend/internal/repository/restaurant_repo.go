@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/models"
 	"gorm.io/gorm"
@@ -64,6 +66,39 @@ func (r *RestaurantRepo) UpdateStatus(id uuid.UUID, status models.RestaurantStat
 
 func (r *RestaurantRepo) CountAll(count *int64) error {
 	return r.db.Model(&models.Restaurant{}).Count(count).Error
+}
+
+func (r *RestaurantRepo) CountByDate(days int) ([]map[string]interface{}, error) {
+	type DailyCount struct {
+		Date  string `json:"date"`
+		Count int64  `json:"count"`
+	}
+	var results []DailyCount
+	err := r.db.Raw(
+		"SELECT DATE(created_at) as date, COUNT(*) as count FROM restaurants WHERE created_at >= NOW() - INTERVAL '1 day' * ? GROUP BY DATE(created_at) ORDER BY date",
+		days,
+	).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	filled := make([]map[string]interface{}, 0)
+	for i := days - 1; i >= 0; i-- {
+		t := time.Now().AddDate(0, 0, -i)
+		dateStr := t.Format("2006-01-02")
+		count := int64(0)
+		for _, r := range results {
+			if r.Date == dateStr {
+				count = r.Count
+				break
+			}
+		}
+		filled = append(filled, map[string]interface{}{
+			"date":  dateStr,
+			"count": count,
+		})
+	}
+	return filled, nil
 }
 
 func (r *RestaurantRepo) CountByStatus(status string, count *int64) error {
