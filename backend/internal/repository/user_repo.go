@@ -53,6 +53,10 @@ func (r *UserRepo) SoftDelete(id uuid.UUID) error {
 	return r.db.Model(&models.User{}).Where("id = ?", id).Update("is_active", false).Error
 }
 
+func (r *UserRepo) CountAll(count *int64) error {
+	return r.db.Model(&models.User{}).Count(count).Error
+}
+
 func (r *UserRepo) FindAll(page, perPage int) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64

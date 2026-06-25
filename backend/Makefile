@@ -25,15 +25,15 @@ lint:
 
 migrate-up:
 	@echo "Running migrations up..."
-	go run ./scripts/migrate.go up
+	go run -tags=migration ./scripts/migrate.go up
 
 migrate-down:
 	@echo "Running migrations down..."
-	go run ./scripts/migrate.go down
+	go run -tags=migration ./scripts/migrate.go down
 
 seed:
 	@echo "Seeding database..."
-	go run ./scripts/seed.go
+	go run -tags=seed ./scripts/seed.go
 
 swagger:
 	@echo "Generating Swagger docs..."

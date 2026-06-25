@@ -59,6 +59,21 @@ func (r *NotificationRepo) GetUnreadCount(userID uuid.UUID) (int64, error) {
 	return count, err
 }
 
+func (r *NotificationRepo) FindAllAdmin(offset, limit int) ([]models.Notification, int64, error) {
+	var total int64
+	r.db.Model(&models.Notification{}).Count(&total)
+
+	var notifications []models.Notification
+	err := r.db.
+		Preload("User").
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&notifications).Error
+
+	return notifications, total, err
+}
+
 func (r *NotificationRepo) Delete(id uuid.UUID) error {
 	return r.db.Delete(&models.Notification{}, id).Error
 }

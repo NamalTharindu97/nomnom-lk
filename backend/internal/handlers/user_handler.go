@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/middleware"
+	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
@@ -63,4 +67,61 @@ func (h *UserHandler) List(c *gin.Context) {
 	}
 
 	response.SuccessPaginated(c, data, pagination.Meta(params, total))
+}
+
+func (h *UserHandler) Update(c *gin.Context) {
+	var req struct {
+		Role *string `json:"role"`
+		Name *string `json:"name"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+		return
+	}
+
+	userID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid user id")
+		return
+	}
+
+	user, err := h.repo.FindByID(userID)
+	if err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
+	if req.Role != nil {
+		user.Role = models.UserRole(*req.Role)
+	}
+	if req.Name != nil {
+		user.Name = *req.Name
+	}
+
+	if err := h.repo.Update(user); err != nil {
+		response.InternalError(c, "failed to update user")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"id":    user.ID,
+		"email": user.Email,
+		"name":  user.Name,
+		"role":  user.Role,
+	})
+}
+
+func (h *UserHandler) Delete(c *gin.Context) {
+	userID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid user id")
+		return
+	}
+
+	if err := h.repo.SoftDelete(userID); err != nil {
+		response.InternalError(c, "failed to delete user")
+		return
+	}
+
+	response.SuccessNoContent(c)
 }

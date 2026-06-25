@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { api, ApiError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { PaginationBar } from "@/components/ui/pagination-bar"
 import {
   Select,
   SelectTrigger,
@@ -15,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+const PER_PAGE = 10
+
 export default function NotificationsPage() {
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
@@ -22,6 +27,28 @@ export default function NotificationsPage() {
   const [userId, setUserId] = useState("")
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const [history, setHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  const loadHistory = useCallback(async () => {
+    setLoadingHistory(true)
+    try {
+      const res = await api.get<{ data: any[]; pagination: { total: number } }>(
+        `/admin/notifications?page=${page}&per_page=${PER_PAGE}`
+      )
+      setHistory(res.data || [])
+      setTotal(res.pagination?.total || 0)
+    } catch {
+      setHistory([])
+    } finally {
+      setLoadingHistory(false)
+    }
+  }, [page])
+
+  useEffect(() => { loadHistory() }, [loadHistory])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -38,6 +65,7 @@ export default function NotificationsPage() {
       setResult({ ok: true, message: "Push notification sent successfully!" })
       setTitle("")
       setBody("")
+      loadHistory()
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Failed to send notification"
       setResult({ ok: false, message: msg })
@@ -47,10 +75,10 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Push Notifications</h1>
-        <p className="text-muted-foreground">Send push notifications to users</p>
+        <p className="text-muted-foreground">Send and view push notifications</p>
       </div>
 
       <Card>
@@ -115,6 +143,55 @@ export default function NotificationsPage() {
               {sending ? "Sending..." : "Send Push Notification"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notification History</CardTitle>
+          <CardDescription>Previously sent push notifications</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Body</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Sent At</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loadingHistory ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : history.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    No notifications sent yet
+                  </TableCell>
+                </TableRow>
+              ) : (
+                history.map((n: any) => (
+                  <TableRow key={n.id}>
+                    <TableCell className="font-medium">{n.title}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                      {n.body}
+                    </TableCell>
+                    <TableCell>{n.user_name || "All Users"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(n.created_at).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          <PaginationBar page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
     </div>

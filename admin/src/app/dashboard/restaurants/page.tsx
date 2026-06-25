@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useRouter } from "next/navigation"
+import { PaginationBar } from "@/components/ui/pagination-bar"
+import { notify } from "@/components/ui/toast"
+import { Plus, Pencil, Trash2 } from "lucide-react"
+import RestaurantDialog from "./_restaurant-dialog"
 
 interface Restaurant {
   id: string
@@ -18,28 +21,46 @@ interface Restaurant {
   owner_id: string
 }
 
+const PER_PAGE = 10
+
 export default function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [showDialog, setShowDialog] = useState(false)
+  const [editing, setEditing] = useState<Restaurant | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.get<{ data: Restaurant[] }>("/restaurants")
+      const res = await api.get<{ data: Restaurant[]; pagination: { total: number } }>(
+        `/restaurants?page=${page}&per_page=${PER_PAGE}`
+      )
       setRestaurants(res.data || [])
+      setTotal(res.pagination?.total || 0)
     } catch {
       setRestaurants([])
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page])
 
   useEffect(() => { load() }, [load])
 
   async function updateStatus(id: string, action: "approve" | "reject") {
     try {
       await api.post(`/restaurants/${id}/${action}`)
+      notify(`Restaurant ${action}d`, "success")
+      load()
+    } catch {}
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this restaurant?")) return
+    try {
+      await api.delete(`/restaurants/${id}`)
+      notify("Restaurant deleted", "success")
       load()
     } catch {}
   }
@@ -60,6 +81,10 @@ export default function RestaurantsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Restaurants</h1>
           <p className="text-muted-foreground">Manage restaurant listings</p>
         </div>
+        <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
+          <Plus className="mr-2 size-4" />
+          New Restaurant
+        </Button>
       </div>
 
       <Card>
@@ -107,27 +132,41 @@ export default function RestaurantsPage() {
                     </TableCell>
                     <TableCell>{statusBadge(r.status)}</TableCell>
                     <TableCell className="text-right">
-                      {r.status === "pending" && (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" onClick={() => updateStatus(r.id, "approve")}>
-                            Approve
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => updateStatus(r.id, "reject")}>
-                            Reject
-                          </Button>
-                        </div>
-                      )}
-                      {r.status !== "pending" && (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditing(r); setShowDialog(true) }}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDelete(r.id)}>
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                        {r.status === "pending" && (
+                          <>
+                            <Button size="sm" onClick={() => updateStatus(r.id, "approve")}>
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => updateStatus(r.id, "reject")}>
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+
+          <PaginationBar page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
+
+      <RestaurantDialog
+        open={showDialog}
+        onClose={() => setShowDialog(false)}
+        onSaved={load}
+        restaurant={editing}
+      />
     </div>
   )
 }

@@ -62,6 +62,14 @@ func (r *RestaurantRepo) UpdateStatus(id uuid.UUID, status models.RestaurantStat
 	return r.db.Model(&models.Restaurant{}).Where("id = ?", id).Update("status", status).Error
 }
 
+func (r *RestaurantRepo) CountAll(count *int64) error {
+	return r.db.Model(&models.Restaurant{}).Count(count).Error
+}
+
+func (r *RestaurantRepo) CountByStatus(status string, count *int64) error {
+	return r.db.Model(&models.Restaurant{}).Where("status = ?", status).Count(count).Error
+}
+
 func (r *RestaurantRepo) FindByOwnerID(ownerID uuid.UUID) ([]models.Restaurant, error) {
 	var restaurants []models.Restaurant
 	err := r.db.Where("owner_id = ?", ownerID).Find(&restaurants).Error

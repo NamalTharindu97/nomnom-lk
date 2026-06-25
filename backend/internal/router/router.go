@@ -47,6 +47,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	firebaseService := services.NewFirebaseService(&cfg.Firebase)
 	authHandler := handlers.NewAuthHandler(authService, firebaseService)
 	userHandler := handlers.NewUserHandler(userRepo)
+	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo)
 	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService)
 	offerHandler := handlers.NewOfferHandler(offerService, sseService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService, sseService)
@@ -107,6 +108,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		adminUsers.Use(middleware.RequireRole("admin"))
 		{
 			adminUsers.GET("", userHandler.List)
+			adminUsers.PUT("/:id", userHandler.Update)
+			adminUsers.DELETE("/:id", userHandler.Delete)
 		}
 
 		restaurantsGroup := v1.Group("/restaurants")
@@ -175,6 +178,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		adminGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		adminGroup.Use(middleware.RequireRole("admin"))
 		{
+			adminGroup.GET("/stats", adminHandler.Stats)
+			adminGroup.GET("/notifications", adminHandler.ListNotifications)
 			adminGroup.POST("/notifications/push", notificationHandler.SendPush)
 		}
 	}

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { PaginationBar } from "@/components/ui/pagination-bar"
+import { notify } from "@/components/ui/toast"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import OfferDialog from "./_offer-dialog"
 
@@ -23,29 +25,37 @@ interface Offer {
   image_urls: string[]
 }
 
+const PER_PAGE = 10
+
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [showDialog, setShowDialog] = useState(false)
   const [editing, setEditing] = useState<Offer | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.get<{ data: Offer[] }>("/offers")
+      const res = await api.get<{ data: Offer[]; pagination: { total: number } }>(
+        `/offers?page=${page}&per_page=${PER_PAGE}`
+      )
       setOffers(res.data || [])
+      setTotal(res.pagination?.total || 0)
     } catch {
       setOffers([])
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page])
 
   useEffect(() => { load() }, [load])
 
   async function updateStatus(id: string, action: "approve" | "reject") {
     try {
       await api.post(`/offers/${id}/${action}`)
+      notify(`Offer ${action}d`, "success")
       load()
     } catch {}
   }
@@ -54,6 +64,7 @@ export default function OffersPage() {
     if (!confirm("Are you sure you want to delete this offer?")) return
     try {
       await api.delete(`/offers/${id}`)
+      notify("Offer deleted", "success")
       load()
     } catch {}
   }
@@ -150,6 +161,8 @@ export default function OffersPage() {
               )}
             </TableBody>
           </Table>
+
+          <PaginationBar page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
 

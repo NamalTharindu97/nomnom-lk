@@ -11,6 +11,13 @@ export class ApiError extends Error {
   }
 }
 
+function doLogout() {
+  if (typeof window === "undefined") return
+  localStorage.removeItem("token")
+  localStorage.removeItem("user")
+  window.location.href = "/login"
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
@@ -31,6 +38,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...options,
     headers,
   })
+
+  if (res.status === 401) {
+    doLogout()
+    throw new ApiError(401, "Session expired. Please login again.")
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))

@@ -88,6 +88,14 @@ func (r *OfferRepo) FindPending(page, perPage int) ([]models.Offer, int64, error
 	return r.FindAll(string(models.OfferPending), page, perPage, "newest")
 }
 
+func (r *OfferRepo) CountAll(count *int64) error {
+	return r.db.Model(&models.Offer{}).Count(count).Error
+}
+
+func (r *OfferRepo) CountByStatus(status string, count *int64) error {
+	return r.db.Model(&models.Offer{}).Where("status = ?", status).Count(count).Error
+}
+
 func (r *OfferRepo) ExpirePastOffers() error {
 	return r.db.Model(&models.Offer{}).
 		Where("end_date < ? AND status = ?", time.Now(), models.OfferApproved).

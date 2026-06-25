@@ -7,29 +7,23 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { api } from "@/lib/api"
-import { Loader2 } from "lucide-react"
+import { notify } from "@/components/ui/toast"
+import { Loader2, Upload, X } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 
-interface OfferData {
-  title: string
-  description: string
-  original_price: number
-  offer_price: number
-  start_date: string
-  end_date: string
-  image_urls: string
-  restaurant_id: string
-}
+const offerSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  original_price: z.number().positive("Must be positive"),
+  offer_price: z.number().positive("Must be positive"),
+  start_date: z.string().min(1, "Start date is required"),
+  end_date: z.string().min(1, "End date is required"),
+  restaurant_id: z.string().min(1, "Restaurant is required"),
+})
 
-const emptyForm: OfferData = {
-  title: "",
-  description: "",
-  original_price: 0,
-  offer_price: 0,
-  start_date: "",
-  end_date: "",
-  image_urls: "",
-  restaurant_id: "",
-}
+type OfferForm = z.infer<typeof offerSchema>
 
 interface RestaurantOption {
   id: string
@@ -44,11 +38,31 @@ interface OfferDialogProps {
 }
 
 export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDialogProps) {
-  const [form, setForm] = useState<OfferData>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [restaurants, setRestaurants] = useState<RestaurantOption[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [uploadingImages, setUploadingImages] = useState(false)
 
   const isEdit = !!offer
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<OfferForm>({
+    resolver: zodResolver(offerSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      original_price: 0,
+      offer_price: 0,
+      start_date: "",
+      end_date: "",
+      restaurant_id: "",
+    },
+  })
 
   useEffect(() => {
     api.get<{ data: RestaurantOption[] }>("/restaurants").then((res) => {
@@ -58,46 +72,77 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
 
   useEffect(() => {
     if (offer) {
-      setForm({
+      reset({
         title: offer.title || "",
         description: offer.description || "",
         original_price: offer.original_price || 0,
         offer_price: offer.offer_price || 0,
         start_date: offer.start_date ? offer.start_date.slice(0, 10) : "",
         end_date: offer.end_date ? offer.end_date.slice(0, 10) : "",
-        image_urls: (offer.image_urls || []).join(", "),
         restaurant_id: offer.restaurant_id || "",
       })
     } else {
-      setForm(emptyForm)
+      reset({
+        title: "",
+        description: "",
+        original_price: 0,
+        offer_price: 0,
+        start_date: "",
+        end_date: "",
+        restaurant_id: "",
+      })
+      setImageFiles([])
     }
-  }, [offer])
+  }, [offer, reset])
 
-  function set<K extends keyof OfferData>(key: K, value: OfferData[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }))
+  function onFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || [])
+    setImageFiles((prev) => [...prev, ...files])
   }
 
-  async function handleSave() {
+  function removeFile(index: number) {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function uploadFiles(): Promise<string[]> {
+    if (imageFiles.length === 0) return []
+    setUploadingImages(true)
+    try {
+      const formData = new FormData()
+      imageFiles.forEach((f) => formData.append("files", f))
+      const res = await api.upload<{ data: { url: string }[] }>("/upload/multiple", formData)
+      setUploadingImages(false)
+      return (res.data || []).map((f) => f.url)
+    } catch {
+      setUploadingImages(false)
+      return []
+    }
+  }
+
+  async function onSave(data: OfferForm) {
     setSaving(true)
     try {
+      const uploadedUrls = await uploadFiles()
+      const existingUrls = offer?.image_urls || []
+      const allUrls = [...existingUrls, ...uploadedUrls]
+
       const body = {
-        ...form,
-        original_price: Number(form.original_price),
-        offer_price: Number(form.offer_price),
-        image_urls: form.image_urls
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
+        ...data,
+        image_urls: allUrls,
       }
 
       if (isEdit) {
         await api.put(`/offers/${offer.id}`, body)
+        notify("Offer updated", "success")
       } else {
         await api.post("/offers", body)
+        notify("Offer created", "success")
       }
       onSaved()
       onClose()
-    } catch {}
+    } catch (err: any) {
+      notify(err?.message || "Failed to save offer", "error")
+    }
     setSaving(false)
   }
 
@@ -111,10 +156,13 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2">
+        <form onSubmit={handleSubmit(onSave)} className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="restaurant">Restaurant</Label>
-            <Select value={form.restaurant_id} onValueChange={(v) => set("restaurant_id", v)}>
+            <Label htmlFor="restaurant_id">Restaurant</Label>
+            <Select
+              defaultValue={offer?.restaurant_id || ""}
+              onValueChange={(v) => setValue("restaurant_id", v, { shouldValidate: true })}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a restaurant" />
               </SelectTrigger>
@@ -124,11 +172,15 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                 ))}
               </SelectContent>
             </Select>
+            {errors.restaurant_id && (
+              <p className="text-xs text-destructive">{errors.restaurant_id.message}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" value={form.title} onChange={(e) => set("title", e.target.value)} />
+            <Input id="title" {...register("title")} />
+            {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
           </div>
 
           <div className="grid gap-2">
@@ -136,46 +188,73 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
             <textarea
               id="description"
               className="border-input flex min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
-              value={form.description}
-              onChange={(e) => set("description", e.target.value)}
+              {...register("description")}
             />
+            {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="original_price">Original Price (LKR)</Label>
-              <Input id="original_price" type="number" value={form.original_price} onChange={(e) => set("original_price", Number(e.target.value))} />
+              <Input id="original_price" type="number" {...register("original_price", { valueAsNumber: true })} />
+              {errors.original_price && <p className="text-xs text-destructive">{errors.original_price.message}</p>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="offer_price">Offer Price (LKR)</Label>
-              <Input id="offer_price" type="number" value={form.offer_price} onChange={(e) => set("offer_price", Number(e.target.value))} />
+              <Input id="offer_price" type="number" {...register("offer_price", { valueAsNumber: true })} />
+              {errors.offer_price && <p className="text-xs text-destructive">{errors.offer_price.message}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="start_date">Start Date</Label>
-              <Input id="start_date" type="date" value={form.start_date} onChange={(e) => set("start_date", e.target.value)} />
+              <Input id="start_date" type="date" {...register("start_date")} />
+              {errors.start_date && <p className="text-xs text-destructive">{errors.start_date.message}</p>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="end_date">End Date</Label>
-              <Input id="end_date" type="date" value={form.end_date} onChange={(e) => set("end_date", e.target.value)} />
+              <Input id="end_date" type="date" {...register("end_date")} />
+              {errors.end_date && <p className="text-xs text-destructive">{errors.end_date.message}</p>}
             </div>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="image_urls">Image URLs (comma-separated)</Label>
-            <Input id="image_urls" value={form.image_urls} onChange={(e) => set("image_urls", e.target.value)} />
+            <Label>Images</Label>
+            <div className="flex items-center gap-2">
+              <Input type="file" multiple accept="image/*" onChange={onFileSelect} className="file:text-xs" />
+            </div>
+            {imageFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {imageFiles.map((f, i) => (
+                  <span key={i} className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
+                    {f.name}
+                    <button type="button" onClick={() => removeFile(i)} className="text-destructive hover:opacity-70">
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {offer?.image_urls?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {offer.image_urls.map((url: string, i: number) => (
+                  <span key={i} className="rounded-md bg-muted px-2 py-1 text-xs truncate max-w-40">
+                    {url.split("/").pop()}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-            {isEdit ? "Update" : "Create"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving || uploadingImages}>
+              {(saving || uploadingImages) && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {isEdit ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

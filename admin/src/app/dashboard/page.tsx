@@ -3,42 +3,31 @@
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Store, Tag, UtensilsCrossed } from "lucide-react"
+import { Store, Tag, Users, Bell } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
+interface Stats {
+  total_restaurants: number
+  total_offers: number
+  total_users: number
+  pending_restaurants: number
+  pending_offers: number
+}
+
 export default function DashboardPage() {
-  const [stats, setStats] = useState({ restaurants: 0, offers: 0 })
-  const [chartData, setChartData] = useState<{ name: string; offers: number }[]>([])
+  const [stats, setStats] = useState<Stats | null>(null)
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [restRes, offerRes] = await Promise.all([
-          api.get<{ pagination: { total: number } }>("/restaurants?per_page=1"),
-          api.get<{ pagination: { total: number } }>("/offers?per_page=1"),
-        ])
-        setStats({
-          restaurants: restRes.pagination?.total || 0,
-          offers: offerRes.pagination?.total || 0,
-        })
-      } catch {}
-    }
-    load()
-  }, [])
-
-  useEffect(() => {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    const today = new Date().getDay()
-    const data = days.map((name, i) => ({
-      name,
-      offers: Math.max(0, Math.round(Math.sin((i + 1) * 0.6) * 2 + 2)),
-    }))
-    setChartData(data)
+    api.get<{ data: Stats }>("/admin/stats")
+      .then((res) => setStats(res.data))
+      .catch(() => {})
   }, [])
 
   const cards = [
-    { title: "Total Restaurants", value: stats.restaurants, icon: Store },
-    { title: "Total Offers", value: stats.offers, icon: Tag },
+    { title: "Total Restaurants", value: stats?.total_restaurants ?? 0, icon: Store },
+    { title: "Total Offers", value: stats?.total_offers ?? 0, icon: Tag },
+    { title: "Total Users", value: stats?.total_users ?? 0, icon: Users },
+    { title: "Pending Reviews", value: (stats?.pending_restaurants ?? 0) + (stats?.pending_offers ?? 0), icon: Bell },
   ]
 
   return (
@@ -71,25 +60,23 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">Offers This Week</CardTitle>
           </CardHeader>
           <CardContent>
-            {chartData.length > 0 && (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: 8,
-                        border: "1px solid var(--border)",
-                        background: "var(--card)",
-                        color: "var(--card-foreground)",
-                      }}
-                    />
-                    <Bar dataKey="offers" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[]}>
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid var(--border)",
+                      background: "var(--card)",
+                      color: "var(--card-foreground)",
+                    }}
+                  />
+                  <Bar dataKey="offers" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -116,7 +103,7 @@ export default function DashboardPage() {
               href="/dashboard/notifications"
               className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-accent"
             >
-              <UtensilsCrossed className="size-4 text-primary" />
+              <Bell className="size-4 text-primary" />
               <span>Send Notification</span>
             </a>
           </CardContent>
