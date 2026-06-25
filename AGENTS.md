@@ -13,6 +13,8 @@
 - **Pagination:** Shared `PaginationBar` component in admin, infinite scroll in Flutter.
 - **Form validation:** `react-hook-form` + `zod` + `@hookform/resolvers` in admin OfferDialog.
 - **Build tags:** `//go:build seed` and `//go:build migration` on script files to avoid `main()` conflict in `go build ./...`.
+- **Flutter rebuild required:** After every Flutter code change, rebuild and re-run the app with `flutter run` to see changes on the simulator.
+- **Air for Go hot reload:** Backend uses `air` for automatic rebuild/restart on `.go` file changes; admin dashboard uses Next.js HMR built into `next dev`; Flutter runs in debug mode.
 - **Not yet:** Flutter localization, full offline support.
 
 ## Progress
@@ -24,9 +26,10 @@
 - **P14: Admin UX Polish & Localization** — `GET /admin/stats/timeline` with daily offer & restaurant counts; translation fields (`_si`/`_ta`) in restaurant and offer dialogs; real chart data with dual bars; loading skeletons on dashboard cards. Merged to master.
 - **E2E Fixes (on master):** Offer create nil `Restaurant` pointer fix (reload after create); `search_vector` TSVECTOR migration; timeline `DATE::text` cast for GORM scan.
 - **P15: Real-Time Sync via SSE** — Flutter SSE listener wired up (`_SseListener` widget in `main.dart`); `SSEService` rewritten to parse `event:` lines and emit typed `SSEEvent` objects with auto-reconnect; admin offers/restaurants pages pass `status=all` to see all statuses; backend `status=all` support in `offer_repo.go` and `restaurant_repo.go`; `status` field added to `offerToMap` response.
+- **P16: Dev Environment — Background Processes + Hot Reload** — Backend auto-restart via `air` (Go hot reload, configured in `backend/.air.toml`); admin dashboard runs with `next dev` (HMR built-in); Flutter runs on iPhone 17 Pro simulator in debug mode; all three run as background `nohup` processes with logs routed to `*/logs/*.log`; `.gitignore` updated to exclude log dirs.
 
 ### In Progress
-- (none — Phase 15 complete)
+- (none — Phase 16 complete)
 
 ### Blocked
 - (none)
@@ -46,12 +49,14 @@
 - **iOS entitlements:** `Runner.entitlements` with `aps-environment = development` required for APNs token. Added to Xcode project via pbxproj edits (CODE_SIGN_ENTITLEMENTS build setting + file reference).
 - **SSE listener in Flutter:** `_SseListener` widget in `main.dart` creates `SSEService`, connects on init, listens for `offer.*` and `restaurant.*` events, and calls `OfferProvider.refreshOffers()` / `RestaurantProvider.loadRestaurants()` automatically — no user action needed.
 - **Admin page status filter:** Both offers and restaurants pages pass `status=all` to the backend to display all statuses (approved, pending, rejected) so admins can manage them.
+- **Air for Go hot reload:** `air` installed via `go install github.com/air-verse/air@latest`; config at `backend/.air.toml` watches `.go`/`.html`/`.tpl`/`.tmpl` changes and rebuilds; binary built to `backend/tmp/nomnom-api`.
+- **Background process management:** All three services (backend, admin, Flutter) run as `nohup` background processes; logs go to `*/logs/*.log`.
 
 ## Next Steps
-- (none — all 15 phases complete and merged to master)
+- (none — all 16 phases complete and merged to master)
 
 ## Critical Context
-- All branches P1–P15 merged to master and preserved on remote.
+- All branches P1–P16 merged to master and preserved on remote.
 - Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on iPhone 17 Pro simulator.
 - Docker services (postgres 16, redis 7, minio) running with seeded data.
 - Backend FCM client already initialized in `NotificationService` — `POST /admin/notifications/push` already sends via FCM in real goroutine.
@@ -80,6 +85,7 @@
 - `backend/internal/models/offer.go` — `Translations *json.RawMessage`
 - `backend/internal/dto/request/restaurant_request.go` — `NameSi`, `NameTa`, `DescSi`, `DescTa`
 - `backend/internal/dto/request/offer_request.go` — `TitleSi`, `TitleTa`, `DescSi`, `DescTa`
+- `backend/.air.toml` — Air hot reload config (watches `.go`/`.html`/`.tpl`/`.tmpl`)
 - `backend/scripts/seed.go` — `//go:build seed`
 - `backend/scripts/migrate.go` — `//go:build migration`
 - `backend/Makefile` — targets with `-tags`
