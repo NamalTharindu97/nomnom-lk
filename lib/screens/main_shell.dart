@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
 import '../providers/notification_provider.dart';
+import '../providers/offer_provider.dart';
+import '../providers/restaurant_provider.dart';
 import 'favorites_screen.dart';
 import 'home_screen.dart';
 import 'notifications_screen.dart';
@@ -16,8 +18,28 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<OfferProvider>().refreshOffers();
+      context.read<RestaurantProvider>().loadRestaurants();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   void _selectTab(int index) {
     setState(() => _selectedIndex = index);
