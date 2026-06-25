@@ -26,35 +26,62 @@ class HomeScreen extends StatelessWidget {
             onRefresh: provider.refreshOffers,
             color: AppColors.deepCharcoal,
             backgroundColor: AppColors.curry,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _HomeHeader(
-                    offerCount: offers.length,
-                    onSearchTap: onSearchTap,
-                  ),
-                ),
-                if (provider.isLoading && offers.isEmpty)
-                  const SliverToBoxAdapter(child: _OfferSkeletonList())
-                else if (offers.isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: EmptyState(
-                      icon: Icons.no_food_rounded,
-                      title: 'No offers yet',
-                      message: 'Fresh deals will appear here soon.',
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollEndNotification &&
+                    notification.metrics.pixels >=
+                        notification.metrics.maxScrollExtent - 200) {
+                  provider.loadMoreOffers();
+                }
+                return false;
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _HomeHeader(
+                      offerCount: offers.length,
+                      onSearchTap: onSearchTap,
                     ),
-                  )
-                else
-                  SliverList.builder(
-                    itemCount: offers.length,
-                    itemBuilder: (context, index) {
-                      return OfferCard(offer: offers[index]);
-                    },
                   ),
-                const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              ],
+                  if (provider.error != null && offers.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: EmptyState(
+                        icon: Icons.wifi_off_rounded,
+                        title: 'Something went wrong',
+                        message: provider.error!,
+                      ),
+                    )
+                  else if (provider.isLoading && offers.isEmpty)
+                    const SliverToBoxAdapter(child: _OfferSkeletonList())
+                  else if (offers.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: EmptyState(
+                        icon: Icons.no_food_rounded,
+                        title: 'No offers yet',
+                        message: 'Fresh deals will appear here soon.',
+                      ),
+                    )
+                  else
+                    SliverList.builder(
+                      itemCount: offers.length + (provider.isLoadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= offers.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: CircularProgressIndicator(strokeWidth: 2.4),
+                            ),
+                          );
+                        }
+                        return OfferCard(offer: offers[index]);
+                      },
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                ],
+              ),
             ),
           );
         },

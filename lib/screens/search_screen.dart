@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,17 +17,28 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final _controller = TextEditingController();
+  Timer? _debounce;
 
   @override
   void dispose() {
     _controller.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    setState(() {});
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      context.read<OfferProvider>().searchOffers(value);
+    });
   }
 
   void _clearSearch() {
     _controller.clear();
+    _debounce?.cancel();
     setState(() {});
-    context.read<OfferProvider>().updateSearchQuery('');
+    context.read<OfferProvider>().searchOffers('');
   }
 
   @override
@@ -53,10 +66,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   TextField(
                     controller: _controller,
                     autofocus: false,
-                    onChanged: (value) {
-                      setState(() {});
-                      context.read<OfferProvider>().updateSearchQuery(value);
-                    },
+                    onChanged: _onSearchChanged,
                     decoration: InputDecoration(
                       hintText: 'Food or restaurant name',
                       prefixIcon: const Icon(Icons.search_rounded),
@@ -74,13 +84,33 @@ class _SearchScreenState extends State<SearchScreen> {
             Expanded(
               child: Consumer<OfferProvider>(
                 builder: (context, provider, child) {
-                  final offers = provider.filteredOffers;
+                  if (provider.isSearching) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                  if (offers.isEmpty) {
+                  if (provider.error != null && _controller.text.isNotEmpty) {
+                    return EmptyState(
+                      icon: Icons.wifi_off_rounded,
+                      title: 'Search failed',
+                      message: provider.error!,
+                    );
+                  }
+
+                  final offers = provider.offers;
+
+                  if (_controller.text.isNotEmpty && offers.isEmpty) {
                     return const EmptyState(
                       icon: Icons.search_off_rounded,
                       title: 'No matching deals',
                       message: 'Try another food or restaurant name.',
+                    );
+                  }
+
+                  if (offers.isEmpty) {
+                    return const EmptyState(
+                      icon: Icons.search_rounded,
+                      title: 'Find your next meal',
+                      message: 'Search for food or restaurant names.',
                     );
                   }
 

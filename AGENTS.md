@@ -17,6 +17,15 @@
 - **P11: Admin Dashboard Full CRUD** — Branch `phase/11-admin-full-crud`, committed. Changes:
   - **Backend:** `GET /admin/stats` endpoint (restaurant/offer/user counts, pending counts), `GET /admin/notifications` (all-notifications list with user names), `PUT /users/:id` (role/name editing), `DELETE /users/:id` (soft-delete). New `admin_handler.go` with `Stats` and `ListNotifications`. Count methods added to restaurant/offer/user repos. Build tags (`//go:build seed` / `//go:build migration`) on scripts to allow `go build ./...`. Makefile updated with `-tags`.
   - **Admin Dashboard:** 401 auto-logout in `api.ts` (interceptor clears localStorage + redirects). New `ToastProvider` using `@radix-ui/react-toast` with `notify()` function for success/error messages. Dashboard uses real `/admin/stats` endpoint with 4 stat cards (Restaurants, Offers, Users, Pending Reviews). Restaurant CRUD: new `_restaurant-dialog.tsx` modal (name/slug/address/phone/cuisine/description), edit/delete buttons with pagination (`PaginationBar` component). User management: role editing dropdown, soft-delete button, pagination. Offers: pagination, zod+react-hook-form validation on OfferDialog, file upload support via `/upload/multiple`. Notifications: new history table with pagination from `/admin/notifications`. Scripts fixed with build tags to avoid redeclared `main()` errors.
+- **P12: Flutter Full CRUD & Sync** — Branch `phase/12-flutter-full-crud`, not yet merged. Changes:
+  - **Favorites fix:** `loadFavorites()` now called in splash screen after `loadOffers()` completes (only for logged-in users). Favorite state persists across app restarts.
+  - **Pagination:** `OfferProvider` tracks `_currentPage`, `_hasMore`, supports `loadMoreOffers()`. `HomeScreen` uses `NotificationListener<ScrollNotification>` for infinite scroll, shows loading indicator at bottom.
+  - **Server-side search:** `SearchScreen` now calls `provider.searchOffers()` with 400ms debounce instead of client-side filtering. Shows loading spinner during search, error state on failure.
+  - **Error states:** `OfferProvider` exposes `_error` string. Home/Search screens show retry UI with error message instead of silently failing.
+  - **Offer detail API:** `OfferDetailsScreen` fetches full detail from `GET /offers/:id` using `ApiOfferService` if not in local cache. Shows loading spinner during fetch.
+  - **Notification system:** New `NotificationProvider`, `ApiNotificationService`, `AppNotification` model, `NotificationsScreen` with read/unread badge on tab bar. `loadUnreadCount()` called on splash. Mark-all-read and per-notification read support.
+  - **Restaurant model + list:** `Restaurant` model (`lib/models/restaurant.dart`), `ApiRestaurantService`, `RestaurantProvider`, `RestaurantsScreen` with list. Link from Profile screen ("Browse Restaurants") navigates to `RestaurantsScreen`.
+  - **SSE service:** `SSEService` (`lib/services/sse_service.dart`) connects to `GET /events` for real-time updates using `dart:io` `HttpClient`. Configurable base URL + token auth.
 
 ### Blocked
 - (none)
@@ -37,7 +46,6 @@
 - Build tags (`seed`, `migration`) on script files to avoid `go build ./...` conflicts.
 
 ## Next Steps
-- **Phase 12: Flutter Full CRUD & Sync** — Fix favorites sync on startup; infinite scroll/pagination; backend search endpoint integration; restaurant list/detail screens; SSE client for real-time updates; offer detail API call; notification list screen; error states in providers.
 - **Phase 13: Push Notifications End-to-End** — Add firebase_messaging to Flutter; device token registration; foreground/background notification handling; unread badge; admin notification sending to real FCM.
 - **Phase 14: Admin UX Polish & Localization** — Translation fields in admin forms; translation-aware search; admin stats widgets; performance optimization.
 

@@ -6,15 +6,20 @@ import 'core/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'models/offer.dart';
 import 'providers/auth_provider.dart';
+import 'providers/notification_provider.dart';
 import 'providers/offer_provider.dart';
+import 'providers/restaurant_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/offer_details_screen.dart';
+import 'screens/restaurants_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/api_auth_service.dart';
 import 'services/api_client.dart';
 import 'services/api_favorites_service.dart';
+import 'services/api_notification_service.dart';
 import 'services/api_offer_service.dart';
+import 'services/api_restaurant_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +48,16 @@ class NomNomBootstrap extends StatelessWidget {
             favoritesService: ApiFavoritesService(apiClient),
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider(
+            ApiNotificationService(apiClient),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RestaurantProvider(
+            ApiRestaurantService(apiClient),
+          ),
+        ),
       ],
       child: const NomNomApp(),
     );
@@ -65,6 +80,7 @@ class NomNomApp extends StatelessWidget {
         AppRoutes.splash: (_) => const SplashScreen(),
         AppRoutes.login: (_) => const LoginScreen(),
         AppRoutes.home: (_) => const MainShell(),
+        AppRoutes.restaurants: (_) => const RestaurantsScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == AppRoutes.offerDetails) {

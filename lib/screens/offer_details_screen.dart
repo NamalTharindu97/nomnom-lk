@@ -4,12 +4,14 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
+import '../services/api_client.dart';
+import '../services/api_offer_service.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/favorite_button.dart';
 import '../widgets/offer_image.dart';
 
-class OfferDetailsScreen extends StatelessWidget {
+class OfferDetailsScreen extends StatefulWidget {
   const OfferDetailsScreen({
     super.key,
     required this.offerId,
@@ -18,23 +20,69 @@ class OfferDetailsScreen extends StatelessWidget {
   final String offerId;
 
   @override
-  Widget build(BuildContext context) {
-    return Selector<OfferProvider, Offer?>(
-      selector: (_, provider) => provider.offerById(offerId),
-      builder: (context, offer, child) {
-        if (offer == null) {
-          return const Scaffold(
-            body: EmptyState(
-              icon: Icons.error_outline_rounded,
-              title: 'Offer not found',
-              message: 'This deal may have been removed.',
-            ),
-          );
-        }
+  State<OfferDetailsScreen> createState() => _OfferDetailsScreenState();
+}
 
-        return _OfferDetailsContent(offer: offer);
-      },
-    );
+class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
+  Offer? _fetchedOffer;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetail();
+  }
+
+  Future<void> _fetchDetail() async {
+    final localOffer = context.read<OfferProvider>().offerById(widget.offerId);
+    if (localOffer != null) {
+      setState(() {
+        _fetchedOffer = localOffer;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final client = ApiClient();
+      final service = ApiOfferService(client);
+      final offer = await service.getOffer(widget.offerId);
+      if (mounted) {
+        setState(() {
+          _fetchedOffer = offer;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Could not load offer details.';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null || _fetchedOffer == null) {
+      return Scaffold(
+        body: EmptyState(
+          icon: Icons.error_outline_rounded,
+          title: 'Offer not found',
+          message: _error ?? 'This deal may have been removed.',
+        ),
+      );
+    }
+
+    return _OfferDetailsContent(offer: _fetchedOffer!);
   }
 }
 

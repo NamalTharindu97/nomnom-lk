@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
 import '../widgets/app_logo.dart';
 
@@ -39,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _bootstrap() async {
     final authProvider = context.read<AuthProvider>();
     final offerProvider = context.read<OfferProvider>();
+    final notificationProvider = context.read<NotificationProvider>();
 
     try {
       await Future.wait([
@@ -46,6 +48,13 @@ class _SplashScreenState extends State<SplashScreen>
         offerProvider.loadOffers(),
         Future<void>.delayed(const Duration(milliseconds: 1100)),
       ]);
+
+      if (mounted && authProvider.isLoggedIn) {
+        await Future.wait([
+          offerProvider.loadFavorites(),
+          notificationProvider.loadUnreadCount(),
+        ]);
+      }
     } catch (e) {
       debugPrint('Splash bootstrap error: $e');
     }

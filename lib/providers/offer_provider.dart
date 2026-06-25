@@ -17,14 +17,21 @@ class OfferProvider extends ChangeNotifier {
   List<Offer> _offers = const [];
   String _searchQuery = '';
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   bool _hasLoaded = false;
   bool _isSearching = false;
+  String? _error;
+  int _currentPage = 1;
+  bool _hasMore = true;
 
   List<Offer> get offers => List.unmodifiable(_offers);
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
   bool get hasLoaded => _hasLoaded;
   String get searchQuery => _searchQuery;
   bool get isSearching => _isSearching;
+  String? get error => _error;
+  bool get hasMore => _hasMore;
 
   List<Offer> get favoriteOffers {
     return _offers.where((offer) => offer.isFavorite).toList(growable: false);
@@ -32,9 +39,7 @@ class OfferProvider extends ChangeNotifier {
 
   List<Offer> get filteredOffers {
     final query = _searchQuery.trim().toLowerCase();
-    if (query.isEmpty) {
-      return offers;
-    }
+    if (query.isEmpty) return offers;
     return _offers.where((offer) {
       return offer.title.toLowerCase().contains(query) ||
           offer.restaurantName.toLowerCase().contains(query);
@@ -43,30 +48,49 @@ class OfferProvider extends ChangeNotifier {
 
   Offer? offerById(String id) {
     for (final offer in _offers) {
-      if (offer.id == id) {
-        return offer;
-      }
+      if (offer.id == id) return offer;
     }
     return null;
   }
 
   Future<void> loadOffers({bool forceRefresh = false}) async {
-    if (_hasLoaded && !forceRefresh) {
-      return;
-    }
+    if (_hasLoaded && !forceRefresh) return;
     _setLoading(true);
+    _error = null;
+    _currentPage = 1;
     try {
-      _offers = await _offerService.fetchOffers();
+      _offers = await _offerService.fetchOffers(page: _currentPage);
+      _hasMore = _offers.length >= 20;
       _hasLoaded = true;
     } catch (e) {
+      _error = 'Failed to load offers. Pull to retry.';
       debugPrint('Failed to load offers: $e');
     }
     _setLoading(false);
   }
 
+  Future<void> loadMoreOffers() async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      final nextPage = _currentPage + 1;
+      final newOffers = await _offerService.fetchOffers(page: nextPage);
+      if (newOffers.length < 20) _hasMore = false;
+      _currentPage = nextPage;
+      _offers = [..._offers, ...newOffers];
+    } catch (e) {
+      _error = 'Failed to load more offers.';
+      debugPrint('Failed to load more offers: $e');
+    }
+    _isLoadingMore = false;
+    notifyListeners();
+  }
+
   Future<void> refreshOffers() async {
     await Future<void>.delayed(const Duration(milliseconds: 350));
     await loadOffers(forceRefresh: true);
+    await loadFavorites();
   }
 
   Future<void> searchOffers(String query) async {
@@ -77,11 +101,14 @@ class OfferProvider extends ChangeNotifier {
     }
     _isSearching = true;
     _searchQuery = query;
+    _error = null;
     notifyListeners();
     try {
       _offers = await _offerService.fetchOffers(query: query);
+      _currentPage = 1;
+      _hasMore = _offers.length >= 20;
     } catch (_) {
-      // Keep existing results on error
+      _error = 'Search failed. Try again.';
     }
     _isSearching = false;
     notifyListeners();
@@ -108,9 +135,7 @@ class OfferProvider extends ChangeNotifier {
   }
 
   void updateSearchQuery(String value) {
-    if (_searchQuery == value) {
-      return;
-    }
+    if (_searchQuery == value) return;
     _searchQuery = value;
     notifyListeners();
   }
@@ -127,9 +152,7 @@ class OfferProvider extends ChangeNotifier {
   }
 
   void _setLoading(bool value) {
-    if (_isLoading == value) {
-      return;
-    }
+    if (_isLoading == value) return;
     _isLoading = value;
     notifyListeners();
   }

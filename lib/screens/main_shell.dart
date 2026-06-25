@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../providers/notification_provider.dart';
 import 'favorites_screen.dart';
 import 'home_screen.dart';
+import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
 
@@ -26,6 +29,7 @@ class _MainShellState extends State<MainShell> {
       HomeScreen(onSearchTap: () => _selectTab(1)),
       const SearchScreen(),
       const FavoritesScreen(),
+      const NotificationsScreen(),
       const ProfileScreen(),
     ];
 
@@ -43,23 +47,49 @@ class _MainShellState extends State<MainShell> {
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _selectTab,
-          items: const [
-            BottomNavigationBarItem(
+          type: BottomNavigationBarType.fixed,
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.local_fire_department_outlined),
               activeIcon: Icon(Icons.local_fire_department_rounded),
               label: 'Home',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.search_rounded),
               activeIcon: Icon(Icons.search_rounded),
               label: 'Search',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.favorite_border_rounded),
               activeIcon: Icon(Icons.favorite_rounded),
               label: 'Favorites',
             ),
             BottomNavigationBarItem(
+              icon: Consumer<NotificationProvider>(
+                builder: (_, provider, __) {
+                  if (provider.unreadCount > 0) {
+                    return Badge(
+                      label: Text('${provider.unreadCount}'),
+                      child: const Icon(Icons.notifications_outlined),
+                    );
+                  }
+                  return const Icon(Icons.notifications_outlined);
+                },
+              ),
+              activeIcon: Consumer<NotificationProvider>(
+                builder: (_, provider, __) {
+                  if (provider.unreadCount > 0) {
+                    return Badge(
+                      label: Text('${provider.unreadCount}'),
+                      child: const Icon(Icons.notifications_rounded),
+                    );
+                  }
+                  return const Icon(Icons.notifications_rounded);
+                },
+              ),
+              label: 'Alerts',
+            ),
+            const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),
               activeIcon: Icon(Icons.person_rounded),
               label: 'Profile',

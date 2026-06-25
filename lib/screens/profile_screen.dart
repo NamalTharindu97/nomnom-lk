@@ -110,6 +110,13 @@ class ProfileScreen extends StatelessWidget {
                   value: 'Dark mode',
                 ),
                 const SizedBox(height: 10),
+                _ProfileTile(
+                  icon: Icons.storefront_rounded,
+                  title: 'Browse Restaurants',
+                  value: 'View all',
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.restaurants),
+                ),
+                const SizedBox(height: 10),
                 const _ProfileTile(
                   icon: Icons.api_rounded,
                   title: 'Backend',
@@ -142,17 +149,19 @@ class _ProfileTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.value,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
+    final tile = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardDark,
@@ -178,5 +187,15 @@ class _ProfileTile extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: tile,
+      );
+    }
+
+    return tile;
   }
 }
