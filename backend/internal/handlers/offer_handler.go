@@ -83,6 +83,11 @@ func (h *OfferHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// Reload to get preloaded Restaurant association for response
+	if reloaded, err := h.service.GetByID(offer.ID); err == nil {
+		offer = reloaded
+	}
+
 	h.sseService.Emit("offer.created", gin.H{"id": offer.ID, "title": offer.Title})
 	c.JSON(http.StatusCreated, h.offerToMap(offer, c))
 }
