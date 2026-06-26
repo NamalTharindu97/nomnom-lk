@@ -23,6 +23,7 @@ class OfferProvider extends ChangeNotifier {
   String? _error;
   int _currentPage = 1;
   bool _hasMore = true;
+  int _total = 0;
 
   List<Offer> get offers => List.unmodifiable(_offers);
   bool get isLoading => _isLoading;
@@ -32,6 +33,7 @@ class OfferProvider extends ChangeNotifier {
   bool get isSearching => _isSearching;
   String? get error => _error;
   bool get hasMore => _hasMore;
+  int get total => _total;
 
   List<Offer> get favoriteOffers {
     return _offers.where((offer) => offer.isFavorite).toList(growable: false);
@@ -59,12 +61,13 @@ class OfferProvider extends ChangeNotifier {
     _error = null;
     _currentPage = 1;
     try {
-      _offers = await _offerService.fetchOffers(page: _currentPage);
-      _hasMore = _offers.length >= 20;
+      final result = await _offerService.fetchOffers(page: _currentPage);
+      _offers = result.data;
+      _hasMore = result.hasMore;
+      _total = result.total;
       _hasLoaded = true;
     } catch (e) {
       _error = 'Failed to load offers. Pull to retry.';
-      debugPrint('Failed to load offers: $e');
     }
     _setLoading(false);
   }
@@ -75,12 +78,11 @@ class OfferProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final nextPage = _currentPage + 1;
-      final newOffers = await _offerService.fetchOffers(page: nextPage);
-      if (newOffers.length < 20) _hasMore = false;
+      final result = await _offerService.fetchOffers(page: nextPage);
+      _hasMore = result.hasMore;
       _currentPage = nextPage;
-      _offers = [..._offers, ...newOffers];
+      _offers = [..._offers, ...result.data];
     } catch (e) {
-      _error = 'Failed to load more offers.';
       debugPrint('Failed to load more offers: $e');
     }
     _isLoadingMore = false;
@@ -96,6 +98,11 @@ class OfferProvider extends ChangeNotifier {
   Future<void> searchOffers(String query) async {
     if (query.trim().isEmpty) {
       _searchQuery = '';
+      _error = null;
+      _offers = const [];
+      _hasMore = true;
+      _currentPage = 1;
+      _total = 0;
       notifyListeners();
       return;
     }
@@ -104,9 +111,11 @@ class OfferProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _offers = await _offerService.fetchOffers(query: query);
+      final result = await _offerService.fetchOffers(query: query);
+      _offers = result.data;
       _currentPage = 1;
-      _hasMore = _offers.length >= 20;
+      _hasMore = result.hasMore;
+      _total = result.total;
     } catch (_) {
       _error = 'Search failed. Try again.';
     }

@@ -1,3 +1,4 @@
+import '../models/paginated_response.dart';
 import '../models/restaurant.dart';
 import 'api_client.dart';
 
@@ -6,15 +7,12 @@ class ApiRestaurantService {
 
   final ApiClient _client;
 
-  Future<List<Restaurant>> fetchRestaurants({int page = 1}) async {
+  Future<PaginatedResponse<Restaurant>> fetchRestaurants({int page = 1}) async {
     final response = await _client.get('/restaurants', queryParameters: {
       'page': page,
       'per_page': 20,
     });
-    final data = response['data'] as List;
-    return data
-        .map((json) => Restaurant.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return PaginatedResponse.fromJson(response, Restaurant.fromJson);
   }
 
   Future<Restaurant> getRestaurant(String id) async {

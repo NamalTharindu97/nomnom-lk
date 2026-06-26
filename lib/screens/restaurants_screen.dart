@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../models/restaurant.dart';
 import '../providers/restaurant_provider.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/shimmer_loading.dart';
 
 class RestaurantsScreen extends StatefulWidget {
   const RestaurantsScreen({super.key});
@@ -33,46 +34,108 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
-              child: Text(
-                'Restaurants',
-                style: textTheme.headlineSmall?.copyWith(
-                  color: AppColors.cream,
-                  fontWeight: FontWeight.w900,
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    'Restaurants',
+                    style: textTheme.headlineSmall?.copyWith(
+                      color: AppColors.cream,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const Spacer(),
+                  Consumer<RestaurantProvider>(
+                    builder: (context, provider, _) {
+                      if (provider.restaurants.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardElevated,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${provider.total} total',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: AppColors.curry,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
             Expanded(
-              child: Consumer<RestaurantProvider>(
-                builder: (context, provider, child) {
-                  if (provider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+              child: RefreshIndicator(
+                onRefresh: () =>
+                    context.read<RestaurantProvider>().refreshRestaurants(),
+                color: AppColors.deepCharcoal,
+                backgroundColor: AppColors.curry,
+                child: Consumer<RestaurantProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.isLoading) {
+                      return const RestaurantShimmerList();
+                    }
 
-                  if (provider.error != null) {
-                    return EmptyState(
-                      icon: Icons.wifi_off_rounded,
-                      title: 'Failed to load',
-                      message: provider.error!,
+                    if (provider.error != null) {
+                      return ListView(
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            child: EmptyState(
+                              icon: Icons.wifi_off_rounded,
+                              title: 'Failed to load',
+                              message: provider.error!,
+                              onRetry: provider.refreshRestaurants,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    final restaurants = provider.restaurants;
+                    if (restaurants.isEmpty) {
+                      return const EmptyState(
+                        icon: Icons.storefront_outlined,
+                        title: 'No restaurants',
+                        message: 'No restaurants available right now.',
+                      );
+                    }
+
+                    return NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification is ScrollEndNotification &&
+                            notification.metrics.pixels >=
+                                notification.metrics.maxScrollExtent - 200) {
+                          provider.loadMoreRestaurants();
+                        }
+                        return false;
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: restaurants.length + (provider.isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= restaurants.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: CircularProgressIndicator(strokeWidth: 2.4),
+                              ),
+                            );
+                          }
+                          return _RestaurantCard(restaurant: restaurants[index]);
+                        },
+                      ),
                     );
-                  }
-
-                  final restaurants = provider.restaurants;
-                  if (restaurants.isEmpty) {
-                    return const EmptyState(
-                      icon: Icons.storefront_outlined,
-                      title: 'No restaurants',
-                      message: 'No restaurants available right now.',
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    itemCount: restaurants.length,
-                    itemBuilder: (context, index) {
-                      return _RestaurantCard(restaurant: restaurants[index]);
-                    },
-                  );
-                },
+                  },
+                ),
               ),
             ),
           ],

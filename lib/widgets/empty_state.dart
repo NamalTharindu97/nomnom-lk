@@ -8,11 +8,15 @@ class EmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.message,
+    this.onRetry,
+    this.retryLabel,
   });
 
   final IconData icon;
   final String title;
   final String message;
+  final VoidCallback? onRetry;
+  final String? retryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +52,21 @@ class EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
             ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(retryLabel ?? 'Retry'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.curry,
+                  foregroundColor: AppColors.deepCharcoal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

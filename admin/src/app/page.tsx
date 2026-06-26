@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth, requireAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
@@ -9,12 +9,13 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (isLoading) return
+    if (user) {
+      router.replace("/dashboard")
+    } else {
       router.push("/login")
     }
   }, [user, isLoading, router])
 
-  if (isLoading || !user) return null
-  router.replace("/dashboard")
   return null
 }

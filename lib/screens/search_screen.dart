@@ -7,6 +7,7 @@ import '../core/theme/app_colors.dart';
 import '../providers/offer_provider.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/offer_card.dart';
+import '../widgets/shimmer_loading.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -39,6 +40,13 @@ class _SearchScreenState extends State<SearchScreen> {
     _debounce?.cancel();
     setState(() {});
     context.read<OfferProvider>().searchOffers('');
+  }
+
+  void _retrySearch() {
+    final query = _controller.text;
+    if (query.isNotEmpty) {
+      context.read<OfferProvider>().searchOffers(query);
+    }
   }
 
   @override
@@ -85,14 +93,22 @@ class _SearchScreenState extends State<SearchScreen> {
               child: Consumer<OfferProvider>(
                 builder: (context, provider, child) {
                   if (provider.isSearching) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const OfferShimmerList();
                   }
 
                   if (provider.error != null && _controller.text.isNotEmpty) {
-                    return EmptyState(
-                      icon: Icons.wifi_off_rounded,
-                      title: 'Search failed',
-                      message: provider.error!,
+                    return ListView(
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.3,
+                          child: EmptyState(
+                            icon: Icons.wifi_off_rounded,
+                            title: 'Search failed',
+                            message: provider.error!,
+                            onRetry: _retrySearch,
+                          ),
+                        ),
+                      ],
                     );
                   }
 

@@ -193,6 +193,7 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 			"slug":    o.Restaurant.Slug,
 			"address": o.Restaurant.Address,
 		},
+		"restaurant_id":    o.RestaurantID,
 		"title":            o.Title,
 		"description":      o.Description,
 		"original_price":   o.OriginalPrice,
@@ -201,12 +202,17 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 		"saving":           o.OriginalPrice - o.OfferPrice,
 		"image_urls":       o.ImageURLs,
 		"status":           o.Status,
+		"start_date":       o.StartDate,
 		"end_date":         o.EndDate,
 		"is_favorited":     false,
 	}
 
 	if o.Translations != nil {
 		locale.MergeTranslations(m, o.Translations, lang)
+		locale.FlattenTranslations(m, o.Translations, map[string]string{
+			"name":        "title",
+			"description": "description",
+		})
 	}
 
 	return m
@@ -214,9 +220,7 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 
 func (h *OfferHandler) offerDetailToMap(o *models.Offer, c *gin.Context) gin.H {
 	m := h.offerToMap(o, c)
-	m["status"] = o.Status
 	m["view_count"] = o.ViewCount
-	m["start_date"] = o.StartDate
 	m["created_at"] = o.CreatedAt
 
 	restDetail := m["restaurant"].(gin.H)

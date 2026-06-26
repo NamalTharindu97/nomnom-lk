@@ -179,6 +179,8 @@ func (h *RestaurantHandler) restaurantToMap(r *models.Restaurant, c *gin.Context
 		"name":             r.Name,
 		"slug":             r.Slug,
 		"address":          r.Address,
+		"description":      r.Description,
+		"contact_phone":    r.ContactPhone,
 		"cuisine_tags":     r.CuisineTags,
 		"cover_image":      r.CoverImage,
 		"status":           r.Status,
@@ -187,6 +189,10 @@ func (h *RestaurantHandler) restaurantToMap(r *models.Restaurant, c *gin.Context
 
 	if r.Translations != nil {
 		locale.MergeTranslations(m, r.Translations, lang)
+		locale.FlattenTranslations(m, r.Translations, map[string]string{
+			"name":        "name",
+			"description": "description",
+		})
 	}
 
 	return m

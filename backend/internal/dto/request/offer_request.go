@@ -22,6 +22,7 @@ type CreateOfferRequest struct {
 }
 
 type UpdateOfferRequest struct {
+	RestaurantID  *string                 `json:"restaurant_id,omitempty"`
 	Title         *string                 `json:"title,omitempty"`
 	TitleSi       *string                 `json:"title_si,omitempty"`
 	TitleTa       *string                 `json:"title_ta,omitempty"`

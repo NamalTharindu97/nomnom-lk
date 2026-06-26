@@ -9,4 +9,12 @@ class ApiConfig {
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
   static const int perPage = 20;
+
+  static String resolveUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    final origin = baseUrl.replaceAll('/api/v1', '');
+    return '$origin$path';
+  }
 }

@@ -1,5 +1,6 @@
 import '../core/api_config.dart';
 import '../models/offer.dart';
+import '../models/paginated_response.dart';
 import 'api_client.dart';
 
 class ApiOfferService {
@@ -7,7 +8,7 @@ class ApiOfferService {
 
   final ApiClient _client;
 
-  Future<List<Offer>> fetchOffers({String? query, int page = 1}) async {
+  Future<PaginatedResponse<Offer>> fetchOffers({String? query, int page = 1}) async {
     final params = <String, dynamic>{
       'page': page,
       'per_page': ApiConfig.perPage,
@@ -17,10 +18,7 @@ class ApiOfferService {
     }
 
     final response = await _client.get('/offers', queryParameters: params);
-    final data = response['data'] as List;
-    return data
-        .map((json) => Offer.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return PaginatedResponse.fromJson(response, Offer.fromJson);
   }
 
   Future<Offer> getOffer(String id) async {
@@ -33,7 +31,7 @@ class ApiOfferService {
     return Offer.fromJson(response['data'] as Map<String, dynamic>);
   }
 
-  Future<List<Offer>> search({
+  Future<PaginatedResponse<Offer>> search({
     required String query,
     int page = 1,
     String? sort,
@@ -54,9 +52,6 @@ class ApiOfferService {
     if (radiusKm != null) params['radius_km'] = radiusKm;
 
     final response = await _client.get('/search', queryParameters: params);
-    final data = response['data'] as List;
-    return data
-        .map((json) => Offer.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return PaginatedResponse.fromJson(response, Offer.fromJson);
   }
 }

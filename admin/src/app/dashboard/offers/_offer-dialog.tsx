@@ -54,6 +54,7 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<OfferForm>({
     resolver: zodResolver(offerSchema),
@@ -142,10 +143,13 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
       const existingUrls = offer?.image_urls || []
       const allUrls = [...existingUrls, ...uploadedUrls]
 
-      const body = {
+      const body: Record<string, any> = {
         ...data,
         image_urls: allUrls,
       }
+
+      if (body.start_date) body.start_date = `${body.start_date}T00:00:00Z`
+      if (body.end_date) body.end_date = `${body.end_date}T00:00:00Z`
 
       if (isEdit) {
         await api.put(`/offers/${offer.id}`, body)
@@ -164,7 +168,7 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Offer" : "New Offer"}</DialogTitle>
           <DialogDescription>
@@ -172,138 +176,140 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSave)} className="grid gap-4 py-2">
-          <div className="grid gap-2">
-            <Label htmlFor="restaurant_id">Restaurant</Label>
-            <Select
-              defaultValue={offer?.restaurant_id || ""}
-              onValueChange={(v) => setValue("restaurant_id", v, { shouldValidate: true })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a restaurant" />
-              </SelectTrigger>
-              <SelectContent>
-                {restaurants.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.restaurant_id && (
-              <p className="text-xs text-destructive">{errors.restaurant_id.message}</p>
-            )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" {...register("title")} />
-            {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <textarea
-              id="description"
-              className="border-input flex min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
-              {...register("description")}
-            />
-            {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <form key={offer?.id || 'new'} onSubmit={handleSubmit(onSave)}>
+          <div className="overflow-y-auto max-h-[55vh] space-y-4 px-1 scrollbar-thin">
             <div className="grid gap-2">
-              <Label htmlFor="original_price">Original Price (LKR)</Label>
-              <Input id="original_price" type="number" {...register("original_price", { valueAsNumber: true })} />
-              {errors.original_price && <p className="text-xs text-destructive">{errors.original_price.message}</p>}
+              <Label htmlFor="restaurant_id">Restaurant</Label>
+              <Select
+                value={watch('restaurant_id') || ""}
+                onValueChange={(v) => setValue("restaurant_id", v, { shouldValidate: true })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a restaurant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {restaurants.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.restaurant_id && (
+                <p className="text-xs text-destructive">{errors.restaurant_id.message}</p>
+              )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="offer_price">Offer Price (LKR)</Label>
-              <Input id="offer_price" type="number" {...register("offer_price", { valueAsNumber: true })} />
-              {errors.offer_price && <p className="text-xs text-destructive">{errors.offer_price.message}</p>}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input id="start_date" type="date" {...register("start_date")} />
-              {errors.start_date && <p className="text-xs text-destructive">{errors.start_date.message}</p>}
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" {...register("title")} />
+              {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="end_date">End Date</Label>
-              <Input id="end_date" type="date" {...register("end_date")} />
-              {errors.end_date && <p className="text-xs text-destructive">{errors.end_date.message}</p>}
-            </div>
-          </div>
 
-          <div className="grid gap-2">
-            <Label>Images</Label>
-            <div className="flex items-center gap-2">
-              <Input type="file" multiple accept="image/*" onChange={onFileSelect} className="file:text-xs" />
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <textarea
+                id="description"
+                className="border-input flex min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                {...register("description")}
+              />
+              {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
             </div>
-            {imageFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-1">
-                {imageFiles.map((f, i) => (
-                  <span key={i} className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
-                    {f.name}
-                    <button type="button" onClick={() => removeFile(i)} className="text-destructive hover:opacity-70">
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="original_price">Original Price (LKR)</Label>
+                <Input id="original_price" type="number" {...register("original_price", { valueAsNumber: true })} />
+                {errors.original_price && <p className="text-xs text-destructive">{errors.original_price.message}</p>}
               </div>
-            )}
-            {offer?.image_urls?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-1">
-                {offer.image_urls.map((url: string, i: number) => (
-                  <span key={i} className="rounded-md bg-muted px-2 py-1 text-xs truncate max-w-40">
-                    {url.split("/").pop()}
-                  </span>
-                ))}
+              <div className="grid gap-2">
+                <Label htmlFor="offer_price">Offer Price (LKR)</Label>
+                <Input id="offer_price" type="number" {...register("offer_price", { valueAsNumber: true })} />
+                {errors.offer_price && <p className="text-xs text-destructive">{errors.offer_price.message}</p>}
               </div>
-            )}
-          </div>
+            </div>
 
-          <div className="border-t pt-4">
-            <h4 className="text-sm font-semibold mb-3">Translations</h4>
-            <div className="grid gap-4">
-              <div>
-                <h5 className="text-xs font-medium text-muted-foreground mb-2">Sinhala (සිංහල)</h5>
-                <div className="grid gap-2">
-                  <div className="grid gap-1">
-                    <Label htmlFor="title_si">Title (SI)</Label>
-                    <Input id="title_si" {...register("title_si")} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input id="start_date" type="date" {...register("start_date")} />
+                {errors.start_date && <p className="text-xs text-destructive">{errors.start_date.message}</p>}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="end_date">End Date</Label>
+                <Input id="end_date" type="date" {...register("end_date")} />
+                {errors.end_date && <p className="text-xs text-destructive">{errors.end_date.message}</p>}
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Images</Label>
+              <div className="flex items-center gap-2">
+                <Input type="file" multiple accept="image/*" onChange={onFileSelect} className="file:text-xs" />
+              </div>
+              {imageFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {imageFiles.map((f, i) => (
+                    <span key={i} className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
+                      {f.name}
+                      <button type="button" onClick={() => removeFile(i)} className="text-destructive hover:opacity-70">
+                        <X className="size-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {offer?.image_urls?.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {offer.image_urls.map((url: string, i: number) => (
+                    <span key={i} className="rounded-md bg-muted px-2 py-1 text-xs truncate max-w-40">
+                      {url.split("/").pop()}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-3">Translations</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h5 className="text-xs font-medium text-muted-foreground mb-2">Sinhala (සිංහල)</h5>
+                  <div className="grid gap-2">
+                    <div className="grid gap-1">
+                      <Label htmlFor="title_si">Title</Label>
+                      <Input id="title_si" {...register("title_si")} />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="description_si">Description</Label>
+                      <textarea
+                        id="description_si"
+                        className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                        {...register("description_si")}
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-1">
-                    <Label htmlFor="description_si">Description (SI)</Label>
-                    <textarea
-                      id="description_si"
-                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
-                      {...register("description_si")}
-                    />
+                </div>
+                <div>
+                  <h5 className="text-xs font-medium text-muted-foreground mb-2">Tamil (தமிழ்)</h5>
+                  <div className="grid gap-2">
+                    <div className="grid gap-1">
+                      <Label htmlFor="title_ta">Title</Label>
+                      <Input id="title_ta" {...register("title_ta")} />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="description_ta">Description</Label>
+                      <textarea
+                        id="description_ta"
+                        className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                        {...register("description_ta")}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div>
-                <h5 className="text-xs font-medium text-muted-foreground mb-2">Tamil (தமிழ்)</h5>
-                <div className="grid gap-2">
-                  <div className="grid gap-1">
-                    <Label htmlFor="title_ta">Title (TA)</Label>
-                    <Input id="title_ta" {...register("title_ta")} />
-                  </div>
-                  <div className="grid gap-1">
-                    <Label htmlFor="description_ta">Description (TA)</Label>
-                    <textarea
-                      id="description_ta"
-                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
-                      {...register("description_ta")}
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={saving || uploadingImages}>
               {(saving || uploadingImages) && <Loader2 className="mr-2 size-4 animate-spin" />}

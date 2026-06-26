@@ -20,7 +20,7 @@ func NewUploadHandler(service *services.UploadService) *UploadHandler {
 }
 
 func (h *UploadHandler) ServeFile(c *gin.Context) {
-	key := c.Param("key")
+	key := strings.TrimPrefix(c.Param("key"), "/")
 	if key == "" {
 		response.NotFound(c, "file not found")
 		return

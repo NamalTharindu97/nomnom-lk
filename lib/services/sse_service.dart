@@ -23,6 +23,7 @@ class SSEService {
   final _controller = StreamController<SSEEvent>.broadcast();
   bool _isConnected = false;
   bool _shouldReconnect = true;
+  String _buffer = '';
 
   Stream<SSEEvent> get events => _controller.stream;
   bool get isConnected => _isConnected;
@@ -30,35 +31,45 @@ class SSEService {
   Future<void> connect() async {
     if (_isConnected) return;
     _shouldReconnect = true;
+    _buffer = '';
 
     try {
       final uri = Uri.parse('$baseUrl/events');
 
       _client = HttpClient();
+      _client!.connectionTimeout = const Duration(seconds: 5);
       final request = await _client!.getUrl(uri);
       request.headers.set('Accept', 'text/event-stream');
       request.headers.set('Cache-Control', 'no-cache');
 
-      final response = await request.close();
+      final response = await request.close().timeout(const Duration(seconds: 10));
       _isConnected = true;
       debugPrint('SSE connected');
 
-      String? currentEvent;
-
       _subscription = response.transform(utf8.decoder).listen(
         (data) {
-          for (final line in data.split('\n')) {
-            if (line.startsWith('event: ')) {
-              currentEvent = line.substring(7);
-            } else if (line.startsWith('data: ')) {
-              final payload = line.substring(6);
-              final event = currentEvent ?? 'message';
-              currentEvent = null;
-              try {
-                final json = jsonDecode(payload) as Map<String, dynamic>;
-                _controller.add(SSEEvent(event: event, data: json));
-              } catch (_) {
-                debugPrint('SSE parse error: $payload');
+          _buffer += data;
+          while (true) {
+            final delimiter = _buffer.indexOf('\n\n');
+            if (delimiter == -1) break;
+
+            final block = _buffer.substring(0, delimiter);
+            _buffer = _buffer.substring(delimiter + 2);
+
+            String? currentEvent;
+            for (final line in block.split('\n')) {
+              if (line.startsWith('event:')) {
+                currentEvent = line.substring(6).trim();
+              } else if (line.startsWith('data:')) {
+                final payload = line.substring(5).trim();
+                final event = currentEvent ?? 'message';
+                currentEvent = null;
+                try {
+                  final json = jsonDecode(payload) as Map<String, dynamic>;
+                  _controller.add(SSEEvent(event: event, data: json));
+                } catch (_) {
+                  debugPrint('SSE parse error: $payload');
+                }
               }
             }
           }

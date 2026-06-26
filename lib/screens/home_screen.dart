@@ -6,6 +6,7 @@ import '../providers/offer_provider.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/offer_card.dart';
+import '../widgets/shimmer_loading.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -51,10 +52,11 @@ class HomeScreen extends StatelessWidget {
                         icon: Icons.wifi_off_rounded,
                         title: 'Something went wrong',
                         message: provider.error!,
+                        onRetry: provider.refreshOffers,
                       ),
                     )
                   else if (provider.isLoading && offers.isEmpty)
-                    const SliverToBoxAdapter(child: _OfferSkeletonList())
+                    const SliverToBoxAdapter(child: OfferShimmerList())
                   else if (offers.isEmpty)
                     const SliverFillRemaining(
                       hasScrollBody: false,
@@ -184,41 +186,6 @@ class _HomeHeader extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _OfferSkeletonList extends StatelessWidget {
-  const _OfferSkeletonList();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(
-        3,
-        (index) => const Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: _OfferSkeleton(),
-        ),
-      ),
-    );
-  }
-}
-
-class _OfferSkeleton extends StatelessWidget {
-  const _OfferSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 280,
-      decoration: BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(strokeWidth: 2.4),
       ),
     );
   }

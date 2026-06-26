@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
 
 class OfferImage extends StatelessWidget {
@@ -27,7 +28,7 @@ class OfferImage extends StatelessWidget {
         height: height,
         width: width,
         child: CachedNetworkImage(
-          imageUrl: imageUrl,
+          imageUrl: ApiConfig.resolveUrl(imageUrl),
           fit: BoxFit.cover,
           placeholder: (context, url) => const _ImageFallback(isLoading: true),
           errorWidget: (context, url, error) => const _ImageFallback(),

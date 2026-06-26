@@ -66,9 +66,7 @@ class CacheInterceptor extends Interceptor {
   }
 
   void invalidate(String path) {
-    _cache.remove(path);
-
-    final keysToRemove = _cache.keys.where((k) => k.startsWith(path)).toList();
+    final keysToRemove = _cache.keys.where((k) => k.contains(path)).toList();
     for (final k in keysToRemove) {
       _cache.remove(k);
     }

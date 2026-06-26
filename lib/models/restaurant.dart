@@ -7,10 +7,11 @@ class Restaurant {
     required this.name,
     required this.slug,
     required this.address,
-    required this.phone,
+    this.phone,
     required this.description,
     required this.cuisineTags,
     required this.status,
+    this.coverImage,
   });
 
   final String id;
@@ -21,6 +22,7 @@ class Restaurant {
   final String description;
   final List<String> cuisineTags;
   final String status;
+  final String? coverImage;
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     return Restaurant(
@@ -33,6 +35,7 @@ class Restaurant {
       cuisineTags:
           (json['cuisine_tags'] as List?)?.cast<String>() ?? [],
       status: json['status'] as String? ?? 'approved',
+      coverImage: json['cover_image'] as String?,
     );
   }
 
@@ -45,6 +48,7 @@ class Restaurant {
     String? description,
     List<String>? cuisineTags,
     String? status,
+    String? coverImage,
   }) {
     return Restaurant(
       id: id ?? this.id,
@@ -55,6 +59,7 @@ class Restaurant {
       description: description ?? this.description,
       cuisineTags: cuisineTags ?? this.cuisineTags,
       status: status ?? this.status,
+      coverImage: coverImage ?? this.coverImage,
     );
   }
 }

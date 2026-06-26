@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { api } from "@/lib/api"
 import { notify } from "@/components/ui/toast"
-import { Loader2 } from "lucide-react"
+import { Loader2, X } from "lucide-react"
 
 interface RestaurantForm {
   name: string
@@ -45,6 +45,8 @@ interface RestaurantDialogProps {
 export default function RestaurantDialog({ open, onClose, onSaved, restaurant }: RestaurantDialogProps) {
   const [form, setForm] = useState<RestaurantForm>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const isEdit = !!restaurant
 
@@ -56,7 +58,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         address: restaurant.address || "",
         cuisine_tags: (restaurant.cuisine_tags || []).join(", "),
         description: restaurant.description || "",
-        phone: restaurant.phone || "",
+        phone: restaurant.contact_phone || "",
         name_si: restaurant.name_si || "",
         name_ta: restaurant.name_ta || "",
         description_si: restaurant.description_si || "",
@@ -64,11 +66,36 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       })
     } else {
       setForm(emptyForm)
+      setCoverFile(null)
     }
   }, [restaurant])
 
   function set<K extends keyof RestaurantForm>(key: K, value: RestaurantForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function onFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null
+    setCoverFile(file)
+  }
+
+  function removeFile() {
+    setCoverFile(null)
+  }
+
+  async function uploadFile(): Promise<string | null> {
+    if (!coverFile) return restaurant?.cover_image || null
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append("files", coverFile)
+      const res = await api.upload<{ data: { url: string }[] }>("/upload/multiple", formData)
+      setUploadingImage(false)
+      return (res.data?.[0]?.url) || null
+    } catch {
+      setUploadingImage(false)
+      return null
+    }
   }
 
   async function handleSave() {
@@ -78,10 +105,19 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
     }
     setSaving(true)
     try {
-      const body = {
-        ...form,
+      const coverImage = await uploadFile()
+
+      const { phone, ...restForm } = form
+      const body: Record<string, any> = {
+        ...restForm,
+        contact_phone: phone || null,
         cuisine_tags: form.cuisine_tags.split(",").map((s) => s.trim()).filter(Boolean),
       }
+
+      if (coverImage) {
+        body.cover_image = coverImage
+      }
+
       if (isEdit) {
         await api.put(`/restaurants/${restaurant.id}`, body)
         notify("Restaurant updated", "success")
@@ -99,7 +135,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Restaurant" : "New Restaurant"}</DialogTitle>
           <DialogDescription>
@@ -118,13 +154,15 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
               <Input id="slug" value={form.slug} onChange={(e) => set("slug", e.target.value)} />
             </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="address">Address</Label>
-            <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="address">Address</Label>
+              <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="cuisine_tags">Cuisine Tags (comma-separated)</Label>
@@ -140,18 +178,42 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
             />
           </div>
 
+          <div className="grid gap-2">
+            <Label>Cover Image</Label>
+            <div className="flex items-center gap-2">
+              <Input type="file" accept="image/*" onChange={onFileSelect} className="file:text-xs" />
+            </div>
+            {coverFile && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
+                  {coverFile.name}
+                  <button type="button" onClick={removeFile} className="text-destructive hover:opacity-70">
+                    <X className="size-3" />
+                  </button>
+                </span>
+              </div>
+            )}
+            {restaurant?.cover_image && !coverFile && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="rounded-md bg-muted px-2 py-1 text-xs truncate max-w-60">
+                  {restaurant.cover_image.split("/").pop()}
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className="border-t pt-4">
             <h4 className="text-sm font-semibold mb-3">Translations</h4>
-            <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <h5 className="text-xs font-medium text-muted-foreground mb-2">Sinhala (සිංහල)</h5>
                 <div className="grid gap-2">
                   <div className="grid gap-1">
-                    <Label htmlFor="name_si">Name (SI)</Label>
+                    <Label htmlFor="name_si">Name</Label>
                     <Input id="name_si" value={form.name_si} onChange={(e) => set("name_si", e.target.value)} />
                   </div>
                   <div className="grid gap-1">
-                    <Label htmlFor="description_si">Description (SI)</Label>
+                    <Label htmlFor="description_si">Description</Label>
                     <textarea
                       id="description_si"
                       className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
@@ -165,11 +227,11 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                 <h5 className="text-xs font-medium text-muted-foreground mb-2">Tamil (தமிழ்)</h5>
                 <div className="grid gap-2">
                   <div className="grid gap-1">
-                    <Label htmlFor="name_ta">Name (TA)</Label>
+                    <Label htmlFor="name_ta">Name</Label>
                     <Input id="name_ta" value={form.name_ta} onChange={(e) => set("name_ta", e.target.value)} />
                   </div>
                   <div className="grid gap-1">
-                    <Label htmlFor="description_ta">Description (TA)</Label>
+                    <Label htmlFor="description_ta">Description</Label>
                     <textarea
                       id="description_ta"
                       className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
@@ -185,8 +247,8 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+          <Button onClick={handleSave} disabled={saving || uploadingImage}>
+            {(saving || uploadingImage) && <Loader2 className="mr-2 size-4 animate-spin" />}
             {isEdit ? "Update" : "Create"}
           </Button>
         </DialogFooter>

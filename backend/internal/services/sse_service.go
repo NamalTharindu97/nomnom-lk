@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -59,6 +60,12 @@ func (s *SSEService) HandleSSE(c *gin.Context) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 	c.Header("Access-Control-Allow-Origin", "*")
+
+	// Force headers to flush immediately so the client receives the HTTP
+	// response. Without this, c.Stream blocks on select waiting for events
+	// and the client never hears back.
+	c.Writer.WriteHeader(http.StatusOK)
+	c.Writer.Flush()
 
 	client := &SSEClient{
 		ID:     fmt.Sprintf("client_%d", len(s.clients)+1),

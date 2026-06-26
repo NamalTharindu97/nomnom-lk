@@ -93,6 +93,11 @@ func (s *OfferService) Update(id uuid.UUID, req *request.UpdateOfferRequest, req
 		return nil, errors.New("not authorized to update this offer")
 	}
 
+	if req.RestaurantID != nil {
+		if rid, err := uuid.Parse(*req.RestaurantID); err == nil {
+			offer.RestaurantID = rid
+		}
+	}
 	if req.Title != nil {
 		offer.Title = *req.Title
 	}

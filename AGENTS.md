@@ -28,13 +28,8 @@
 - **P15: Real-Time Sync via SSE** — Flutter SSE listener wired up (`_SseListener` widget in `main.dart`); `SSEService` rewritten to parse `event:` lines and emit typed `SSEEvent` objects with auto-reconnect; admin offers/restaurants pages pass `status=all` to see all statuses; backend `status=all` support in `offer_repo.go` and `restaurant_repo.go`; `status` field added to `offerToMap` response.
 - **P16: Dev Environment — Background Processes + Hot Reload** — Backend auto-restart via `air` (Go hot reload, configured in `backend/.air.toml`); admin dashboard runs with `next dev` (HMR built-in); Flutter runs on iPhone 17 Pro simulator in debug mode; all three run as background `nohup` processes with logs routed to `*/logs/*.log`; `.gitignore` updated to exclude log dirs.
 
-### In Progress
-- **P17: Seed Data with MinIO Images + Data Loading Optimization** — Phase split into sub-steps:
-  1. ✅ Seed script with MinIO image upload (Unsplash food photos → MinIO → DB records)
-  2. ✅ Fix offer dialog field name mismatch (`desc_si`/`desc_ta` → `description_si`/`description_ta`)
-  3. ✅ Image caching (Flutter `Image.network` → `CachedNetworkImage`)
-  4. ✅ Data caching (Dio interceptor with 2-min TTL + SSE cache invalidation)
-  5. ⬜ Pagination metadata + shimmer + retry + restaurant upload
+### Done
+- **P17: Seed Data with MinIO Images + Data Loading Optimization** — Seed script with MinIO image upload; fix offer dialog field name mismatch (`desc_si`/`desc_ta` → `description_si`/`description_ta`); `CachedNetworkImage` for image caching; Dio interceptor cache with 2-min TTL + SSE-driven cache invalidation; pagination metadata (total/total_pages) + shimmer loading + retry on error + restaurant cover image upload; translation fields flattened in API responses (`FlattenTranslations`); `offerToMap` includes `restaurant_id`, `start_date`, `translations`; `contact_phone` field fix in restaurant dialog. Merged to master.
 
 ### Blocked
 - (none)
@@ -42,10 +37,16 @@
 ## Key Decisions
 - All phase branches merged to master; master is current active branch.
 - **SSE for real-time sync:** Chose Server-Sent Events over WebSocket for simpler server→client streaming with Gin's `c.Stream()`.
+- **SSE header flush:** Gin's `c.Stream()` blocks on `select` inside the callback, so HTTP response headers never flush to the client. Fix: call `c.Writer.WriteHeader(http.StatusOK)` + `c.Writer.Flush()` before `c.Stream()`.
+- **SSE parser no-space colons:** Gin's SSE encoder writes `event:eventName` and `data:{json}` (no space after colon). Flutter parser must check `startsWith('event:')` and use `.trim()`, not `startsWith('event: ')`.
+- **SSE forceRefresh for restaurants:** `RestaurantProvider.loadRestaurants()` guard `if (!forceRefresh && _restaurants.isNotEmpty) return;` silently skips reload on SSE events when called without `forceRefresh: true`.
 - **Firebase graceful fallback:** Both Auth token verification and FCM client follow same pattern — init from credentials file, skip if missing, log a warning.
 - **Toast notifications in admin:** `@radix-ui/react-toast` with custom `ToastProvider` avoids extra dependencies.
 - **Form validation in admin:** `react-hook-form` + `zod` + `@hookform/resolvers` — packages already installed but unused.
-- **Pagination:** Shared `PaginationBar` in admin; `NotificationListener<ScrollNotification>` infinite scroll in Flutter.
+- **Pagination:** Shared `PaginationBar` in admin; `NotificationListener<ScrollNotification>` infinite scroll in Flutter. Backend returns `page`, `per_page`, `total`, `total_pages` — consumed by Flutter via `PaginatedResponse<T>` model.
+- **Shimmer loading:** `shimmer: ^3.0.0` package used for animated skeleton screens in Flutter (offers list, restaurants list, search results). Replaces old static gray boxes with `CircularProgressIndicator`.
+- **Retry on error:** `EmptyState` widget has optional `onRetry` callback and `retryLabel`. Error states on home, restaurants, and search screens show a retry button. Restaurants screen also has pull-to-refresh.
+- **Restaurant cover image upload:** Admin restaurant dialog now has image file input and upload via `/upload/multiple` endpoint. Sends `cover_image` in API body.
 - **Build tags on script files:** `//go:build seed` / `//go:build migration` prevents `go build ./...` conflict from two `main()` functions in `scripts/` directory.
 - **FCM service init:** `_FcmInitializer` stateful widget at app root runs `addPostFrameCallback` to avoid blocking UI; creates its own `ApiClient` instance. `NotificationProvider` captured before async gap to avoid `use_build_context_synchronously` lint.
 - **firebase_messaging version:** Pinned to `^15.2.10` for compatibility with existing `firebase_core ^3.6.0`.
@@ -58,29 +59,31 @@
 - **Background process management:** All three services (backend, admin, Flutter) run as `nohup` background processes; logs go to `*/logs/*.log`.
 
 ## Next Steps
-- (none — all 16 phases complete, P17 in progress on master)
+- (none — all 17 phases complete, on master)
 
 ## Critical Context
-- All branches P1–P16 merged to master and preserved on remote.
+- All branches P1–P17 merged to master and preserved on remote.
 - Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on iPhone 17 Pro simulator.
 - Docker services (postgres 16, redis 7, minio) running with seeded data.
 - Backend FCM client already initialized in `NotificationService` — `POST /admin/notifications/push` already sends via FCM in real goroutine.
 - `Flutter` `pubspec.yaml` has `firebase_messaging: ^15.2.10` resolved.
 - API routes confirmable at startup logs: `GET /admin/stats`, `GET /admin/stats/timeline`, `GET /admin/notifications`, `POST /admin/notifications/push`, `POST /devices`, `DELETE /devices`.
 - Translations stored as JSONB column on restaurants/offers. Admin dialog sends `name_si`, `name_ta`, `description_si`, `description_ta` for restaurant and `title_si`, `title_ta`, `desc_si`, `desc_ta` for offer — merged into JSONB by backend `TranslationService`.
-- **Offer dialog field name mismatch:** The admin offer dialog sends `desc_si`/`desc_ta` but the backend DTO expects `description_si`/`description_ta`. The dialog needs updating to match backend field names.
-- **Real-time SSE sync working:** Backend emits `offer.*` and `restaurant.*` events on all CRUD operations. Flutter `_SseListener` widget connects, parses events, and refreshes providers automatically. Admin offers/restaurants pages pass `?status=all` to see pending/rejected items for moderation.
+- **Offer dialog field name mismatch:** The admin offer dialog sends `desc_si`/`desc_ta` but the backend DTO expects `description_si`/`description_ta`. The dialog needs updating to match backend field names. — ✅ **Fixed in P17**
+- **Real-time SSE sync working:** Backend emits `offer.*` and `restaurant.*` events on all CRUD operations. Flutter `_SseListener` widget connects, parses events, and refreshes providers automatically with cache invalidation. Admin offers/restaurants pages pass `?status=all` to see pending/rejected items for moderation. ✅ **Working end-to-end (header flush + parser fix)**
 
 ## Relevant Files
-### Backend (all P10+P11+P14+P15)
+### Backend (all P10+P11+P14+P15+P17)
 - `backend/internal/handlers/admin_handler.go` — `Stats()`, `StatsTimeline()`, `ListNotifications()`
 - `backend/internal/handlers/user_handler.go` — `Me()`, `List()`, `Update()`, `Delete()`
 - `backend/internal/handlers/notification_handler.go` — `SendPush`, `RegisterDevice`, `UnregisterDevice`
-- `backend/internal/handlers/offer_handler.go` — `offerToMap` now includes `status` field; SSE emits on CRUD
-- `backend/internal/handlers/restaurant_handler.go` — SSE emits on CRUD
+- `backend/internal/handlers/offer_handler.go` — `offerToMap` now includes `status`, `restaurant_id`, `start_date`, `translations` fields; SSE emits on CRUD
+- `backend/internal/handlers/restaurant_handler.go` — `contact_phone`, `description`, `translations` in response; SSE emits on CRUD
+- `backend/internal/handlers/upload_handler.go` — cover image upload support
 - `backend/internal/services/notification_service.go` — FCM `initFCMClient`, `SendPush()` goroutine
 - `backend/internal/services/translation_service.go` — `MergeIntoJSONB()` helper
-- `backend/internal/services/sse_service.go` — `HandleSSE()`, `Broadcast()`, `Emit()`
+- `backend/internal/services/sse_service.go` — `HandleSSE()`, `Broadcast()`, `Emit()`; header flush fix (`c.Writer.WriteHeader` + `c.Writer.Flush()` before `c.Stream()`)
+- `backend/internal/services/offer_service.go` — `UpdateTranslationFields`
 - `backend/internal/repository/notification_repo.go` — `FindAllAdmin()` for history
 - `backend/internal/repository/device_token_repo.go` — `Upsert()`, `DeleteByToken()`
 - `backend/internal/repository/offer_repo.go` — `FindAll` supports `status=all` (no filter)
@@ -95,31 +98,38 @@
 - `backend/scripts/migrate.go` — `//go:build migration`
 - `backend/Makefile` — targets with `-tags`
 
-### Admin Dashboard (P11+P14+P15)
-- `admin/src/lib/api.ts` — 401 auto-logout interceptor
+### Admin Dashboard (P11+P14+P15+P17)
+- `admin/src/lib/api.ts` — 401 auto-logout interceptor, `upload()` method for FormData
 - `admin/src/components/ui/toast.tsx` — ToastProvider + notify()
 - `admin/src/components/ui/pagination-bar.tsx` — Reusable pagination
 - `admin/src/app/dashboard/page.tsx` — Real stats from `/admin/stats`, chart from `/admin/stats/timeline`, loading skeletons
 - `admin/src/app/dashboard/restaurants/page.tsx` — CRUD table, passes `status=all`
-- `admin/src/app/dashboard/restaurants/_restaurant-dialog.tsx` — Create/edit modal with Sinhala/Tamil translation fields
+- `admin/src/app/dashboard/restaurants/_restaurant-dialog.tsx` — Create/edit modal with cover image upload + Sinhala/Tamil translation fields
 - `admin/src/app/dashboard/offers/page.tsx` — CRUD table, passes `status=all`
 - `admin/src/app/dashboard/offers/_offer-dialog.tsx` — Zod + react-hook-form + file upload + translation fields
 - `admin/src/app/dashboard/users/page.tsx` — Role dropdown + soft-delete
 - `admin/src/app/dashboard/notifications/page.tsx` — Send form + history table
 
-### Flutter (P12+P13+P15)
+### Flutter (P12+P13+P15+P17)
+- `lib/models/paginated_response.dart` — Generic paginated response model consuming backend `pagination` metadata
+- `lib/models/restaurant.dart` — Restaurant model with `coverImage` field
 - `lib/services/fcm_messaging_service.dart` — FCM token management, handlers, permission, local notifications, tap navigation
 - `lib/services/api_client.dart` — HTTP client with `delete()` data body support
 - `lib/services/sse_service.dart` — SSE stream via `dart:io`, parses `event:` / `data:` lines, emits `SSEEvent` objects, auto-reconnect
-- `lib/services/api_restaurant_service.dart` — Restaurant API
+- `lib/services/api_restaurant_service.dart` — Restaurant API, returns `PaginatedResponse<Restaurant>`
+- `lib/services/api_offer_service.dart` — Offer API, returns `PaginatedResponse<Offer>`
 - `lib/services/api_notification_service.dart` — fetch/mark notifications
 - `lib/main.dart` — `_FcmInitializer` widget (FCM init) + `_SseListener` widget (SSE real-time sync)
 - `lib/providers/notification_provider.dart` — Notification state + unread count
 - `lib/providers/auth_provider.dart` — Sign-out calls fcmService?.unregisterToken()
-- `lib/providers/restaurant_provider.dart` — Restaurant list state
-- `lib/providers/offer_provider.dart` — Paginated loading, search, error state
+- `lib/providers/restaurant_provider.dart` — Paginated restaurant list with `hasMore`, `total`, infinite scroll
+- `lib/providers/offer_provider.dart` — Paginated loading from backend metadata, search, error state with retry
 - `lib/screens/notifications_screen.dart` — Notification list with read/unread
-- `lib/screens/restaurants_screen.dart` — Restaurant list with cuisine tags
-- `lib/screens/main_shell.dart` — 5-tab bottom nav with unread badge
+- `lib/screens/restaurants_screen.dart` — Restaurant list with shimmer, pull-to-refresh, infinite scroll, retry button
+- `lib/screens/home_screen.dart` — Offers with shimmer animation, retry button on error
+- `lib/screens/search_screen.dart` — Search with shimmer loading and retry button
+- `lib/screens/favorites_screen.dart` — Favorites with loading state check
+- `lib/widgets/shimmer_loading.dart` — Shimmer skeleton widgets for offers and restaurant cards
+- `lib/widgets/empty_state.dart` — Optional `onRetry` callback + retry button
 - `lib/core/api_config.dart` — Base URL configuration
 - `lib/core/app_routes.dart` — All named routes

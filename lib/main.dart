@@ -136,8 +136,12 @@ class _SseListenerState extends State<_SseListener> {
   Future<void> _initSse() async {
     final sse = SSEService(ApiConfig.baseUrl);
     _sseService = sse;
-    await sse.connect();
-    _subscription = sse.events.listen(_handleEvent);
+    try {
+      await sse.connect();
+      _subscription = sse.events.listen(_handleEvent);
+    } catch (e) {
+      debugPrint('_initSse error: $e');
+    }
   }
 
   void _handleEvent(SSEEvent event) {
@@ -147,15 +151,15 @@ class _SseListenerState extends State<_SseListener> {
       case 'offer.approved':
       case 'offer.updated':
       case 'offer.deleted':
-        apiClient.invalidateCache('/offers');
+        apiClient.clearCache();
         context.read<OfferProvider>().refreshOffers();
         break;
       case 'restaurant.created':
       case 'restaurant.approved':
       case 'restaurant.updated':
       case 'restaurant.deleted':
-        apiClient.invalidateCache('/restaurants');
-        context.read<RestaurantProvider>().loadRestaurants();
+        apiClient.clearCache();
+        context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
         break;
     }
   }

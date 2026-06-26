@@ -48,6 +48,30 @@ func BuildTranslations(nameSi, nameTa, descSi, descTa string) *json.RawMessage {
 	return &raw
 }
 
+func FlattenTranslations(target map[string]interface{}, data *json.RawMessage, fieldMap map[string]string) {
+	if data == nil || len(*data) == 0 {
+		return
+	}
+
+	var translations map[string]map[string]string
+	if err := json.Unmarshal(*data, &translations); err != nil {
+		return
+	}
+
+	for field, langMap := range translations {
+		mappedField, ok := fieldMap[field]
+		if !ok {
+			mappedField = field
+		}
+		for lang, val := range langMap {
+			if val != "" {
+				key := mappedField + "_" + lang
+				target[key] = val
+			}
+		}
+	}
+}
+
 func addTranslation(m map[string]string, lang, val string) map[string]string {
 	if m == nil {
 		m = make(map[string]string)

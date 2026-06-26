@@ -31,6 +31,10 @@ class FavoritesScreen extends StatelessWidget {
             Expanded(
               child: Consumer<OfferProvider>(
                 builder: (context, provider, child) {
+                  if (!provider.hasLoaded) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
                   final offers = provider.favoriteOffers;
 
                   if (offers.isEmpty) {
