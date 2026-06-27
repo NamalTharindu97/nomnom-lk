@@ -1,25 +1,27 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"strings"
 
-	firebase "firebase.google.com/go/v4"
-	"firebase.google.com/go/v4/messaging"
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/config"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/pagination"
-	"google.golang.org/api/option"
+	"golang.org/x/oauth2/google"
 )
 
 type NotificationService struct {
 	notificationRepo *repository.NotificationRepo
 	deviceTokenRepo  *repository.DeviceTokenRepo
-	fcmClient        *messaging.Client
+	credsPath        string
 }
 
 func NewNotificationService(
@@ -27,33 +29,14 @@ func NewNotificationService(
 	deviceTokenRepo *repository.DeviceTokenRepo,
 	cfg *config.FirebaseConfig,
 ) *NotificationService {
-	fcmClient := initFCMClient(cfg)
+	if cfg.CredentialsPath != "" {
+		fmt.Printf("INFO: using Firebase credentials from: %s\n", cfg.CredentialsPath)
+	}
 	return &NotificationService{
 		notificationRepo: notificationRepo,
 		deviceTokenRepo:  deviceTokenRepo,
-		fcmClient:        fcmClient,
+		credsPath:        cfg.CredentialsPath,
 	}
-}
-
-func initFCMClient(cfg *config.FirebaseConfig) *messaging.Client {
-	if cfg.CredentialsPath == "" {
-		return nil
-	}
-
-	opt := option.WithCredentialsFile(cfg.CredentialsPath)
-	app, err := firebase.NewApp(context.Background(), nil, opt)
-	if err != nil {
-		fmt.Printf("WARN: failed to initialize Firebase app: %v\n", err)
-		return nil
-	}
-
-	client, err := app.Messaging(context.Background())
-	if err != nil {
-		fmt.Printf("WARN: failed to initialize FCM client: %v\n", err)
-		return nil
-	}
-
-	return client
 }
 
 func (s *NotificationService) RegisterDevice(userID uuid.UUID, token, platform string) error {
@@ -129,10 +112,6 @@ func (s *NotificationService) SendPush(input SendPushInput) error {
 		return fmt.Errorf("failed to save notifications: %w", err)
 	}
 
-	if s.fcmClient == nil {
-		return nil
-	}
-
 	go s.sendFCMNotifications(tokens, input)
 
 	return nil
@@ -142,41 +121,115 @@ func (s *NotificationService) sendFCMNotifications(tokens []models.DeviceToken, 
 	ctx := context.Background()
 
 	for _, t := range tokens {
-		message := &messaging.Message{
-			Token: t.Token,
-			Notification: &messaging.Notification{
-				Title: input.Title,
-				Body:  input.Body,
+		s.sendFCMDirect(ctx, t.Token, input)
+	}
+}
+
+func (s *NotificationService) sendFCMDirect(ctx context.Context, token string, input SendPushInput) {
+	raw, err := os.ReadFile(s.credsPath)
+	if err != nil {
+		fmt.Printf("WARN: failed to read Firebase credentials: %v\n", err)
+		return
+	}
+
+	var credsJSON struct {
+		ProjectID string `json:"project_id"`
+	}
+	if err := json.Unmarshal(raw, &credsJSON); err != nil || credsJSON.ProjectID == "" {
+		fmt.Println("WARN: could not determine Firebase project ID")
+		return
+	}
+
+	// Use cloud-platform scope token for FCM API auth
+	creds, err := google.CredentialsFromJSON(ctx, raw, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		fmt.Printf("WARN: failed to create credentials: %v\n", err)
+		return
+	}
+
+	if creds.TokenSource == nil {
+		fmt.Println("WARN: no token source from credentials")
+		return
+	}
+
+	tok, err := creds.TokenSource.Token()
+	if err != nil {
+		fmt.Printf("WARN: failed to get access token: %v\n", err)
+		return
+	}
+
+	data := make(map[string]string)
+	if input.Data != nil {
+		for k, v := range input.Data {
+			data[k] = v
+		}
+	}
+	if input.Type != "" {
+		data["type"] = input.Type
+	}
+
+	msg := map[string]any{
+		"token": token,
+		"notification": map[string]string{
+			"title": input.Title,
+			"body":  input.Body,
+		},
+		"android": map[string]any{
+			"priority": "high",
+			"notification": map[string]string{
+				"channel_id": "nomnom_notifications",
 			},
-		}
+		},
+	}
+	if len(data) > 0 {
+		msg["data"] = data
+	}
 
-		if input.Data != nil {
-			message.Data = input.Data
-		}
+	body, _ := json.Marshal(map[string]any{"message": msg})
 
-		if input.Type != "" {
-			if message.Data == nil {
-				message.Data = make(map[string]string)
-			}
-			message.Data["type"] = input.Type
-		}
+	url := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credsJSON.ProjectID)
 
-		if _, err := s.fcmClient.Send(ctx, message); err != nil {
-			fmt.Printf("WARN: FCM send failed for token %s: %v\n", t.Token[:20], err)
-			if isUnregisteredError(err) {
-				if delErr := s.deviceTokenRepo.DeleteByTokenValue(t.Token); delErr != nil {
-					fmt.Printf("WARN: failed to delete stale token: %v\n", delErr)
-				} else {
-					fmt.Printf("INFO: deleted stale token %s\n", t.Token[:20])
-				}
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	if err != nil {
+		fmt.Printf("WARN: failed to create FCM request: %v\n", err)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("WARN: FCM HTTP request failed: %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode == 200 {
+		fmt.Printf("INFO: FCM sent to token %s\n", token[:20])
+		return
+	}
+
+	fmt.Printf("WARN: FCM HTTP error %d for token %s: %s\n", resp.StatusCode, token[:20], string(respBody))
+	var fcmResp struct {
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(respBody, &fcmResp) == nil {
+		if isUnregisteredByMessage(fcmResp.Error.Message) {
+			if delErr := s.deviceTokenRepo.DeleteByTokenValue(token); delErr != nil {
+				fmt.Printf("WARN: failed to delete stale token: %v\n", delErr)
 			}
 		}
 	}
 }
 
-func isUnregisteredError(err error) bool {
-	msg := err.Error()
-	return strings.Contains(msg, "NotRegistered") || strings.Contains(msg, "UNREGISTERED") || strings.Contains(msg, "Unregistered")
+func isUnregisteredByMessage(msg string) bool {
+	return strings.Contains(msg, "NotRegistered") ||
+		strings.Contains(msg, "Unregistered") ||
+		strings.Contains(msg, "UNREGISTERED")
 }
+
 
 

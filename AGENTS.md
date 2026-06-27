@@ -34,6 +34,13 @@
 - **P19: Fix Notification Tap Navigation + Backend Silent Success** — `_navigateToNotifications` parses payload: UUID routes to offer detail; `"notification"`/`"admin"`/null routes to notifications tab (index 3); home route moved to `onGenerateRoute` to accept `RouteSettings.arguments` for initial tab index; `MainShell` accepts `initialTab` param and loads notifications when tab=3 via `addPostFrameCallback`; backend `SendPush` returns error when `len(tokens) == 0` instead of silent nil. Merged to master.
 - **P20: Robustness Fixes** — `sendFCMNotifications` deletes stale device tokens on `NotRegistered`/`Unregistered` FCM errors; `POST /admin/notifications/push` rate-limited to 1 per 10s per admin user via in-memory `rateLimiter`; admin notifications page auto-clears result message after 5s; Flutter `markAsRead` checks `isRead` before decrementing unread count to prevent negative. Merged to master.
 
+### Done (Fix)
+- **FCM Fix — Android Push Notifications Working E2E** — Three fixes:
+  1. **Android google-services plugin**: Added `id("com.google.gms.google-services")` to `android/settings.gradle.kts` and `android/app/build.gradle.kts`. Without this, `Firebase.initializeApp()` silently failed and FCM tokens were generated under Google's internal project, causing `SENDER_ID_MISMATCH`.
+  2. **Backend FCM direct HTTP**: Replaced Firebase Admin SDK (`firebase.google.com/go/v4`) with direct HTTP to FCM v1 API using `google.CredentialsFromJSON` with `cloud-platform` scope. Added `android` channel config (`nomnom_notifications`, `high` priority) so background/terminated notifications use the custom channel. Removed `initFCMClient()` and Firebase SDK dependency.
+  3. **One-time FCM token migration**: `_getToken()` in `FcmMessagingService` calls `deleteToken()` + `getToken()` on first launch (tracked via `shared_preferences` flag `fcm_token_migrated`) to force a fresh token under the correct Firebase project. Only runs once per installation.
+  - Verified: FCM v1 API returns HTTP 200 (`INFO: FCM sent`). Notifications arrive on Android emulator in foreground, background, and killed (non-force-stop) states. `dumpsys notification` confirms notifications posted to `nomnom_notifications` channel with importance=4.
+
 ### Blocked
 - (none)
 
@@ -68,10 +75,11 @@
 
 ## Critical Context
 - All branches P1–P17 merged to master and preserved on remote.
-- Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on iPhone 17 Pro simulator.
+- Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on Pixel 8 Pro Android emulator.
 - Docker services (postgres 16, redis 7, minio) running with seeded data.
-- Backend FCM client already initialized in `NotificationService` — `POST /admin/notifications/push` already sends via FCM in real goroutine.
+- Backend FCM via direct HTTP to `https://fcm.googleapis.com/v1/projects/nomnom-cfe32/messages:send` using `cloud-platform` OAuth2 scope. No Firebase Admin SDK dependency.
 - `Flutter` `pubspec.yaml` has `firebase_messaging: ^15.2.10` resolved.
+- **Android google-services plugin** required for Firebase to work on Android (processes `google-services.json` at build time). Without it, FCM tokens are generated under wrong project → `SENDER_ID_MISMATCH`.
 - API routes confirmable at startup logs: `GET /admin/stats`, `GET /admin/stats/timeline`, `GET /admin/notifications`, `POST /admin/notifications/push`, `POST /devices`, `DELETE /devices`.
 - Translations stored as JSONB column on restaurants/offers. Admin dialog sends `name_si`, `name_ta`, `description_si`, `description_ta` for restaurant and `title_si`, `title_ta`, `desc_si`, `desc_ta` for offer — merged into JSONB by backend `TranslationService`.
 - **Offer dialog field name mismatch:** The admin offer dialog sends `desc_si`/`desc_ta` but the backend DTO expects `description_si`/`description_ta`. The dialog needs updating to match backend field names. — ✅ **Fixed in P17**
@@ -85,7 +93,7 @@
 - `backend/internal/handlers/offer_handler.go` — `offerToMap` now includes `status`, `restaurant_id`, `start_date`, `translations` fields; SSE emits on CRUD
 - `backend/internal/handlers/restaurant_handler.go` — `contact_phone`, `description`, `translations` in response; SSE emits on CRUD
 - `backend/internal/handlers/upload_handler.go` — cover image upload support
-- `backend/internal/services/notification_service.go` — FCM `initFCMClient`, `SendPush()` goroutine
+- `backend/internal/services/notification_service.go` — FCM via direct HTTP (`sendFCMDirect`) with `google.CredentialsFromJSON` + `cloud-platform` scope; Android channel config (`nomnom_notifications`, `high` priority); stale token deletion on `UNREGISTERED`
 - `backend/internal/services/translation_service.go` — `MergeIntoJSONB()` helper
 - `backend/internal/services/sse_service.go` — `HandleSSE()`, `Broadcast()`, `Emit()`; header flush fix (`c.Writer.WriteHeader` + `c.Writer.Flush()` before `c.Stream()`)
 - `backend/internal/services/offer_service.go` — `UpdateTranslationFields`
@@ -118,7 +126,7 @@
 ### Flutter (P12+P13+P15+P17)
 - `lib/models/paginated_response.dart` — Generic paginated response model consuming backend `pagination` metadata
 - `lib/models/restaurant.dart` — Restaurant model with `coverImage` field
-- `lib/services/fcm_messaging_service.dart` — FCM token management, handlers, permission, local notifications, tap navigation
+- `lib/services/fcm_messaging_service.dart` — FCM token management, handlers, permission, local notifications, tap navigation, one-time `deleteToken()` migration with `shared_preferences`
 - `lib/services/api_client.dart` — HTTP client with `delete()` data body support
 - `lib/services/sse_service.dart` — SSE stream via `dart:io`, parses `event:` / `data:` lines, emits `SSEEvent` objects, auto-reconnect
 - `lib/services/api_restaurant_service.dart` — Restaurant API, returns `PaginatedResponse<Restaurant>`

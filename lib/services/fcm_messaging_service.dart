@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/notification_provider.dart';
 import 'api_client.dart';
@@ -73,7 +74,19 @@ class FcmMessagingService {
 
   Future<void> _getToken() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('fcm_token_migrated') != true) {
+        try {
+          debugPrint('FCM one-time token migration: deleting old token...');
+          await _messaging.deleteToken();
+          await prefs.setBool('fcm_token_migrated', true);
+          debugPrint('FCM migration done');
+        } catch (e) {
+          debugPrint('FCM migration deleteToken error: $e');
+        }
+      }
       _currentToken = await _messaging.getToken();
+      debugPrint('FCM token: $_currentToken');
       if (_currentToken != null) {
         await _registerToken(_currentToken!);
       }
