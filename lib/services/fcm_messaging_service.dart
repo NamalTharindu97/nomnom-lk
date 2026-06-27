@@ -22,9 +22,9 @@ class FcmMessagingService {
   final _notifsPlugin = FlutterLocalNotificationsPlugin();
 
   String? _currentToken;
-  VoidCallback? _onNavigate;
+  void Function(String?)? _onNavigate;
 
-  Future<void> initialize({VoidCallback? onNavigate}) async {
+  Future<void> initialize({void Function(String?)? onNavigate}) async {
     _onNavigate = onNavigate;
     await _initLocalNotifications();
     await _requestPermission();
@@ -156,8 +156,12 @@ class FcmMessagingService {
   }
 
   void _navigateFromPayload(String? payload) {
-    if (_onNavigate == null) return;
-    _onNavigate!();
+    _onNavigate?.call(payload);
+  }
+
+  Future<void> registerCurrentToken() async {
+    if (_currentToken == null) return;
+    await _registerToken(_currentToken!);
   }
 
   Future<void> _registerToken(String token) async {

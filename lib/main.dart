@@ -85,7 +85,7 @@ class _FcmInitializerState extends State<_FcmInitializer> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _initFcm());
   }
 
-  void _navigateToNotifications() {
+  void _navigateToNotifications(String? payload) {
     final nav = Navigator.of(context, rootNavigator: true);
     if (nav.canPop()) {
       nav.pushNamed(AppRoutes.home);
@@ -96,11 +96,8 @@ class _FcmInitializerState extends State<_FcmInitializer> {
 
   Future<void> _initFcm() async {
     final notificationProvider = context.read<NotificationProvider>();
+    final apiClient = context.read<ApiClient>();
     try {
-      await Firebase.initializeApp();
-    } catch (_) {}
-    try {
-      final apiClient = ApiClient();
       final fcm = FcmMessagingService(
         apiClient: apiClient,
         notificationProvider: notificationProvider,

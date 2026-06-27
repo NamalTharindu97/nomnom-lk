@@ -25,6 +25,9 @@ class AuthProvider extends ChangeNotifier {
     _user = await _authService.restoreUser();
     _isInitialized = true;
     _setLoading(false);
+    if (_user?.isLoggedIn == true) {
+      await fcmService?.registerCurrentToken();
+    }
   }
 
   Future<void> signInWithFirebase(String firebaseToken) async {
@@ -32,6 +35,7 @@ class AuthProvider extends ChangeNotifier {
     _user = await _authService.signInWithFirebase(firebaseToken);
     _isInitialized = true;
     _setLoading(false);
+    await fcmService?.registerCurrentToken();
   }
 
   Future<void> signInWithEmail(String email, String password) async {
@@ -39,6 +43,7 @@ class AuthProvider extends ChangeNotifier {
     _user = await _authService.login(email, password);
     _isInitialized = true;
     _setLoading(false);
+    await fcmService?.registerCurrentToken();
   }
 
   Future<void> continueAsGuest() async {
