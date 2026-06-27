@@ -106,7 +106,7 @@ func (s *NotificationService) SendPush(input SendPushInput) error {
 	}
 
 	if len(tokens) == 0 {
-		return nil
+		return fmt.Errorf("no registered devices for target")
 	}
 
 	notifications := make([]models.Notification, len(tokens))

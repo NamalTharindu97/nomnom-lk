@@ -87,11 +87,20 @@ class _FcmInitializerState extends State<_FcmInitializer> {
 
   void _navigateToNotifications(String? payload) {
     final nav = Navigator.of(context, rootNavigator: true);
-    if (nav.canPop()) {
-      nav.pushNamed(AppRoutes.home);
-    } else {
-      nav.pushNamed(AppRoutes.home);
+    if (payload == null || payload == 'notification' || payload == 'admin') {
+      nav.pushNamed(AppRoutes.home, arguments: 3);
+      return;
     }
+    if (payload.startsWith('offer_')) {
+      nav.pushNamed(AppRoutes.offerDetails, arguments: payload.substring(6));
+      return;
+    }
+    final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+    if (uuidRegex.hasMatch(payload)) {
+      nav.pushNamed(AppRoutes.offerDetails, arguments: payload);
+      return;
+    }
+    nav.pushNamed(AppRoutes.home);
   }
 
   Future<void> _initFcm() async {
@@ -187,10 +196,20 @@ class NomNomApp extends StatelessWidget {
       routes: {
         AppRoutes.splash: (_) => const SplashScreen(),
         AppRoutes.login: (_) => const LoginScreen(),
-        AppRoutes.home: (_) => const MainShell(),
         AppRoutes.restaurants: (_) => const RestaurantsScreen(),
       },
       onGenerateRoute: (settings) {
+        if (settings.name == AppRoutes.home) {
+          final initialTab = switch (settings.arguments) {
+            final int tab => tab,
+            _ => 0,
+          };
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => MainShell(initialTab: initialTab),
+          );
+        }
+
         if (settings.name == AppRoutes.offerDetails) {
           final offerId = switch (settings.arguments) {
             final Offer offer => offer.id,

@@ -12,19 +12,26 @@ import 'profile_screen.dart';
 import 'search_screen.dart';
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  final int initialTab;
+  const MainShell({super.key, this.initialTab = 0});
 
   @override
   State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialTab;
     WidgetsBinding.instance.addObserver(this);
+    if (_selectedIndex == 3) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<NotificationProvider>().loadNotifications();
+      });
+    }
   }
 
   @override
