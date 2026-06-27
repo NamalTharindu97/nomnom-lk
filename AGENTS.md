@@ -41,8 +41,20 @@
   3. **One-time FCM token migration**: `_getToken()` in `FcmMessagingService` calls `deleteToken()` + `getToken()` on first launch (tracked via `shared_preferences` flag `fcm_token_migrated`) to force a fresh token under the correct Firebase project. Only runs once per installation.
   - Verified: FCM v1 API returns HTTP 200 (`INFO: FCM sent`). Notifications arrive on Android emulator in foreground, background, and killed (non-force-stop) states. `dumpsys notification` confirms notifications posted to `nomnom_notifications` channel with importance=4.
 
+### Done
+- **iOS 16 Pro Physical Device Testing** — Connected iPhone 16 Pro (iOS 26.5) for iOS push testing. Findings:
+  - Flutter 3.29.3 debug mode crashes on iOS 26.5+ physical devices (known JIT issue).
+  - Profile/release mode also had install issues via `devicectl`.
+  - Workaround: Built release `.app` and installed via `ios-deploy` (Homebrew tool).
+  - White screen on launch → debug mode crash on home screen tap (no JIT support).
+  - Reverted iOS changes: restored `aps-environment` entitlement and removed `NSAllowsArbitraryLoads`.
+  - `DEVELOPMENT_TEAM = GBBV66G8DH` persisted in `project.pbxproj` for future iOS builds.
+- **Admin Account Created** — `namal@nomnom.lk` / `Namal@123` registered and promoted to `admin` role via `PUT /users/:id`. Works for both mobile app and admin dashboard login.
+
 ### Blocked
-- (none)
+- **iOS device debug mode** — Flutter 3.29.3 incompatible with iOS 26.5 JIT. No workaround without Flutter upgrade.
+- **iOS push notifications** — Requires paid Apple Developer Account ($99/yr) for APNs entitlement.
+- **Google Sign-In on Android** — Not yet working. Missing SHA-1 fingerprint in Firebase Console (see Next Steps).
 
 ## Key Decisions
 - All phase branches merged to master; master is current active branch.
@@ -71,7 +83,11 @@
 - **Background process management:** All three services (backend, admin, Flutter) run as `nohup` background processes; logs go to `*/logs/*.log`.
 
 ## Next Steps
-- (none — all 20 phases complete, on master)
+1. **Fix Google Sign-In on Android** — Add debug SHA-1 fingerprint to Firebase Console:
+   - Run `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1`
+   - Add to Firebase Console → Project Settings → General → Android app → Add fingerprint
+   - Verify Google Sign-In enabled in Authentication → Sign-in methods
+   - Rebuild and test "Continue with Google" on Android emulator
 
 ## Critical Context
 - All branches P1–P17 merged to master and preserved on remote.
