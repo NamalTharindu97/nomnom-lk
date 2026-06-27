@@ -30,6 +30,9 @@
 
 ### Done
 - **P17: Seed Data with MinIO Images + Data Loading Optimization** — Seed script with MinIO image upload; fix offer dialog field name mismatch (`desc_si`/`desc_ta` → `description_si`/`description_ta`); `CachedNetworkImage` for image caching; Dio interceptor cache with 2-min TTL + SSE-driven cache invalidation; pagination metadata (total/total_pages) + shimmer loading + retry on error + restaurant cover image upload; translation fields flattened in API responses (`FlattenTranslations`); `offerToMap` includes `restaurant_id`, `start_date`, `translations`; `contact_phone` field fix in restaurant dialog. Merged to master.
+- **P18: Fix Device Registration** — `_FcmInitializer` reuses shared `ApiClient` from widget tree (via `context.read<ApiClient>()`) instead of creating a duplicate instance without auth; added `registerCurrentToken()` to `FcmMessagingService`; `AuthProvider.restoreSession()` and login methods call `fcmService?.registerCurrentToken()` after auth confirmed. Merged to master.
+- **P19: Fix Notification Tap Navigation + Backend Silent Success** — `_navigateToNotifications` parses payload: UUID routes to offer detail; `"notification"`/`"admin"`/null routes to notifications tab (index 3); home route moved to `onGenerateRoute` to accept `RouteSettings.arguments` for initial tab index; `MainShell` accepts `initialTab` param and loads notifications when tab=3 via `addPostFrameCallback`; backend `SendPush` returns error when `len(tokens) == 0` instead of silent nil. Merged to master.
+- **P20: Robustness Fixes** — `sendFCMNotifications` deletes stale device tokens on `NotRegistered`/`Unregistered` FCM errors; `POST /admin/notifications/push` rate-limited to 1 per 10s per admin user via in-memory `rateLimiter`; admin notifications page auto-clears result message after 5s; Flutter `markAsRead` checks `isRead` before decrementing unread count to prevent negative. Merged to master.
 
 ### Blocked
 - (none)
@@ -48,7 +51,9 @@
 - **Retry on error:** `EmptyState` widget has optional `onRetry` callback and `retryLabel`. Error states on home, restaurants, and search screens show a retry button. Restaurants screen also has pull-to-refresh.
 - **Restaurant cover image upload:** Admin restaurant dialog now has image file input and upload via `/upload/multiple` endpoint. Sends `cover_image` in API body.
 - **Build tags on script files:** `//go:build seed` / `//go:build migration` prevents `go build ./...` conflict from two `main()` functions in `scripts/` directory.
-- **FCM service init:** `_FcmInitializer` stateful widget at app root runs `addPostFrameCallback` to avoid blocking UI; creates its own `ApiClient` instance. `NotificationProvider` captured before async gap to avoid `use_build_context_synchronously` lint.
+- **FCM service init:** `_FcmInitializer` stateful widget at app root runs `addPostFrameCallback` to avoid blocking UI; uses shared `ApiClient` from widget tree (via `context.read<ApiClient>()`). `NotificationProvider` captured before async gap to avoid `use_build_context_synchronously` lint.
+- **Rate limiter:** In-memory per-user `rateLimiter` with `sync.Mutex` for `POST /admin/notifications/push` — 10s cooldown per admin user (identified by UUID from JWT).
+- **Stale token cleanup:** FCM `Send()` error message checked via `strings.Contains()` for `"NotRegistered"`/`"UNREGISTERED"`/`"Unregistered"`; matching tokens deleted from DB via `DeleteByTokenValue`.
 - **firebase_messaging version:** Pinned to `^15.2.10` for compatibility with existing `firebase_core ^3.6.0`.
 - **Android minSdk:** Set to 23 for Firebase Auth compatibility (firebase-auth 23.x requires 23). Core library desugaring enabled for `flutter_local_notifications`.
 - **Notification tap nav:** All three tap scenarios (foreground local notification, background `onMessageOpenedApp`, terminated `getInitialMessage`) route to home screen via an `onNavigate` callback.
@@ -59,7 +64,7 @@
 - **Background process management:** All three services (backend, admin, Flutter) run as `nohup` background processes; logs go to `*/logs/*.log`.
 
 ## Next Steps
-- (none — all 17 phases complete, on master)
+- (none — all 20 phases complete, on master)
 
 ## Critical Context
 - All branches P1–P17 merged to master and preserved on remote.
