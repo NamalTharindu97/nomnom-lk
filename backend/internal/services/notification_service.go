@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
@@ -162,8 +163,20 @@ func (s *NotificationService) sendFCMNotifications(tokens []models.DeviceToken, 
 
 		if _, err := s.fcmClient.Send(ctx, message); err != nil {
 			fmt.Printf("WARN: FCM send failed for token %s: %v\n", t.Token[:20], err)
+			if isUnregisteredError(err) {
+				if delErr := s.deviceTokenRepo.DeleteByTokenValue(t.Token); delErr != nil {
+					fmt.Printf("WARN: failed to delete stale token: %v\n", delErr)
+				} else {
+					fmt.Printf("INFO: deleted stale token %s\n", t.Token[:20])
+				}
+			}
 		}
 	}
+}
+
+func isUnregisteredError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "NotRegistered") || strings.Contains(msg, "UNREGISTERED") || strings.Contains(msg, "Unregistered")
 }
 
 

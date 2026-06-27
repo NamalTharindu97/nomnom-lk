@@ -42,7 +42,7 @@ class NotificationProvider extends ChangeNotifier {
     try {
       await _service.markAsRead(id);
       final index = _notifications.indexWhere((n) => n.id == id);
-      if (index != -1) {
+      if (index != -1 && !_notifications[index].isRead) {
         _notifications[index] =
             _notifications[index].copyWith(isRead: true);
         _unreadCount = (_unreadCount - 1).clamp(0, _unreadCount);

@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"sync"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/dto/request"
@@ -9,6 +12,25 @@ import (
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
 )
+
+type rateLimiter struct {
+	mu       sync.Mutex
+	attempts map[string]time.Time
+}
+
+func (rl *rateLimiter) Allow(key string, interval time.Duration) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	last, ok := rl.attempts[key]
+	now := time.Now()
+	if ok && now.Sub(last) < interval {
+		return false
+	}
+	rl.attempts[key] = now
+	return true
+}
+
+var pushRateLimiter = &rateLimiter{attempts: make(map[string]time.Time)}
 
 type NotificationHandler struct {
 	service *services.NotificationService
@@ -122,6 +144,12 @@ func (h *NotificationHandler) UnreadCount(c *gin.Context) {
 }
 
 func (h *NotificationHandler) SendPush(c *gin.Context) {
+	userID, _ := middleware.GetUserID(c)
+	if !pushRateLimiter.Allow(userID.String(), 10*time.Second) {
+		response.Error(c, 429, "rate_limit", "rate limit exceeded, try again later")
+		return
+	}
+
 	var req request.SendPushRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, []response.ErrorDetail{

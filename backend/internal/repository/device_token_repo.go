@@ -38,6 +38,11 @@ func (r *DeviceTokenRepo) FindByUserID(userID uuid.UUID) ([]models.DeviceToken, 
 	return tokens, err
 }
 
+func (r *DeviceTokenRepo) DeleteByTokenValue(token string) error {
+	return r.db.Where("token = ?", token).
+		Delete(&models.DeviceToken{}).Error
+}
+
 func (r *DeviceTokenRepo) FindAll() ([]models.DeviceToken, error) {
 	var tokens []models.DeviceToken
 	err := r.db.Find(&tokens).Error

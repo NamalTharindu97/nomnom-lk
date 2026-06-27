@@ -28,6 +28,12 @@ export default function NotificationsPage() {
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
 
+  useEffect(() => {
+    if (!result) return
+    const timer = setTimeout(() => setResult(null), 5000)
+    return () => clearTimeout(timer)
+  }, [result])
+
   const [history, setHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [page, setPage] = useState(1)
