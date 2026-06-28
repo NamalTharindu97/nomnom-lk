@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -15,22 +16,93 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool _showEmailForm = false;
+  bool _obscurePassword = true;
+  bool _isGoogleLoading = false;
+  late final AnimationController _animCtrl;
+  late final Animation<double> _logoAnim;
+  late final Animation<double> _titleAnim;
+  late final Animation<double> _googleBtnAnim;
+  late final Animation<double> _dividerAnim;
+  late final Animation<double> _emailBtnAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..forward();
+
+    _logoAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
+    );
+    _titleAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: const Interval(0.2, 0.55, curve: Curves.easeOutCubic),
+    );
+    _googleBtnAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: const Interval(0.4, 0.7, curve: Curves.easeOutCubic),
+    );
+    _dividerAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: const Interval(0.55, 0.8, curve: Curves.easeOutCubic),
+    );
+    _emailBtnAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: const Interval(0.65, 0.95, curve: Curves.easeOutCubic),
+    );
+  }
 
   @override
   void dispose() {
+    _animCtrl.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  String _parseAuthError(Object e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map) {
+        final error = data['error'];
+        if (error is Map && error['message'] is String) {
+          final msg = error['message'] as String;
+          if (msg.contains('invalid email or password')) {
+            return 'Invalid email or password.';
+          }
+          if (msg.contains('account is deactivated')) {
+            return 'Account has been deactivated. Contact support.';
+          }
+          if (msg.contains('please sign in with Google')) {
+            return 'This email uses Google Sign-In.';
+          }
+          if (msg.contains('verify your email')) {
+            return msg;
+          }
+          return msg;
+        }
+      }
+    }
+    return 'Login failed. Try again.';
+  }
+
   Future<void> _signInWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
     try {
       final googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
+      if (googleUser == null) {
+        if (mounted) setState(() => _isGoogleLoading = false);
+        return;
+      }
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -52,24 +124,22 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Google sign-in error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in failed. Try again.')),
+          SnackBar(content: Text('Google sign-in failed: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
   Future<void> _signInWithEmail() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    if (!_formKey.currentState!.validate()) return;
 
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password.')),
-      );
-      return;
-    }
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text;
 
     try {
       await context.read<AuthProvider>().signInWithEmail(email, password);
@@ -82,24 +152,27 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login failed. Check your credentials.')),
-        );
+        final msg = _parseAuthError(e);
+        if (msg.contains('verify your email')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Please verify your email first'),
+              action: SnackBarAction(
+                label: 'Resend',
+                onPressed: () => Navigator.of(context).pushReplacementNamed(
+                  AppRoutes.verifyEmail,
+                  arguments: email,
+                ),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg)),
+          );
+        }
       }
     }
-  }
-
-  Future<void> _continueAsGuest() async {
-    await context.read<AuthProvider>().continueAsGuest();
-
-    if (!mounted) {
-      return;
-    }
-
-    await Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.home,
-      (_) => false,
-    );
   }
 
   @override
@@ -120,86 +193,242 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         child: SafeArea(
-          child: Selector<AuthProvider, bool>(
-            selector: (_, provider) => provider.isLoading,
-            builder: (context, isLoading, child) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const AppLogo(),
-                    const SizedBox(height: 28),
-                    Text(
-                      'Daily Sri Lankan food deals, served dark and fresh.',
-                      style: textTheme.headlineSmall?.copyWith(
-                        color: AppColors.cream,
-                        fontWeight: FontWeight.w900,
-                        height: 1.12,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Find kottu, hoppers, rice packs, short eats, and local favorites near you.',
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: AppColors.muted,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    ElevatedButton.icon(
-                      onPressed: isLoading ? null : _signInWithGoogle,
-                      icon: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.g_mobiledata_rounded, size: 30),
-                      label: const Text('Continue with Google'),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_showEmailForm) ...[
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          hintText: 'Email address',
-                          prefixIcon: Icon(Icons.mail_outline_rounded),
+          child: Center(
+            child: Selector<AuthProvider, bool>(
+              selector: (_, provider) => provider.isLoading,
+              builder: (context, isLoading, child) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 24),
+                      FadeTransition(
+                        opacity: _logoAnim,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.8, end: 1).animate(
+                            CurvedAnimation(
+                              parent: _animCtrl,
+                              curve: const Interval(
+                                0.0, 0.4, curve: Curves.easeOutBack,
+                              ),
+                            ),
+                          ),
+                          child: const AppLogo(),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          hintText: 'Password',
-                          prefixIcon: Icon(Icons.lock_outline_rounded),
+                      const SizedBox(height: 28),
+                      SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.3),
+                          end: Offset.zero,
+                        ).animate(_titleAnim),
+                        child: FadeTransition(
+                          opacity: _titleAnim,
+                          child: Text(
+                            "Find Sri Lanka's Best\nFood Deals",
+                            textAlign: TextAlign.center,
+                            style: textTheme.headlineMedium?.copyWith(
+                              color: AppColors.cream,
+                              fontWeight: FontWeight.w900,
+                              height: 1.15,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: isLoading ? null : _signInWithEmail,
-                        icon: const Icon(Icons.arrow_forward_rounded),
-                        label: const Text('Sign in with email'),
+                      const SizedBox(height: 44),
+                      SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.3),
+                          end: Offset.zero,
+                        ).animate(_googleBtnAnim),
+                        child: FadeTransition(
+                          opacity: _googleBtnAnim,
+                            child: ElevatedButton.icon(
+                                onPressed: isLoading || _isGoogleLoading ? null : _signInWithGoogle,
+                                icon: isLoading || _isGoogleLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.deepCharcoal,
+                                        ),
+                                      )
+                                    : const Icon(Icons.g_mobiledata_rounded, size: 28),
+                                label: Text(isLoading || _isGoogleLoading ? 'Signing in...' : 'Continue with Google'),
+                          ),
+                        ),
                       ),
-                    ] else ...[
-                      OutlinedButton.icon(
-                        onPressed: () => setState(() => _showEmailForm = true),
-                        icon: const Icon(Icons.mail_outline_rounded),
-                        label: const Text('Continue with email'),
+                      const SizedBox(height: 24),
+                      FadeTransition(
+                        opacity: _dividerAnim,
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Divider(color: AppColors.cardElevated),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              child: Text(
+                                'or continue with',
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ),
+                            const Expanded(
+                              child: Divider(color: AppColors.cardElevated),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 24),
+                      SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.3),
+                          end: Offset.zero,
+                        ).animate(_emailBtnAnim),
+                        child: FadeTransition(
+                          opacity: _emailBtnAnim,
+                          child: AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 300),
+                            crossFadeState: _showEmailForm
+                                ? CrossFadeState.showSecond
+                                : CrossFadeState.showFirst,
+                            firstChild: SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () =>
+                                    setState(() => _showEmailForm = true),
+                                icon: const Icon(Icons.mail_outline_rounded),
+                                label: const Text('Continue with email'),
+                              ),
+                            ),
+                            secondChild: Form(
+                              key: _formKey,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.cardDark,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  children: [
+                                    TextFormField(
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      textInputAction: TextInputAction.next,
+                                      maxLength: 254,
+                                      validator: (v) {
+                                        if (v == null || v.trim().isEmpty) {
+                                          return 'Enter your email';
+                                        }
+                                        if (!RegExp(
+                                                r'^[^@]+@[^@]+\.[^@]+$')
+                                            .hasMatch(v.trim())) {
+                                          return 'Enter a valid email';
+                                        }
+                                        return null;
+                                      },
+                                      decoration: const InputDecoration(
+                                        hintText: 'Email address',
+                                        counterText: '',
+                                        prefixIcon: Icon(
+                                            Icons.mail_outline_rounded),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    TextFormField(
+                                      controller: _passwordController,
+                                      obscureText: _obscurePassword,
+                                      textInputAction: TextInputAction.done,
+                                      maxLength: 128,
+                                      onFieldSubmitted: (_) =>
+                                          _signInWithEmail(),
+                                      validator: (v) {
+                                        if (v == null || v.isEmpty) {
+                                          return 'Enter your password';
+                                        }
+                                        if (v.length < 8) {
+                                          return 'At least 8 characters';
+                                        }
+                                        return null;
+                                      },
+                                      decoration: InputDecoration(
+                                        hintText: 'Password',
+                                        counterText: '',
+                                        prefixIcon: const Icon(
+                                            Icons.lock_outline_rounded),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons
+                                                    .visibility_off_rounded
+                                                : Icons.visibility_rounded,
+                                          ),
+                                          onPressed: () => setState(() =>
+                                              _obscurePassword =
+                                                  !_obscurePassword),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: isLoading || _isGoogleLoading
+                                            ? null
+                                            : _signInWithEmail,
+                                        icon: const Icon(
+                                            Icons.arrow_forward_rounded),
+                                        label: const Text('Sign in'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      FadeTransition(
+                        opacity: _emailBtnAnim,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Don't have an account? ",
+                              style: textTheme.bodySmall?.copyWith(
+                                color: AppColors.muted,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => Navigator.of(context).pushNamed(
+                                AppRoutes.register,
+                              ),
+                              child: Text(
+                                'Sign Up',
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: AppColors.curry,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
                     ],
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: isLoading ? null : _continueAsGuest,
-                      child: const Text('Skip for now'),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),

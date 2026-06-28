@@ -22,13 +22,13 @@ func NewAuthHandler(authService *services.AuthService, firebaseService *services
 	}
 }
 
-// Register creates a new user with email & password.
+// Register creates a new user with email & password and sends verification code.
 // @Summary Register a new user
 // @Tags Auth
 // @Accept json
 // @Produce json
 // @Param body body request.RegisterRequest true "Registration details"
-// @Success 201 {object} response.AuthResponse
+// @Success 201 {object} map[string]string
 // @Failure 400 {object} response.ErrorBody
 // @Failure 409 {object} response.ErrorBody
 // @Router /auth/register [post]
@@ -41,8 +41,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	result, err := h.authService.Register(req.Email, req.Password, req.Name)
-	if err != nil {
+	if err := h.authService.Register(req.Email, req.Password, req.Name); err != nil {
 		if err.Error() == "email already registered" {
 			response.Error(c, http.StatusConflict, "CONFLICT", err.Error())
 			return
@@ -51,7 +50,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, result)
+	if err := h.authService.SendVerificationCode(req.Email); err != nil {
+		c.JSON(http.StatusCreated, gin.H{"message": "Account created. Verification email could not be sent. Try resending."})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Verification code sent to your email"})
 }
 
 // Login authenticates a user with email & password.
@@ -122,6 +126,59 @@ func (h *AuthHandler) FirebaseLogin(c *gin.Context) {
 	result, err := h.authService.FirebaseLogin(firebaseUID, email, name)
 	if err != nil {
 		response.InternalError(c, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// SendVerification sends a verification code to the user's email.
+// @Summary Send verification code
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body request.SendVerificationRequest true "Email"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} response.ErrorBody
+// @Router /auth/send-verification [post]
+func (h *AuthHandler) SendVerification(c *gin.Context) {
+	var req request.SendVerificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, []response.ErrorDetail{
+			{Field: "body", Message: err.Error()},
+		})
+		return
+	}
+
+	if err := h.authService.SendVerificationCode(req.Email); err != nil {
+		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Verification code sent"})
+}
+
+// VerifyEmail verifies a user's email with the code sent to their email.
+// @Summary Verify email with code
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body request.VerifyEmailRequest true "Email and verification code"
+// @Success 200 {object} response.AuthResponse
+// @Failure 400 {object} response.ErrorBody
+// @Router /auth/verify-email [post]
+func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+	var req request.VerifyEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, []response.ErrorDetail{
+			{Field: "body", Message: err.Error()},
+		})
+		return
+	}
+
+	result, err := h.authService.VerifyEmail(req.Email, req.Code)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
 	}
 

@@ -23,11 +23,25 @@ class ApiAuthService {
     return _handleAuthResponse(response);
   }
 
-  Future<AppUser> register(String email, String password, String name) async {
+  Future<Map<String, dynamic>> register(String email, String password, String name) async {
     final response = await _client.post('/auth/register', {
       'email': email,
       'password': password,
       'name': name,
+    });
+    return response;
+  }
+
+  Future<void> sendVerificationCode(String email) async {
+    await _client.post('/auth/send-verification', {
+      'email': email,
+    });
+  }
+
+  Future<AppUser> verifyEmail(String email, String code) async {
+    final response = await _client.post('/auth/verify-email', {
+      'email': email,
+      'code': code,
     });
     return _handleAuthResponse(response);
   }

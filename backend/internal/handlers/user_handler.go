@@ -71,8 +71,9 @@ func (h *UserHandler) List(c *gin.Context) {
 
 func (h *UserHandler) Update(c *gin.Context) {
 	var req struct {
-		Role *string `json:"role"`
-		Name *string `json:"name"`
+		Role     *string `json:"role"`
+		Name     *string `json:"name"`
+		IsActive *bool   `json:"is_active"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
@@ -96,6 +97,9 @@ func (h *UserHandler) Update(c *gin.Context) {
 	}
 	if req.Name != nil {
 		user.Name = *req.Name
+	}
+	if req.IsActive != nil {
+		user.IsActive = *req.IsActive
 	}
 
 	if err := h.repo.Update(user); err != nil {

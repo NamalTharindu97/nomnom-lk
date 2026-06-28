@@ -24,9 +24,10 @@ type User struct {
 	Role         UserRole  `gorm:"not null;default:'user';size:20" json:"role"`
 	FirebaseUID  *string   `gorm:"uniqueIndex;size:128" json:"-"`
 	Phone        *string   `gorm:"size:20" json:"phone,omitempty"`
-	IsActive     bool      `gorm:"default:true" json:"is_active"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	IsActive        bool       `gorm:"default:true" json:"is_active"`
+	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {

@@ -29,7 +29,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 	// Services
 	sseService := services.NewSSEService()
-	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT)
+	emailService := services.NewEmailService(&cfg.SMTP, log)
+	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT, rdb, emailService)
 	restaurantService := services.NewRestaurantService(restaurantRepo)
 	offerService := services.NewOfferService(offerRepo, restaurantRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo)
@@ -96,6 +97,13 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			authGroup.POST("/firebase", authHandler.FirebaseLogin)
 			authGroup.POST("/refresh", authHandler.Refresh)
 			authGroup.POST("/logout", middleware.Auth(cfg.JWT.Secret), authHandler.Logout)
+		}
+
+		verificationGroup := v1.Group("/auth")
+		verificationGroup.Use(middleware.RateLimit(rdb, 3, 1*time.Minute, "rl:verify"))
+		{
+			verificationGroup.POST("/send-verification", authHandler.SendVerification)
+			verificationGroup.POST("/verify-email", authHandler.VerifyEmail)
 		}
 
 		usersGroup := v1.Group("/users")

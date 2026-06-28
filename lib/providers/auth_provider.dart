@@ -35,15 +35,48 @@ class AuthProvider extends ChangeNotifier {
     _user = await _authService.signInWithFirebase(firebaseToken);
     _isInitialized = true;
     _setLoading(false);
-    await fcmService?.registerCurrentToken();
+    fcmService?.registerCurrentToken();
   }
 
   Future<void> signInWithEmail(String email, String password) async {
     _setLoading(true);
-    _user = await _authService.login(email, password);
-    _isInitialized = true;
-    _setLoading(false);
-    await fcmService?.registerCurrentToken();
+    try {
+      _user = await _authService.login(email, password);
+      _isInitialized = true;
+      _setLoading(false);
+      fcmService?.registerCurrentToken();
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  Future<void> register(String email, String password, String name) async {
+    _setLoading(true);
+    try {
+      await _authService.register(email, password, name);
+      _setLoading(false);
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  Future<void> sendVerificationCode(String email) async {
+    await _authService.sendVerificationCode(email);
+  }
+
+  Future<void> verifyEmail(String email, String code) async {
+    _setLoading(true);
+    try {
+      _user = await _authService.verifyEmail(email, code);
+      _isInitialized = true;
+      _setLoading(false);
+      await fcmService?.registerCurrentToken();
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
   }
 
   Future<void> continueAsGuest() async {

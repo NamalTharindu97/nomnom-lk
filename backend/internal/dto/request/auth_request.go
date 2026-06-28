@@ -22,3 +22,12 @@ type RefreshRequest struct {
 type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
+
+type SendVerificationRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type VerifyEmailRequest struct {
+	Email string `json:"email" binding:"required,email"`
+	Code  string `json:"code" binding:"required,len=6"`
+}

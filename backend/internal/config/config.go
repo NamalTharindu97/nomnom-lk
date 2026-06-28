@@ -14,6 +14,15 @@ type Config struct {
 	Sentry   SentryConfig
 	CORS     CORSConfig
 	Admin    AdminConfig
+	SMTP     SMTPConfig
+}
+
+type SMTPConfig struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	From     string
 }
 
 type ServerConfig struct {
@@ -74,6 +83,13 @@ func Load() (*Config, error) {
 	v.AutomaticEnv()
 	v.SetEnvPrefix("")
 
+	v.SetConfigFile(".env")
+	if err := v.MergeInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, err
+		}
+	}
+
 	v.SetDefault("SERVER_PORT", "8080")
 	v.SetDefault("SERVER_HOST", "0.0.0.0")
 	v.SetDefault("ENVIRONMENT", "development")
@@ -108,6 +124,12 @@ func Load() (*Config, error) {
 
 	v.SetDefault("ADMIN_EMAIL", "admin@nomnom.lk")
 	v.SetDefault("ADMIN_PASSWORD", "Admin@123")
+
+	v.SetDefault("SMTP_HOST", "")
+	v.SetDefault("SMTP_PORT", 587)
+	v.SetDefault("SMTP_USERNAME", "")
+	v.SetDefault("SMTP_PASSWORD", "")
+	v.SetDefault("SMTP_FROM", "NomNom LK <noreply@nomnom.lk>")
 
 	return &Config{
 		Server: ServerConfig{
@@ -153,6 +175,13 @@ func Load() (*Config, error) {
 		Admin: AdminConfig{
 			Email:    v.GetString("ADMIN_EMAIL"),
 			Password: v.GetString("ADMIN_PASSWORD"),
+		},
+		SMTP: SMTPConfig{
+			Host:     v.GetString("SMTP_HOST"),
+			Port:     v.GetInt("SMTP_PORT"),
+			Username: v.GetString("SMTP_USERNAME"),
+			Password: v.GetString("SMTP_PASSWORD"),
+			From:     v.GetString("SMTP_FROM"),
 		},
 	}, nil
 }

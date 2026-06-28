@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -8,6 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/nomnom-lk/backend/internal/config"
 	"github.com/nomnom-lk/backend/internal/dto/response"
 	"github.com/nomnom-lk/backend/internal/models"
@@ -18,33 +21,38 @@ import (
 )
 
 type AuthService struct {
-	userRepo        *repository.UserRepo
+	userRepo         *repository.UserRepo
 	refreshTokenRepo *repository.RefreshTokenRepo
-	cfg             *config.JWTConfig
-	firebaseAuth    interface{} // Firebase auth client (injected later)
+	cfg              *config.JWTConfig
+	rdb              *redis.Client
+	emailService     *EmailService
 }
 
 func NewAuthService(
 	userRepo *repository.UserRepo,
 	refreshTokenRepo *repository.RefreshTokenRepo,
 	cfg *config.JWTConfig,
+	rdb *redis.Client,
+	emailService *EmailService,
 ) *AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
 		cfg:              cfg,
+		rdb:              rdb,
+		emailService:     emailService,
 	}
 }
 
-func (s *AuthService) Register(email, password, name string) (*response.AuthResponse, error) {
+func (s *AuthService) Register(email, password, name string) error {
 	existing, err := s.userRepo.FindByEmail(email)
 	if err == nil && existing != nil {
-		return nil, errors.New("email already registered")
+		return errors.New("email already registered")
 	}
 
 	hashedPassword, err := hash.HashPassword(password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	user := &models.User{
@@ -56,10 +64,10 @@ func (s *AuthService) Register(email, password, name string) (*response.AuthResp
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	return s.generateAuthResponse(user)
+	return nil
 }
 
 func (s *AuthService) Login(email, password string) (*response.AuthResponse, error) {
@@ -83,6 +91,67 @@ func (s *AuthService) Login(email, password string) (*response.AuthResponse, err
 		return nil, errors.New("invalid email or password")
 	}
 
+	if user.EmailVerifiedAt == nil {
+		return nil, errors.New("please verify your email first")
+	}
+
+	return s.generateAuthResponse(user)
+}
+
+func (s *AuthService) SendVerificationCode(email string) error {
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		return errors.New("email not found")
+	}
+
+	if user.EmailVerifiedAt != nil {
+		return errors.New("email already verified")
+	}
+
+	code, err := s.emailService.GenerateCode()
+	if err != nil {
+		return fmt.Errorf("failed to generate code: %w", err)
+	}
+
+	ctx := context.Background()
+	key := fmt.Sprintf("verify:%s", email)
+	if err := s.rdb.Set(ctx, key, code, 10*time.Minute).Err(); err != nil {
+		return fmt.Errorf("failed to store code: %w", err)
+	}
+
+	if err := s.emailService.SendVerificationCode(email, code); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *AuthService) VerifyEmail(email, code string) (*response.AuthResponse, error) {
+	ctx := context.Background()
+	key := fmt.Sprintf("verify:%s", email)
+
+	storedCode, err := s.rdb.Get(ctx, key).Result()
+	if err != nil {
+		return nil, errors.New("invalid or expired verification code")
+	}
+
+	if storedCode != code {
+		return nil, errors.New("invalid verification code")
+	}
+
+	s.rdb.Del(ctx, key)
+
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	now := time.Now()
+	user.EmailVerifiedAt = &now
+	if err := s.userRepo.Update(user); err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
 	return s.generateAuthResponse(user)
 }
 
@@ -98,18 +167,20 @@ func (s *AuthService) FirebaseLogin(firebaseUID, email, name string) (*response.
 			return nil, fmt.Errorf("failed to find user by email: %w", err)
 		}
 
-		if user != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		if user != nil {
 			user.FirebaseUID = &firebaseUID
 			if err := s.userRepo.Update(user); err != nil {
 				return nil, fmt.Errorf("failed to link firebase account: %w", err)
 			}
 		} else {
+			now := time.Now()
 			user = &models.User{
-				Email:       email,
-				Name:        name,
-				Role:        models.RoleUser,
-				FirebaseUID: &firebaseUID,
-				IsActive:    true,
+				Email:           email,
+				Name:            name,
+				Role:            models.RoleUser,
+				FirebaseUID:     &firebaseUID,
+				IsActive:        true,
+				EmailVerifiedAt: &now,
 			}
 			if err := s.userRepo.Create(user); err != nil {
 				return nil, fmt.Errorf("failed to create user: %w", err)

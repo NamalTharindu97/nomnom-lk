@@ -15,8 +15,10 @@ import 'providers/restaurant_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/offer_details_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/restaurants_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/verify_email_screen.dart';
 import 'services/api_auth_service.dart';
 import 'services/api_client.dart';
 import 'services/api_favorites_service.dart';
@@ -196,9 +198,21 @@ class NomNomApp extends StatelessWidget {
       routes: {
         AppRoutes.splash: (_) => const SplashScreen(),
         AppRoutes.login: (_) => const LoginScreen(),
+        AppRoutes.register: (_) => const RegisterScreen(),
         AppRoutes.restaurants: (_) => const RestaurantsScreen(),
       },
       onGenerateRoute: (settings) {
+        if (settings.name == AppRoutes.verifyEmail) {
+          final email = switch (settings.arguments) {
+            final String e => e,
+            _ => '',
+          };
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => VerifyEmailScreen(email: email),
+          );
+        }
+
         if (settings.name == AppRoutes.home) {
           final initialTab = switch (settings.arguments) {
             final int tab => tab,

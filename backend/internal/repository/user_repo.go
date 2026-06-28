@@ -20,7 +20,7 @@ func (r *UserRepo) Create(user *models.User) error {
 
 func (r *UserRepo) FindByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
-	err := r.db.Where("id = ? AND is_active = ?", id, true).First(&user).Error
+	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

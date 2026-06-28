@@ -44,6 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const { access_token, user: userData } = res
+
+    if (userData.role !== "admin") {
+      throw new Error("Access restricted to administrators only.")
+    }
+
     localStorage.setItem("token", access_token)
     localStorage.setItem("user", JSON.stringify(userData))
     setToken(access_token)
