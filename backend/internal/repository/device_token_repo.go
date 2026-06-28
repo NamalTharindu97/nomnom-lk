@@ -16,6 +16,12 @@ func NewDeviceTokenRepo(db *gorm.DB) *DeviceTokenRepo {
 }
 
 func (r *DeviceTokenRepo) Upsert(token *models.DeviceToken) error {
+	// Remove stale rows with same token belonging to other users
+	if err := r.db.Where("token = ? AND user_id != ?", token.Token, token.UserID).
+		Delete(&models.DeviceToken{}).Error; err != nil {
+		return err
+	}
+
 	return r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "user_id"}},
 		UpdateAll: true,

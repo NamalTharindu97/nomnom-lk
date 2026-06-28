@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/restaurant_provider.dart';
+import '../services/api_client.dart';
 import 'favorites_screen.dart';
 import 'home_screen.dart';
 import 'notifications_screen.dart';
@@ -39,6 +40,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       context.read<OfferProvider>().refreshOffers();
       context.read<RestaurantProvider>().loadRestaurants();
+      context.read<ApiClient>().invalidateCache('/notifications');
+      context.read<NotificationProvider>().loadNotifications();
     }
   }
 
@@ -50,6 +53,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   void _selectTab(int index) {
     setState(() => _selectedIndex = index);
+    if (index == 3) {
+      context.read<ApiClient>().invalidateCache('/notifications');
+      context.read<NotificationProvider>().loadNotifications();
+    }
   }
 
   @override

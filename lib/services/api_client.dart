@@ -43,6 +43,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>> put(String path, dynamic data) async {
     final response = await _dio.put(path, data: data);
+    if (response.data == null || response.data is! Map) return <String, dynamic>{};
     return response.data as Map<String, dynamic>;
   }
 

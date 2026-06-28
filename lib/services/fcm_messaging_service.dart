@@ -127,6 +127,8 @@ class FcmMessagingService {
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     _notificationProvider.loadUnreadCount();
+    _apiClient.invalidateCache('/notifications');
+    _notificationProvider.loadNotifications();
 
     final title = message.notification?.title ?? 'NomNom LK';
     final body = message.notification?.body ?? '';

@@ -93,6 +93,7 @@ func (s *NotificationService) SendPush(input SendPushInput) error {
 		return fmt.Errorf("no registered devices for target")
 	}
 
+	// Create notifications for ALL users (each sees it in their list)
 	notifications := make([]models.Notification, len(tokens))
 	for i, token := range tokens {
 		notifications[i] = models.Notification{
@@ -112,7 +113,18 @@ func (s *NotificationService) SendPush(input SendPushInput) error {
 		return fmt.Errorf("failed to save notifications: %w", err)
 	}
 
-	go s.sendFCMNotifications(tokens, input)
+	// Deduplicate by token value so one device doesn't get duplicate FCM pushes
+	seen := make(map[string]bool)
+	var fcmTokens []models.DeviceToken
+	for _, t := range tokens {
+		if seen[t.Token] {
+			continue
+		}
+		seen[t.Token] = true
+		fcmTokens = append(fcmTokens, t)
+	}
+
+	go s.sendFCMNotifications(fcmTokens, input)
 
 	return nil
 }

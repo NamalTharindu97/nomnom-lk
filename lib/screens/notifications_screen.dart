@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/empty_state.dart';
 
@@ -108,7 +109,7 @@ class _NotificationTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final dynamic notification;
+  final AppNotification notification;
   final VoidCallback onTap;
 
   @override
