@@ -1,5 +1,6 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
+- **Current session (build session):** Fixed `.env` MinIO endpoint inline comment (Viper reads `# comment` as part of value + `http://` scheme rejected by minio-go v7.2.0); re-ran seed to regenerate matching MinIO image UUIDs; verified FCM push notifications still working end-to-end.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Railway + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -33,6 +34,9 @@
 - **P18: Fix Device Registration** — `_FcmInitializer` reuses shared `ApiClient` from widget tree (via `context.read<ApiClient>()`) instead of creating a duplicate instance without auth; added `registerCurrentToken()` to `FcmMessagingService`; `AuthProvider.restoreSession()` and login methods call `fcmService?.registerCurrentToken()` after auth confirmed. Merged to master.
 - **P19: Fix Notification Tap Navigation + Backend Silent Success** — `_navigateToNotifications` parses payload: UUID routes to offer detail; `"notification"`/`"admin"`/null routes to notifications tab (index 3); home route moved to `onGenerateRoute` to accept `RouteSettings.arguments` for initial tab index; `MainShell` accepts `initialTab` param and loads notifications when tab=3 via `addPostFrameCallback`; backend `SendPush` returns error when `len(tokens) == 0` instead of silent nil. Merged to master.
 - **P20: Robustness Fixes** — `sendFCMNotifications` deletes stale device tokens on `NotRegistered`/`Unregistered` FCM errors; `POST /admin/notifications/push` rate-limited to 1 per 10s per admin user via in-memory `rateLimiter`; admin notifications page auto-clears result message after 5s; Flutter `markAsRead` checks `isRead` before decrementing unread count to prevent negative. Merged to master.
+
+### Done
+- **Seed Data + MinIO Images Fix** — Fixed `.env` `AWS_S3_ENDPOINT` inline comment (Viper reads `# comment` as part of value) + removed `http://` scheme (minio-go v7.2.0 rejects fully qualified endpoints). Re-ran seed: 26 images uploaded with matching UUIDs, 8 restaurants + 18 offers created. Images serve HTTP 200 from MinIO via upload proxy. FCM push verified working end-to-end.
 
 ### Done (Fix)
 - **FCM Fix — Android Push Notifications Working E2E** — Three fixes:
@@ -84,8 +88,16 @@
 - **Admin page status filter:** Both offers and restaurants pages pass `status=all` to the backend to display all statuses (approved, pending, rejected) so admins can manage them.
 - **Air for Go hot reload:** `air` installed via `go install github.com/air-verse/air@latest`; config at `backend/.air.toml` watches `.go`/`.html`/`.tpl`/`.tmpl` changes and rebuilds; binary built to `backend/tmp/nomnom-api`.
 - **Background process management:** All three services (backend, admin, Flutter) run as `nohup` background processes; logs go to `*/logs/*.log`.
+- **`.env` inline comments:** Viper v1.19.0 does not strip inline `# comments` from `.env` values — parsed as part of the value string.
+- **MinIO endpoint format:** minio-go v7.2.0 `New()` rejects endpoints with `http://` scheme or any path component — use bare `host:port` only (e.g. `localhost:9000`).
 
 ## Next Steps
+### Done (Fix) — Seed Data + MinIO Images + Push Verification
+- **Fixed `.env` MinIO endpoint**: Inline comment after `AWS_S3_ENDPOINT=http://localhost:9000  # MinIO endpoint for dev` was parsed by Viper as part of the value. Also removed `http://` scheme — minio-go v7.2.0 rejects endpoints with fully qualified paths in `New()`.
+- **Re-ran seed**: 26 images uploaded to MinIO with UUIDs matching DB records; 8 restaurants + 18 offers created; all image URLs serve HTTP 200.
+- **Verified FCM push**: Sent test notification via `POST /admin/notifications/push` — `INFO: FCM sent to token` logged; app received the push and fetched unread count + notification list.
+- Commit: fixes already captured in performance chain (8533768→5973837), `.env` gitignored — local config only.
+
 ### Performance Optimization Plan — Completed
 **Goal**: Faster data loading + smoother scrolling on home screen. ✅ All 3 phases implemented.
 
@@ -121,7 +133,7 @@
 
 ## Critical Context
 - All branches P1–P17 merged to master and preserved on remote.
-- Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on Pixel 8 Pro Android emulator.
+- Backend running on `:8080` with all endpoints. Admin dashboard on `:3000`. Flutter app on sdk gphone16k arm64 Android emulator (API 35).
 - Docker services (postgres 16, redis 7, minio) running with seeded data.
 - Backend FCM via direct HTTP to `https://fcm.googleapis.com/v1/projects/nomnom-cfe32/messages:send` using `cloud-platform` OAuth2 scope. No Firebase Admin SDK dependency.
 - `Flutter` `pubspec.yaml` has `firebase_messaging: ^15.2.10` resolved.
