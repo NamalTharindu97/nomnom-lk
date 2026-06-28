@@ -38,6 +38,25 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 		log.Fatalf("Failed to auto-migrate: %v", err)
 	}
 
+	runIndexMigrations(db)
+
 	log.Println("[DB] Connected and migrated successfully")
 	return db
+}
+
+func runIndexMigrations(db *gorm.DB) {
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_offers_status_created
+		 ON offers(status, created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_offers_end_date
+		 ON offers(end_date) WHERE status = 'approved'`,
+		`CREATE INDEX IF NOT EXISTS idx_offers_restaurant_id
+		 ON offers(restaurant_id)`,
+	}
+	for _, idx := range indexes {
+		if err := db.Exec(idx).Error; err != nil {
+			log.Printf("[DB] Warning: could not create index: %v", err)
+		}
+	}
+	log.Println("[DB] Index migrations complete")
 }

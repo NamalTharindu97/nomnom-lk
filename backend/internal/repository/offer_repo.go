@@ -62,7 +62,9 @@ func (r *OfferRepo) FindAll(status, queryStr string, page, perPage int, sort str
 	}
 
 	err := query.
-		Preload("Restaurant").
+		Preload("Restaurant", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, name, slug, address, cuisine_tags, cover_image")
+		}).
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Order(order).
