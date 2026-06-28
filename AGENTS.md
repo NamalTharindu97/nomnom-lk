@@ -52,7 +52,7 @@
 - **Admin Account Created** — `namal@nomnom.lk` / `Namal@123` registered and promoted to `admin` role via `PUT /users/:id`. Works for both mobile app and admin dashboard login.
 
 ### Done
-- **Build Fixes + Search + Favorite Button Fix** — `const` removed from `BoxDecoration`/`SizedBox` in 5 files (splash, login, register, verify_email, offer_image). Backend offer search via `search_vector @@ to_tsquery` with `:*` prefix matching. Backend restaurant search via `name ILIKE`. Shimmer overflow crash fixed (`SingleChildScrollView`). Search isolation in providers (`_searchResults` separate from `_offers`). Search screen rewritten as combined Restaurants + Offers layout. Favorite button root cause: `ApiClient.post()` threw `TypeError` on empty 201 response body from `POST /favorites` → rollback in `toggleFavorite()` reverted optimistic update. Fixed with null/type guard in `post()` matching `put()`.
+- **Build Fixes + Search + Favorite Button Fix** — `const` removed from `BoxDecoration`/`SizedBox` in 5 files (splash, login, register, verify_email, offer_image). Backend offer search via `search_vector @@ to_tsquery` with `:*` prefix matching. Backend restaurant search via `name ILIKE`. Shimmer overflow crash fixed (`SingleChildScrollView`). Search isolation in providers (`_searchResults` separate from `_offers`). Search screen rewritten as combined Restaurants + Offers layout. Favorite button root cause: `ApiClient.post()` threw `TypeError` on empty 201 response body from `POST /favorites` → rollback in `toggleFavorite()` reverted optimistic update. Fixed with null/type guard in `post()` matching `put()`. Hot restart applied, verified working. Commit `8e17da1`.
 
 ### Blocked
 - **iOS device debug mode** — Flutter 3.29.3 incompatible with iOS 26.5 JIT. No workaround without Flutter upgrade.
@@ -146,7 +146,7 @@
 - `lib/models/paginated_response.dart` — Generic paginated response model consuming backend `pagination` metadata
 - `lib/models/restaurant.dart` — Restaurant model with `coverImage` field
 - `lib/services/fcm_messaging_service.dart` — FCM token management, handlers, permission, local notifications, tap navigation, one-time `deleteToken()` migration with `shared_preferences`
-- `lib/services/api_client.dart` — HTTP client with `delete()` data body support
+- `lib/services/api_client.dart` — HTTP client with `delete()` data body support; `post()` has null/type guard for empty 201 responses
 - `lib/services/sse_service.dart` — SSE stream via `dart:io`, parses `event:` / `data:` lines, emits `SSEEvent` objects, auto-reconnect
 - `lib/services/api_restaurant_service.dart` — Restaurant API, returns `PaginatedResponse<Restaurant>`
 - `lib/services/api_offer_service.dart` — Offer API, returns `PaginatedResponse<Offer>`
