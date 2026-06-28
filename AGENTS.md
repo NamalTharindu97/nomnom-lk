@@ -86,6 +86,33 @@
 - **Background process management:** All three services (backend, admin, Flutter) run as `nohup` background processes; logs go to `*/logs/*.log`.
 
 ## Next Steps
+### Performance Optimization Plan (4 Phases)
+**Goal**: Faster data loading + smoother scrolling on home screen.
+
+#### Phase 1 — Quick Wins (Flutter)
+- Remove 350ms forced delay in `refreshOffers()` (`offer_provider.dart:100`)
+- SSE: replace `clearCache()` with targeted `invalidateCache('/offers')` / `invalidateCache('/restaurants')` in `main.dart:168`
+- SSE: add 1-second debounce timer in `_SseListenerState` to coalesce rapid events
+- **Verification**: Hot restart, verify offers load faster, SSE refreshes don't clear other caches
+
+#### Phase 2 — Rendering Performance (Flutter)
+- Replace `Consumer<OfferProvider>` on home screen with targeted `Selector` widgets — header reads only error/loading state, list reads only offers
+- Add `Map<String, int>` index for O(1) `offerById()` lookups — built on data load, updated on toggle
+- Cache `List.unmodifiable` result (only re-wrap when reference changes)
+- **Verification**: Profile with Flutter DevTools frame rendering time
+
+#### Phase 3 — Backend Indexes
+- Add GIN index migration for `search_vector`
+- Add composite index for `(status, created_at DESC)`
+- Optimize Preload to select only needed Restaurant columns (`id, name, slug, address`)
+- **Verification**: Verify query plans with `EXPLAIN ANALYZE`
+
+#### Phase 4 — Future / Nice-to-Have
+- Cache interceptor LRU eviction (prevent unbounded memory)
+- MinIO presigned URLs for image serving
+- Redis caching of offer list (30s TTL)
+
+### Other
 1. **Fix Google Sign-In on Android** — Add debug SHA-1 fingerprint to Firebase Console:
    - Run `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1`
    - Add to Firebase Console → Project Settings → General → Android app → Add fingerprint
