@@ -140,6 +140,9 @@ class _SseListener extends StatefulWidget {
 class _SseListenerState extends State<_SseListener> {
   SSEService? _sseService;
   StreamSubscription<SSEEvent>? _subscription;
+  Timer? _debounce;
+  bool _needsOfferRefresh = false;
+  bool _needsRestaurantRefresh = false;
 
   @override
   void initState() {
@@ -159,27 +162,41 @@ class _SseListenerState extends State<_SseListener> {
   }
 
   void _handleEvent(SSEEvent event) {
-    final apiClient = context.read<ApiClient>();
     switch (event.event) {
       case 'offer.created':
       case 'offer.approved':
       case 'offer.updated':
       case 'offer.deleted':
-        apiClient.clearCache();
-        context.read<OfferProvider>().refreshOffers();
+        _needsOfferRefresh = true;
         break;
       case 'restaurant.created':
       case 'restaurant.approved':
       case 'restaurant.updated':
       case 'restaurant.deleted':
-        apiClient.clearCache();
-        context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
+        _needsRestaurantRefresh = true;
         break;
+    }
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(seconds: 1), _flushEvents);
+  }
+
+  void _flushEvents() {
+    final apiClient = context.read<ApiClient>();
+    if (_needsOfferRefresh) {
+      apiClient.invalidateCache('/offers');
+      context.read<OfferProvider>().refreshOffers();
+      _needsOfferRefresh = false;
+    }
+    if (_needsRestaurantRefresh) {
+      apiClient.invalidateCache('/restaurants');
+      context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
+      _needsRestaurantRefresh = false;
     }
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _subscription?.cancel();
     _sseService?.dispose();
     super.dispose();

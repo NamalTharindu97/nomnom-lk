@@ -97,7 +97,6 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> refreshOffers() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
     await loadOffers(forceRefresh: true);
     await loadFavorites();
   }
