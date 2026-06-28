@@ -16,6 +16,10 @@ class OfferProvider extends ChangeNotifier {
 
   List<Offer> _offers = const [];
   List<Offer> _searchResults = const [];
+  Map<String, int> _offerIndex = {};
+  Map<String, int> _searchIndex = {};
+  List<Offer> _cachedOffers = const [];
+  List<Offer> _cachedSearchResults = const [];
   String _searchQuery = '';
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -27,8 +31,8 @@ class OfferProvider extends ChangeNotifier {
   bool _hasMore = true;
   int _total = 0;
 
-  List<Offer> get offers => List.unmodifiable(_offers);
-  List<Offer> get searchResults => List.unmodifiable(_searchResults);
+  List<Offer> get offers => _cachedOffers;
+  List<Offer> get searchResults => _cachedSearchResults;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasLoaded => _hasLoaded;
@@ -53,13 +57,21 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Offer? offerById(String id) {
-    for (final offer in _offers) {
-      if (offer.id == id) return offer;
-    }
-    for (final offer in _searchResults) {
-      if (offer.id == id) return offer;
-    }
+    final idx = _offerIndex[id];
+    if (idx != null && idx < _offers.length) return _offers[idx];
+    final sIdx = _searchIndex[id];
+    if (sIdx != null && sIdx < _searchResults.length) return _searchResults[sIdx];
     return null;
+  }
+
+  void _rebuildOffersCache() {
+    _offerIndex = {for (var i = 0; i < _offers.length; i++) _offers[i].id: i};
+    _cachedOffers = List.unmodifiable(_offers);
+  }
+
+  void _rebuildSearchCache() {
+    _searchIndex = {for (var i = 0; i < _searchResults.length; i++) _searchResults[i].id: i};
+    _cachedSearchResults = List.unmodifiable(_searchResults);
   }
 
   Future<void> loadOffers({bool forceRefresh = false}) async {
@@ -70,6 +82,7 @@ class OfferProvider extends ChangeNotifier {
     try {
       final result = await _offerService.fetchOffers(page: _currentPage);
       _offers = result.data;
+      _rebuildOffersCache();
       _hasMore = result.hasMore;
       _total = result.total;
       _hasLoaded = true;
@@ -89,6 +102,7 @@ class OfferProvider extends ChangeNotifier {
       _hasMore = result.hasMore;
       _currentPage = nextPage;
       _offers = [..._offers, ...result.data];
+      _rebuildOffersCache();
     } catch (e) {
       debugPrint('Failed to load more offers: $e');
     }
@@ -106,6 +120,7 @@ class OfferProvider extends ChangeNotifier {
       _searchQuery = '';
       _searchError = null;
       _searchResults = const [];
+      _rebuildSearchCache();
       notifyListeners();
       return;
     }
@@ -116,6 +131,7 @@ class OfferProvider extends ChangeNotifier {
     try {
       final result = await _offerService.fetchOffers(query: query);
       _searchResults = result.data;
+      _rebuildSearchCache();
       _hasMore = result.hasMore;
       _total = result.total;
     } catch (_) {
@@ -126,16 +142,18 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> toggleFavorite(String offerId) async {
-    final index = _offers.indexWhere((o) => o.id == offerId);
-    final sIndex = _searchResults.indexWhere((o) => o.id == offerId);
-    if (index == -1 && sIndex == -1) return;
+    final index = _offerIndex[offerId];
+    final sIndex = _searchIndex[offerId];
+    final hasOffer = index != null && index < _offers.length;
+    final hasSearch = sIndex != null && sIndex < _searchResults.length;
+    if (!hasOffer && !hasSearch) return;
 
     bool wasFavorite = false;
-    if (index != -1) {
+    if (hasOffer) {
       wasFavorite = _offers[index].isFavorite;
       _offers[index] = _offers[index].copyWith(isFavorite: !wasFavorite);
     }
-    if (sIndex != -1) {
+    if (hasSearch) {
       wasFavorite = _searchResults[sIndex].isFavorite;
       _searchResults[sIndex] = _searchResults[sIndex].copyWith(isFavorite: !wasFavorite);
     }
@@ -149,10 +167,10 @@ class OfferProvider extends ChangeNotifier {
         await _favoritesService.addFavorite(offerId);
       }
     } catch (_) {
-      if (index != -1) {
+      if (hasOffer) {
         _offers[index] = _offers[index].copyWith(isFavorite: wasFavorite);
       }
-      if (sIndex != -1) {
+      if (hasSearch) {
         _searchResults[sIndex] = _searchResults[sIndex].copyWith(isFavorite: wasFavorite);
       }
       notifyListeners();
@@ -172,9 +190,11 @@ class OfferProvider extends ChangeNotifier {
       _offers = _offers.map((offer) {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);
+      _rebuildOffersCache();
       _searchResults = _searchResults.map((offer) {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);
+      _rebuildSearchCache();
       notifyListeners();
     } catch (_) {}
   }

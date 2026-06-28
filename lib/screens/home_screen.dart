@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
+import '../models/offer.dart';
 import '../providers/offer_provider.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/empty_state.dart';
@@ -20,77 +21,111 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<OfferProvider>(
-        builder: (context, provider, child) {
-          final offers = provider.offers;
-
-          return RefreshIndicator(
-            onRefresh: provider.refreshOffers,
-            color: context.colors.background,
-            backgroundColor: AppColors.curry,
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollEndNotification &&
-                    notification.metrics.pixels >=
-                        notification.metrics.maxScrollExtent - 200) {
-                  provider.loadMoreOffers();
-                }
-                return false;
-              },
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _HomeHeader(
-                      offerCount: offers.length,
-                      onSearchTap: onSearchTap,
-                    ),
+      body: RefreshIndicator(
+        onRefresh: context.read<OfferProvider>().refreshOffers,
+        color: context.colors.background,
+        backgroundColor: AppColors.curry,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollEndNotification &&
+                notification.metrics.pixels >=
+                    notification.metrics.maxScrollExtent - 200) {
+              context.read<OfferProvider>().loadMoreOffers();
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              Selector<OfferProvider, int>(
+                selector: (_, p) => p.total,
+                builder: (_, total, __) => SliverToBoxAdapter(
+                  child: _HomeHeader(
+                    offerCount: total,
+                    onSearchTap: onSearchTap,
                   ),
-                  if (provider.error != null && offers.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyState(
-                        icon: Icons.wifi_off_rounded,
-                        title: 'Something went wrong',
-                        message: provider.error!,
-                        onRetry: provider.refreshOffers,
-                      ),
-                    )
-                  else if (provider.isLoading && offers.isEmpty)
-                    const SliverToBoxAdapter(child: OfferShimmerList())
-                  else if (offers.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyState(
-                        icon: Icons.no_food_rounded,
-                        title: 'No offers yet',
-                        message: 'Fresh deals will appear here soon.',
-                      ),
-                    )
-                  else
-                    SliverList.builder(
-                      itemCount: offers.length + (provider.isLoadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= offers.length) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: CircularProgressIndicator(strokeWidth: 2.4),
-                            ),
-                          );
-                        }
-                        return OfferCard(offer: offers[index]);
-                      },
-                    ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+              _HomeBody(),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+class _HomeBody extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Selector<OfferProvider, _BodyState>(
+      selector: (_, p) => _BodyState(
+        error: p.error,
+        isLoading: p.isLoading,
+        isLoadingMore: p.isLoadingMore,
+        offers: p.offers,
+      ),
+      builder: (_, state, __) {
+        final offers = state.offers;
+
+        if (state.error != null && offers.isEmpty) {
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyState(
+              icon: Icons.wifi_off_rounded,
+              title: 'Something went wrong',
+              message: state.error!,
+              onRetry: context.read<OfferProvider>().refreshOffers,
+            ),
+          );
+        }
+
+        if (state.isLoading && offers.isEmpty) {
+          return const SliverToBoxAdapter(child: OfferShimmerList());
+        }
+
+        if (offers.isEmpty) {
+          return const SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyState(
+              icon: Icons.no_food_rounded,
+              title: 'No offers yet',
+              message: 'Fresh deals will appear here soon.',
+            ),
+          );
+        }
+
+        return SliverList.builder(
+          itemCount: offers.length + (state.isLoadingMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= offers.length) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                ),
+              );
+            }
+            return OfferCard(offer: offers[index]);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _BodyState {
+  final String? error;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final List<Offer> offers;
+
+  const _BodyState({
+    this.error,
+    required this.isLoading,
+    required this.isLoadingMore,
+    required this.offers,
+  });
 }
 
 class _HomeHeader extends StatelessWidget {
@@ -117,10 +152,7 @@ class _HomeHeader extends StatelessWidget {
               children: [
                 const Expanded(child: AppLogo(compact: true)),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(8),
@@ -153,16 +185,11 @@ class _HomeHeader extends StatelessWidget {
               onTap: onSearchTap,
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 decoration: BoxDecoration(
                   color: context.colors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
-                  ),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                 ),
                 child: Row(
                   children: [
@@ -177,10 +204,7 @@ class _HomeHeader extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: AppColors.curry,
-                    ),
+                    const Icon(Icons.arrow_forward_rounded, color: AppColors.curry),
                   ],
                 ),
               ),
