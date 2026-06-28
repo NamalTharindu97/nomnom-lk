@@ -75,8 +75,10 @@ class OfferShimmerList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(3, (index) => const OfferCardShimmer()),
+    return SingleChildScrollView(
+      child: Column(
+        children: List.generate(3, (index) => const OfferCardShimmer()),
+      ),
     );
   }
 }
@@ -140,8 +142,10 @@ class RestaurantShimmerList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(4, (index) => const RestaurantCardShimmer()),
+    return SingleChildScrollView(
+      child: Column(
+        children: List.generate(4, (index) => const RestaurantCardShimmer()),
+      ),
     );
   }
 }

@@ -9,17 +9,23 @@ class RestaurantProvider extends ChangeNotifier {
   final ApiRestaurantService _service;
 
   List<Restaurant> _restaurants = const [];
+  List<Restaurant> _searchResults = const [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
+  bool _isSearching = false;
   String? _error;
+  String? _searchError;
   int _currentPage = 1;
   bool _hasMore = true;
   int _total = 0;
 
   List<Restaurant> get restaurants => List.unmodifiable(_restaurants);
+  List<Restaurant> get searchResults => List.unmodifiable(_searchResults);
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
+  bool get isSearching => _isSearching;
   String? get error => _error;
+  String? get searchError => _searchError;
   bool get hasMore => _hasMore;
   int get total => _total;
 
@@ -60,6 +66,26 @@ class RestaurantProvider extends ChangeNotifier {
   Future<void> refreshRestaurants() async {
     await Future<void>.delayed(const Duration(milliseconds: 350));
     await loadRestaurants(forceRefresh: true);
+  }
+
+  Future<void> searchRestaurants(String query) async {
+    if (query.trim().isEmpty) {
+      _searchResults = const [];
+      _searchError = null;
+      notifyListeners();
+      return;
+    }
+    _isSearching = true;
+    _searchError = null;
+    notifyListeners();
+    try {
+      final result = await _service.fetchRestaurants(query: query);
+      _searchResults = result.data;
+    } catch (_) {
+      _searchError = 'Search failed. Try again.';
+    }
+    _isSearching = false;
+    notifyListeners();
   }
 
   void _setLoading(bool value) {

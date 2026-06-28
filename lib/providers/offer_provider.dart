@@ -15,23 +15,27 @@ class OfferProvider extends ChangeNotifier {
   final ApiFavoritesService _favoritesService;
 
   List<Offer> _offers = const [];
+  List<Offer> _searchResults = const [];
   String _searchQuery = '';
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasLoaded = false;
   bool _isSearching = false;
   String? _error;
+  String? _searchError;
   int _currentPage = 1;
   bool _hasMore = true;
   int _total = 0;
 
   List<Offer> get offers => List.unmodifiable(_offers);
+  List<Offer> get searchResults => List.unmodifiable(_searchResults);
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasLoaded => _hasLoaded;
   String get searchQuery => _searchQuery;
   bool get isSearching => _isSearching;
   String? get error => _error;
+  String? get searchError => _searchError;
   bool get hasMore => _hasMore;
   int get total => _total;
 
@@ -50,6 +54,9 @@ class OfferProvider extends ChangeNotifier {
 
   Offer? offerById(String id) {
     for (final offer in _offers) {
+      if (offer.id == id) return offer;
+    }
+    for (final offer in _searchResults) {
       if (offer.id == id) return offer;
     }
     return null;
@@ -98,26 +105,22 @@ class OfferProvider extends ChangeNotifier {
   Future<void> searchOffers(String query) async {
     if (query.trim().isEmpty) {
       _searchQuery = '';
-      _error = null;
-      _offers = const [];
-      _hasMore = true;
-      _currentPage = 1;
-      _total = 0;
+      _searchError = null;
+      _searchResults = const [];
       notifyListeners();
       return;
     }
     _isSearching = true;
     _searchQuery = query;
-    _error = null;
+    _searchError = null;
     notifyListeners();
     try {
       final result = await _offerService.fetchOffers(query: query);
-      _offers = result.data;
-      _currentPage = 1;
+      _searchResults = result.data;
       _hasMore = result.hasMore;
       _total = result.total;
     } catch (_) {
-      _error = 'Search failed. Try again.';
+      _searchError = 'Search failed. Try again.';
     }
     _isSearching = false;
     notifyListeners();
@@ -125,10 +128,19 @@ class OfferProvider extends ChangeNotifier {
 
   Future<void> toggleFavorite(String offerId) async {
     final index = _offers.indexWhere((o) => o.id == offerId);
-    if (index == -1) return;
+    final sIndex = _searchResults.indexWhere((o) => o.id == offerId);
+    if (index == -1 && sIndex == -1) return;
 
-    final wasFavorite = _offers[index].isFavorite;
-    _offers[index] = _offers[index].copyWith(isFavorite: !wasFavorite);
+    bool wasFavorite = false;
+    if (index != -1) {
+      wasFavorite = _offers[index].isFavorite;
+      _offers[index] = _offers[index].copyWith(isFavorite: !wasFavorite);
+    }
+    if (sIndex != -1) {
+      wasFavorite = _searchResults[sIndex].isFavorite;
+      _searchResults[sIndex] = _searchResults[sIndex].copyWith(isFavorite: !wasFavorite);
+    }
+
     notifyListeners();
 
     try {
@@ -138,7 +150,12 @@ class OfferProvider extends ChangeNotifier {
         await _favoritesService.addFavorite(offerId);
       }
     } catch (_) {
-      _offers[index] = _offers[index].copyWith(isFavorite: wasFavorite);
+      if (index != -1) {
+        _offers[index] = _offers[index].copyWith(isFavorite: wasFavorite);
+      }
+      if (sIndex != -1) {
+        _searchResults[sIndex] = _searchResults[sIndex].copyWith(isFavorite: wasFavorite);
+      }
       notifyListeners();
     }
   }
@@ -154,6 +171,9 @@ class OfferProvider extends ChangeNotifier {
       final favorites = await _favoritesService.fetchFavorites();
       final favoriteIds = favorites.map((o) => o.id).toSet();
       _offers = _offers.map((offer) {
+        return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
+      }).toList(growable: false);
+      _searchResults = _searchResults.map((offer) {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);
       notifyListeners();

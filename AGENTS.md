@@ -51,6 +51,9 @@
   - `DEVELOPMENT_TEAM = GBBV66G8DH` persisted in `project.pbxproj` for future iOS builds.
 - **Admin Account Created** — `namal@nomnom.lk` / `Namal@123` registered and promoted to `admin` role via `PUT /users/:id`. Works for both mobile app and admin dashboard login.
 
+### Done
+- **Build Fixes + Search + Favorite Button Fix** — `const` removed from `BoxDecoration`/`SizedBox` in 5 files (splash, login, register, verify_email, offer_image). Backend offer search via `search_vector @@ to_tsquery` with `:*` prefix matching. Backend restaurant search via `name ILIKE`. Shimmer overflow crash fixed (`SingleChildScrollView`). Search isolation in providers (`_searchResults` separate from `_offers`). Search screen rewritten as combined Restaurants + Offers layout. Favorite button root cause: `ApiClient.post()` threw `TypeError` on empty 201 response body from `POST /favorites` → rollback in `toggleFavorite()` reverted optimistic update. Fixed with null/type guard in `post()` matching `put()`.
+
 ### Blocked
 - **iOS device debug mode** — Flutter 3.29.3 incompatible with iOS 26.5 JIT. No workaround without Flutter upgrade.
 - **iOS push notifications** — Requires paid Apple Developer Account ($99/yr) for APNs entitlement.

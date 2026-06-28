@@ -42,9 +42,10 @@ func (s *SearchService) buildOfferBase(filters SearchFilters) *gorm.DB {
 
 	if filters.Query != "" {
 		tsQuery := strings.Join(strings.Fields(filters.Query), " & ")
+		prefixQuery := strings.ReplaceAll(tsQuery, " & ", ":* & ") + ":*"
 		tx = tx.Where(
 			"offers.search_vector @@ to_tsquery('simple', ?)",
-			tsQuery,
+			prefixQuery,
 		)
 	}
 

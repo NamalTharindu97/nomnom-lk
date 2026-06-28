@@ -38,6 +38,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>> post(String path, dynamic data) async {
     final response = await _dio.post(path, data: data);
+    if (response.data == null || response.data is! Map) return <String, dynamic>{};
     return response.data as Map<String, dynamic>;
   }
 

@@ -29,9 +29,10 @@ func NewOfferHandler(service *services.OfferService, sseService *services.SSESer
 func (h *OfferHandler) List(c *gin.Context) {
 	status := c.DefaultQuery("status", "approved")
 	sort := c.DefaultQuery("sort", "newest")
+	query := c.Query("q")
 	params := pagination.Extract(c)
 
-	offers, total, err := h.service.List(status, params.Page, params.PerPage, sort)
+	offers, total, err := h.service.List(status, query, params.Page, params.PerPage, sort)
 	if err != nil {
 		response.InternalError(c, "failed to list offers")
 		return

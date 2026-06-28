@@ -31,13 +31,17 @@ func (r *RestaurantRepo) FindByID(id uuid.UUID) (*models.Restaurant, error) {
 	return &restaurant, nil
 }
 
-func (r *RestaurantRepo) FindAll(status string, page, perPage int) ([]models.Restaurant, int64, error) {
+func (r *RestaurantRepo) FindAll(status, queryStr string, page, perPage int) ([]models.Restaurant, int64, error) {
 	var restaurants []models.Restaurant
 	var total int64
 
 	query := r.db.Model(&models.Restaurant{})
 	if status != "" && status != "all" {
 		query = query.Where("status = ?", status)
+	}
+	if queryStr != "" {
+		like := "%" + queryStr + "%"
+		query = query.Where("name ILIKE ? OR COALESCE(description, '') ILIKE ?", like, like)
 	}
 	query.Count(&total)
 
@@ -125,5 +129,5 @@ func (r *RestaurantRepo) FindByOwnerID(ownerID uuid.UUID) ([]models.Restaurant, 
 }
 
 func (r *RestaurantRepo) FindPending(page, perPage int) ([]models.Restaurant, int64, error) {
-	return r.FindAll(string(models.RestaurantPending), page, perPage)
+	return r.FindAll(string(models.RestaurantPending), "", page, perPage)
 }

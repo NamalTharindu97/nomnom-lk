@@ -63,8 +63,8 @@ func (s *RestaurantService) GetByID(id uuid.UUID) (*models.Restaurant, error) {
 	return restaurant, nil
 }
 
-func (s *RestaurantService) List(status string, page, perPage int) ([]models.Restaurant, int64, error) {
-	return s.repo.FindAll(status, page, perPage)
+func (s *RestaurantService) List(status, query string, page, perPage int) ([]models.Restaurant, int64, error) {
+	return s.repo.FindAll(status, query, page, perPage)
 }
 
 func (s *RestaurantService) Update(id uuid.UUID, req *request.UpdateRestaurantRequest, requesterID uuid.UUID, isAdmin bool) (*models.Restaurant, error) {

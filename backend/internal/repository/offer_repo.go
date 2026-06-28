@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,13 +32,18 @@ func (r *OfferRepo) FindByID(id uuid.UUID) (*models.Offer, error) {
 	return &offer, nil
 }
 
-func (r *OfferRepo) FindAll(status string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+func (r *OfferRepo) FindAll(status, queryStr string, page, perPage int, sort string) ([]models.Offer, int64, error) {
 	var offers []models.Offer
 	var total int64
 
 	query := r.db.Model(&models.Offer{})
 	if status != "" && status != "all" {
 		query = query.Where("offers.status = ?", status)
+	}
+	if queryStr != "" {
+		tsQuery := strings.Join(strings.Fields(queryStr), " & ")
+		prefixQuery := strings.ReplaceAll(tsQuery, " & ", ":* & ") + ":*"
+		query = query.Where("offers.search_vector @@ to_tsquery('simple', ?)", prefixQuery)
 	}
 	query.Count(&total)
 
@@ -86,7 +92,7 @@ func (r *OfferRepo) FindByRestaurantID(restaurantID uuid.UUID) ([]models.Offer, 
 }
 
 func (r *OfferRepo) FindPending(page, perPage int) ([]models.Offer, int64, error) {
-	return r.FindAll(string(models.OfferPending), page, perPage, "newest")
+	return r.FindAll(string(models.OfferPending), "", page, perPage, "newest")
 }
 
 func (r *OfferRepo) CountAll(count *int64) error {

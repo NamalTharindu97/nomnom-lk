@@ -28,9 +28,10 @@ func NewRestaurantHandler(service *services.RestaurantService, sseService *servi
 
 func (h *RestaurantHandler) List(c *gin.Context) {
 	status := c.DefaultQuery("status", "approved")
+	query := c.Query("q")
 	params := pagination.Extract(c)
 
-	restaurants, total, err := h.service.List(status, params.Page, params.PerPage)
+	restaurants, total, err := h.service.List(status, query, params.Page, params.PerPage)
 	if err != nil {
 		response.InternalError(c, "failed to list restaurants")
 		return

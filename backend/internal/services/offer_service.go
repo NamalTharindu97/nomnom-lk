@@ -79,8 +79,8 @@ func (s *OfferService) GetByID(id uuid.UUID) (*models.Offer, error) {
 	return offer, nil
 }
 
-func (s *OfferService) List(status string, page, perPage int, sort string) ([]models.Offer, int64, error) {
-	return s.repo.FindAll(status, page, perPage, sort)
+func (s *OfferService) List(status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+	return s.repo.FindAll(status, query, page, perPage, sort)
 }
 
 func (s *OfferService) Update(id uuid.UUID, req *request.UpdateOfferRequest, requesterID uuid.UUID, isAdmin bool) (*models.Offer, error) {
