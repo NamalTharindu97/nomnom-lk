@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/app_logo.dart';
 
@@ -181,12 +182,12 @@ class _LoginScreenState extends State<LoginScreen>
 
     return Scaffold(
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppColors.deepCharcoal,
-              AppColors.charcoal,
-              Color(0xFF24170C),
+              context.colors.background,
+              context.colors.backgroundAlt,
+              const Color(0xFF24170C),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -229,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen>
                             "Find Sri Lanka's Best\nFood Deals",
                             textAlign: TextAlign.center,
                             style: textTheme.headlineMedium?.copyWith(
-                              color: AppColors.cream,
+                              color: context.colors.textPrimary,
                               fontWeight: FontWeight.w900,
                               height: 1.15,
                             ),
@@ -244,15 +245,15 @@ class _LoginScreenState extends State<LoginScreen>
                         ).animate(_googleBtnAnim),
                         child: FadeTransition(
                           opacity: _googleBtnAnim,
-                            child: ElevatedButton.icon(
+                                child: ElevatedButton.icon(
                                 onPressed: isLoading || _isGoogleLoading ? null : _signInWithGoogle,
                                 icon: isLoading || _isGoogleLoading
-                                    ? const SizedBox(
+                                    ? SizedBox(
                                         width: 20,
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: AppColors.deepCharcoal,
+                                          color: context.colors.background,
                                         ),
                                       )
                                     : const Icon(Icons.g_mobiledata_rounded, size: 28),
@@ -265,8 +266,8 @@ class _LoginScreenState extends State<LoginScreen>
                         opacity: _dividerAnim,
                         child: Row(
                           children: [
-                            const Expanded(
-                              child: Divider(color: AppColors.cardElevated),
+                            Expanded(
+                              child: Divider(color: context.colors.surfaceAlt),
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -277,8 +278,8 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                             ),
-                            const Expanded(
-                              child: Divider(color: AppColors.cardElevated),
+                            Expanded(
+                              child: Divider(color: context.colors.surfaceAlt),
                             ),
                           ],
                         ),
@@ -309,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen>
                               key: _formKey,
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.cardDark,
+                                  color: context.colors.surface,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color:

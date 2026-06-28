@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 
 class OfferImage extends StatelessWidget {
   const OfferImage({
@@ -52,11 +53,11 @@ class _ImageFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.cardElevated,
-            AppColors.charcoal,
+            context.colors.surfaceAlt,
+            context.colors.backgroundAlt,
             AppColors.chili,
           ],
           begin: Alignment.topLeft,
@@ -70,9 +71,9 @@ class _ImageFallback extends StatelessWidget {
                 height: 24,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Icon(
+            : Icon(
                 Icons.local_dining_rounded,
-                color: AppColors.cream,
+                color: context.colors.textPrimary,
                 size: 36,
               ),
       ),

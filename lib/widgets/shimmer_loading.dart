@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 
 class OfferCardShimmer extends StatelessWidget {
   const OfferCardShimmer({super.key});
@@ -9,13 +10,13 @@ class OfferCardShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: AppColors.cardDark,
-      highlightColor: AppColors.cardElevated,
+      baseColor: context.colors.surface,
+      highlightColor: context.colors.surfaceAlt,
       child: Container(
         height: 280,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         decoration: BoxDecoration(
-          color: AppColors.cardDark,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -86,13 +87,13 @@ class RestaurantCardShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: AppColors.cardDark,
-      highlightColor: AppColors.cardElevated,
+      baseColor: context.colors.surface,
+      highlightColor: context.colors.surfaceAlt,
       child: Container(
         height: 100,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         decoration: BoxDecoration(
-          color: AppColors.cardDark,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Padding(

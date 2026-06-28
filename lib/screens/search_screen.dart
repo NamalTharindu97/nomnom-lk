@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../providers/offer_provider.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/offer_card.dart';
@@ -66,7 +67,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   Text(
                     'Search',
                     style: textTheme.headlineSmall?.copyWith(
-                      color: AppColors.cream,
+                      color: context.colors.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),

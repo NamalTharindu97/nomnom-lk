@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
 import '../services/api_client.dart';
@@ -132,7 +133,7 @@ class _OfferDetailsContent extends StatelessWidget {
                             Text(
                               offer.title,
                               style: textTheme.headlineSmall?.copyWith(
-                                color: AppColors.cream,
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -140,7 +141,7 @@ class _OfferDetailsContent extends StatelessWidget {
                             Text(
                               offer.restaurantName,
                               style: textTheme.titleMedium?.copyWith(
-                                color: AppColors.coconut,
+                                color: context.colors.textSecondary,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -157,7 +158,7 @@ class _OfferDetailsContent extends StatelessWidget {
                   Text(
                     offer.description,
                     style: textTheme.bodyLarge?.copyWith(
-                      color: AppColors.coconut,
+                      color: context.colors.textSecondary,
                       height: 1.45,
                     ),
                   ),
@@ -203,7 +204,7 @@ class _PricePanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardDark,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
@@ -276,7 +277,7 @@ class _InfoRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cardDark,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -298,7 +299,7 @@ class _InfoRow extends StatelessWidget {
                 Text(
                   value,
                   style: textTheme.bodyLarge?.copyWith(
-                    color: AppColors.cream,
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -327,7 +328,7 @@ class _DiscountPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.deepCharcoal,
+              color: context.colors.background,
               fontWeight: FontWeight.w900,
             ),
       ),

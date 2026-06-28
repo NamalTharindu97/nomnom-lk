@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../providers/offer_provider.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/empty_state.dart';
@@ -25,7 +26,7 @@ class HomeScreen extends StatelessWidget {
 
           return RefreshIndicator(
             onRefresh: provider.refreshOffers,
-            color: AppColors.deepCharcoal,
+            color: context.colors.background,
             backgroundColor: AppColors.curry,
             child: NotificationListener<ScrollNotification>(
               onNotification: (notification) {
@@ -121,7 +122,7 @@ class _HomeHeader extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.cardElevated,
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -138,7 +139,7 @@ class _HomeHeader extends StatelessWidget {
             Text(
               'Today near you',
               style: textTheme.headlineSmall?.copyWith(
-                color: AppColors.cream,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -157,7 +158,7 @@ class _HomeHeader extends StatelessWidget {
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.cardDark,
+                  color: context.colors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.06),

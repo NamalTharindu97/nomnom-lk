@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -32,7 +33,7 @@ class EmptyState extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.cardElevated,
+                color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: AppColors.curry, size: 30),
@@ -42,7 +43,7 @@ class EmptyState extends StatelessWidget {
               title,
               textAlign: TextAlign.center,
               style: textTheme.titleMedium?.copyWith(
-                color: AppColors.cream,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -60,7 +61,7 @@ class EmptyState extends StatelessWidget {
                 label: Text(retryLabel ?? 'Retry'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.curry,
-                  foregroundColor: AppColors.deepCharcoal,
+                  foregroundColor: context.colors.background,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

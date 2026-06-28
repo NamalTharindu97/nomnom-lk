@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 
 class AppLogo extends StatelessWidget {
   const AppLogo({
@@ -33,7 +34,7 @@ class AppLogo extends StatelessWidget {
           ),
           child: Icon(
             Icons.restaurant_menu_rounded,
-            color: AppColors.deepCharcoal,
+            color: context.colors.background,
             size: compact ? 22 : 30,
           ),
         ),
@@ -42,7 +43,7 @@ class AppLogo extends StatelessWidget {
           'NomNom LK',
           style: (compact ? textTheme.titleLarge : textTheme.headlineMedium)
               ?.copyWith(
-            color: AppColors.cream,
+            color: context.colors.textPrimary,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
           ),

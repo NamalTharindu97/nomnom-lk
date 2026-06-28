@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/empty_state.dart';
@@ -39,7 +40,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Text(
                       'Notifications',
                       style: textTheme.headlineSmall?.copyWith(
-                        color: AppColors.cream,
+                        color: context.colors.textPrimary,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -123,7 +124,7 @@ class _NotificationTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: notification.isRead
               ? Colors.transparent
-              : AppColors.cardDark.withValues(alpha: 0.5),
+              : context.colors.surface.withValues(alpha: 0.5),
           border: Border(
             bottom: BorderSide(
               color: Colors.white.withValues(alpha: 0.04),
@@ -149,7 +150,7 @@ class _NotificationTile extends StatelessWidget {
                   Text(
                     notification.title,
                     style: textTheme.bodyLarge?.copyWith(
-                      color: AppColors.cream,
+                      color: context.colors.textPrimary,
                       fontWeight:
                           notification.isRead ? FontWeight.w600 : FontWeight.w800,
                     ),

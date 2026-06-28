@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../models/restaurant.dart';
 import '../providers/restaurant_provider.dart';
 import '../widgets/empty_state.dart';
@@ -39,7 +40,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                   Text(
                     'Restaurants',
                     style: textTheme.headlineSmall?.copyWith(
-                      color: AppColors.cream,
+                      color: context.colors.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -55,7 +56,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.cardElevated,
+                          color: context.colors.surfaceAlt,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -75,7 +76,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
               child: RefreshIndicator(
                 onRefresh: () =>
                     context.read<RestaurantProvider>().refreshRestaurants(),
-                color: AppColors.deepCharcoal,
+                color: context.colors.background,
                 backgroundColor: AppColors.curry,
                 child: Consumer<RestaurantProvider>(
                   builder: (context, provider, child) {
@@ -159,7 +160,7 @@ class _RestaurantCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardDark,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
@@ -169,7 +170,7 @@ class _RestaurantCard extends StatelessWidget {
             Text(
               restaurant.name,
               style: textTheme.titleMedium?.copyWith(
-                color: AppColors.cream,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.w800,
               ),
             ),

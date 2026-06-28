@@ -12,6 +12,7 @@ import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/offer_provider.dart';
 import 'providers/restaurant_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/offer_details_screen.dart';
@@ -35,11 +36,15 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase init skipped (no config): $e');
   }
-  runApp(const NomNomBootstrap());
+  final themeProvider = ThemeProvider();
+  await themeProvider.load();
+  runApp(NomNomBootstrap(themeProvider: themeProvider));
 }
 
 class NomNomBootstrap extends StatelessWidget {
-  const NomNomBootstrap({super.key});
+  const NomNomBootstrap({super.key, required this.themeProvider});
+
+  final ThemeProvider themeProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +52,7 @@ class NomNomBootstrap extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<ApiClient>.value(value: apiClient),
+        ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(ApiAuthService(apiClient)),
         ),
@@ -188,12 +194,13 @@ class NomNomApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = context.watch<ThemeProvider>().mode;
     return MaterialApp(
       title: 'NomNom LK',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (_) => const SplashScreen(),

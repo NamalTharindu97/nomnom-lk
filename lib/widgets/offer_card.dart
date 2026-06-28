@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../utils/currency_formatter.dart';
 import 'favorite_button.dart';
@@ -22,7 +23,7 @@ class OfferCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Material(
-        color: AppColors.cardDark,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -67,7 +68,7 @@ class OfferCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.titleMedium?.copyWith(
-                              color: AppColors.cream,
+                              color: context.colors.textPrimary,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -86,7 +87,7 @@ class OfferCard extends StatelessWidget {
                     Text(
                       offer.restaurantName,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: AppColors.coconut,
+                        color: context.colors.textSecondary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -147,7 +148,7 @@ class _DiscountBadge extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.deepCharcoal,
+              color: context.colors.background,
               fontWeight: FontWeight.w900,
             ),
       ),

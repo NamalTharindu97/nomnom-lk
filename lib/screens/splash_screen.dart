@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
@@ -77,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.deepCharcoal,
+      backgroundColor: context.colors.background,
       body: _SplashBody(
         fade: _fade,
         scale: _scale,
@@ -98,12 +99,12 @@ class _SplashBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.deepCharcoal,
-            AppColors.charcoal,
-            Color(0xFF26130F),
+            context.colors.background,
+            context.colors.backgroundAlt,
+            const Color(0xFF26130F),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,

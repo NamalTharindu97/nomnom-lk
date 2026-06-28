@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../providers/offer_provider.dart';
 
 class FavoriteButton extends StatelessWidget {
@@ -41,7 +42,7 @@ class FavoriteButton extends StatelessWidget {
                 backgroundColor:
                     isFavorite ? AppColors.chili : AppColors.curry,
                 foregroundColor:
-                    isFavorite ? AppColors.cream : AppColors.deepCharcoal,
+                    isFavorite ? context.colors.textPrimary : context.colors.background,
               ),
             ),
           );
@@ -52,8 +53,8 @@ class FavoriteButton extends StatelessWidget {
           tooltip: isFavorite ? 'Remove favorite' : 'Save favorite',
           icon: icon,
           style: IconButton.styleFrom(
-            backgroundColor: AppColors.deepCharcoal.withValues(alpha: 0.78),
-            foregroundColor: isFavorite ? AppColors.chili : AppColors.cream,
+            backgroundColor: context.colors.background.withValues(alpha: 0.78),
+            foregroundColor: isFavorite ? AppColors.chili : context.colors.textPrimary,
           ),
         );
       },

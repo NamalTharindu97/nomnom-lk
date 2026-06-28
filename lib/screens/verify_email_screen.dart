@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/app_logo.dart';
 
@@ -133,12 +134,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
 
     return Scaffold(
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppColors.deepCharcoal,
-              AppColors.charcoal,
-              Color(0xFF24170C),
+              context.colors.background,
+              context.colors.backgroundAlt,
+              const Color(0xFF24170C),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -182,7 +183,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                               "Check your email",
                               textAlign: TextAlign.center,
                               style: textTheme.titleLarge?.copyWith(
-                                color: AppColors.cream,
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -233,7 +234,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                             opacity: _codeAnim,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: AppColors.cardDark,
+                                color: context.colors.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.06),
@@ -289,12 +290,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                               child: ElevatedButton.icon(
                                 onPressed: isLoading ? null : _verify,
                                 icon: isLoading
-                                    ? const SizedBox(
+                                     ? SizedBox(
                                         width: 20,
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: AppColors.deepCharcoal,
+                                          color: context.colors.background,
                                         ),
                                       )
                                     : const Icon(Icons.check_rounded, size: 22),
