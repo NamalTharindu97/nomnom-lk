@@ -23,6 +23,17 @@ class OfferImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: SizedBox(
+          height: height,
+          width: width,
+          child: const _ImageFallback(),
+        ),
+      );
+    }
+
     final image = ClipRRect(
       borderRadius: borderRadius,
       child: SizedBox(

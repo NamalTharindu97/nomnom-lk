@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/restaurant_provider.dart';
@@ -77,7 +78,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            top: BorderSide(color: context.colors.surfaceAlt.withValues(alpha: 0.5)),
           ),
         ),
         child: BottomNavigationBar(
@@ -85,55 +86,90 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           onTap: _selectTab,
           type: BottomNavigationBarType.fixed,
           items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.local_fire_department_outlined),
-              activeIcon: Icon(Icons.local_fire_department_rounded),
+            BottomNavigationBarItem(
+              icon: _NavIcon(
+                isSelected: _selectedIndex == 0,
+                icon: Icons.local_fire_department_outlined,
+                activeIcon: Icons.local_fire_department_rounded,
+              ),
               label: 'Home',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.search_rounded),
-              activeIcon: Icon(Icons.search_rounded),
+            BottomNavigationBarItem(
+              icon: _NavIcon(
+                isSelected: _selectedIndex == 1,
+                icon: Icons.search_rounded,
+                activeIcon: Icons.search_rounded,
+              ),
               label: 'Search',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border_rounded),
-              activeIcon: Icon(Icons.favorite_rounded),
+            BottomNavigationBarItem(
+              icon: _NavIcon(
+                isSelected: _selectedIndex == 2,
+                icon: Icons.favorite_border_rounded,
+                activeIcon: Icons.favorite_rounded,
+              ),
               label: 'Favorites',
             ),
             BottomNavigationBarItem(
-              icon: Consumer<NotificationProvider>(
-                builder: (_, provider, __) {
-                  if (provider.unreadCount > 0) {
-                    return Badge(
-                      label: Text('${provider.unreadCount}'),
-                      child: const Icon(Icons.notifications_outlined),
-                    );
-                  }
-                  return const Icon(Icons.notifications_outlined);
-                },
-              ),
-              activeIcon: Consumer<NotificationProvider>(
-                builder: (_, provider, __) {
-                  if (provider.unreadCount > 0) {
-                    return Badge(
-                      label: Text('${provider.unreadCount}'),
-                      child: const Icon(Icons.notifications_rounded),
-                    );
-                  }
-                  return const Icon(Icons.notifications_rounded);
-                },
+              icon: _NavIcon(
+                isSelected: _selectedIndex == 3,
+                icon: Icons.notifications_outlined,
+                activeIcon: Icons.notifications_rounded,
+                badge: context.watch<NotificationProvider>().unreadCount,
               ),
               label: 'Alerts',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
+            BottomNavigationBarItem(
+              icon: _NavIcon(
+                isSelected: _selectedIndex == 4,
+                icon: Icons.person_outline_rounded,
+                activeIcon: Icons.person_rounded,
+              ),
               label: 'Profile',
             ),
           ],
           selectedItemColor: AppColors.curry,
         ),
       ),
+    );
+  }
+}
+
+class _NavIcon extends StatelessWidget {
+  const _NavIcon({
+    required this.isSelected,
+    required this.icon,
+    required this.activeIcon,
+    this.badge,
+  });
+
+  final bool isSelected;
+  final IconData icon;
+  final IconData activeIcon;
+  final int? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.elasticOut,
+      switchOutCurve: Curves.easeOut,
+      transitionBuilder: (child, animation) {
+        return ScaleTransition(scale: animation, child: child);
+      },
+      child: badge != null && badge! > 0
+          ? Badge(
+              key: ValueKey('nav-badge-$isSelected'),
+              label: Text('$badge'),
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                key: ValueKey('nav-icon-$isSelected'),
+              ),
+            )
+          : Icon(
+              isSelected ? activeIcon : icon,
+              key: ValueKey('nav-icon-$isSelected'),
+            ),
     );
   }
 }

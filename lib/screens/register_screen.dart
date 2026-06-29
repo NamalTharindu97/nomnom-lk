@@ -6,6 +6,7 @@ import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
+import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -136,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               selector: (_, provider) => provider.isLoading,
               builder: (context, isLoading, _) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  padding: const EdgeInsets.symmetric(horizontal: Spacings.xl + 4),
                   child: Form(
                     key: _formKey,
                     onChanged: () => _formKey.currentState?.validate(),
@@ -191,7 +192,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   color: Colors.white.withValues(alpha: 0.06),
                                 ),
                               ),
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(Spacings.lg),
                               child: Column(
                                 children: [
                                   TextFormField(

@@ -8,6 +8,7 @@ import '../providers/offer_provider.dart';
 import '../services/api_client.dart';
 import '../services/api_offer_service.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/favorite_button.dart';
 import '../widgets/offer_image.dart';
@@ -105,7 +106,7 @@ class _OfferDetailsContent extends StatelessWidget {
             stretch: true,
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.only(right: Spacings.xs),
                 child: FavoriteButton(offerId: offer.id),
               ),
             ],
@@ -119,7 +120,7 @@ class _OfferDetailsContent extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+              padding: const EdgeInsets.fromLTRB(Spacings.lg, 22, Spacings.lg, Spacings.xl + 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -202,7 +203,7 @@ class _PricePanel extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(Spacings.md),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
@@ -275,7 +276,7 @@ class _InfoRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(Spacings.sm + 2),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
@@ -320,7 +321,7 @@ class _DiscountPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: Spacings.xs, vertical: Spacings.xs),
       decoration: BoxDecoration(
         color: AppColors.curry,
         borderRadius: BorderRadius.circular(8),

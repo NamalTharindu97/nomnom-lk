@@ -5,8 +5,10 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/restaurant.dart';
 import '../providers/restaurant_provider.dart';
+import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/shimmer_loading.dart';
+import '../widgets/stagger_item.dart';
 
 class RestaurantsScreen extends StatefulWidget {
   const RestaurantsScreen({super.key});
@@ -34,7 +36,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+              padding: const EdgeInsets.fromLTRB(Spacings.md, 18, Spacings.md, Spacings.sm),
               child: Row(
                 children: [
                   Text(
@@ -52,7 +54,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                       }
                       return Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: Spacings.xs,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
@@ -119,19 +121,22 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                         return false;
                       },
                       child: ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.only(bottom: Spacings.md),
                         physics: const AlwaysScrollableScrollPhysics(),
                         itemCount: restaurants.length + (provider.isLoadingMore ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index >= restaurants.length) {
                             return const Padding(
-                              padding: EdgeInsets.all(16),
+                              padding: EdgeInsets.all(Spacings.md),
                               child: Center(
                                 child: CircularProgressIndicator(strokeWidth: 2.4),
                               ),
                             );
                           }
-                          return _RestaurantCard(restaurant: restaurants[index]);
+                          return StaggerItem(
+                            index: index,
+                            child: _RestaurantCard(restaurant: restaurants[index]),
+                          );
                         },
                       ),
                     );
@@ -156,9 +161,9 @@ class _RestaurantCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.sm),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacings.md),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
@@ -174,7 +179,7 @@ class _RestaurantCard extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: Spacings.xxs),
             Text(
               restaurant.address,
               style: textTheme.bodyMedium?.copyWith(
@@ -182,16 +187,16 @@ class _RestaurantCard extends StatelessWidget {
               ),
             ),
             if (restaurant.cuisineTags.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: restaurant.cuisineTags.map((tag) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+              const SizedBox(height: Spacings.xs),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: Spacings.xxs,
+                    children: restaurant.cuisineTags.map((tag) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacings.xs,
+                          vertical: Spacings.xxs,
+                        ),
                     decoration: BoxDecoration(
                       color: AppColors.curry.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),

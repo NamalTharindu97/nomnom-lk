@@ -6,6 +6,7 @@ import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
+import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
@@ -151,7 +152,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
               selector: (_, provider) => provider.isLoading,
               builder: (context, isLoading, _) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  padding: const EdgeInsets.symmetric(horizontal: Spacings.xl + 4),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -240,7 +241,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                   color: Colors.white.withValues(alpha: 0.06),
                                 ),
                               ),
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(Spacings.lg),
                               child: TextFormField(
                                 controller: _codeController,
                                 keyboardType: TextInputType.number,

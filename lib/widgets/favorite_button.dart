@@ -21,13 +21,16 @@ class FavoriteButton extends StatelessWidget {
       selector: (_, provider) => provider.offerById(offerId)?.isFavorite ?? false,
       builder: (context, isFavorite, child) {
         final icon = AnimatedSwitcher(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.elasticOut,
+          switchOutCurve: Curves.easeOut,
           transitionBuilder: (child, animation) {
             return ScaleTransition(scale: animation, child: child);
           },
           child: Icon(
             isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             key: ValueKey(isFavorite),
+            color: isFavorite ? AppColors.chili : null,
           ),
         );
 

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
+import '../utils/spacings.dart';
 
-class EmptyState extends StatelessWidget {
+class EmptyState extends StatefulWidget {
   const EmptyState({
     super.key,
     required this.icon,
@@ -20,45 +21,79 @@ class EmptyState extends StatelessWidget {
   final String? retryLabel;
 
   @override
+  State<EmptyState> createState() => _EmptyStateState();
+}
+
+class _EmptyStateState extends State<EmptyState>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Spacings.xxxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: context.colors.surfaceAlt,
-                borderRadius: BorderRadius.circular(8),
+            AnimatedBuilder(
+              animation: _pulseAnim,
+              builder: (context, child) => Transform.scale(
+                scale: _pulseAnim.value,
+                child: child,
               ),
-              child: Icon(icon, color: AppColors.curry, size: 30),
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: context.colors.surfaceAlt,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(widget.icon, color: AppColors.curry, size: 30),
+              ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: Spacings.lg),
             Text(
-              title,
+              widget.title,
               textAlign: TextAlign.center,
               style: textTheme.titleMedium?.copyWith(
                 color: context.colors.textPrimary,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacings.xs),
             Text(
-              message,
+              widget.message,
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
             ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 20),
+            if (widget.onRetry != null) ...[
+              const SizedBox(height: Spacings.lg),
               FilledButton.icon(
-                onPressed: onRetry,
+                onPressed: widget.onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(retryLabel ?? 'Retry'),
+                label: Text(widget.retryLabel ?? 'Retry'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.curry,
                   foregroundColor: context.colors.background,

@@ -5,6 +5,8 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/spacings.dart';
+import 'discount_badge.dart';
 import 'favorite_button.dart';
 import 'offer_image.dart';
 
@@ -21,7 +23,7 @@ class OfferCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.md),
       child: Material(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
@@ -44,19 +46,19 @@ class OfferCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 12,
-                    left: 12,
-                    child: _DiscountBadge(label: offer.discountLabel),
+                    top: Spacings.sm,
+                    left: Spacings.sm,
+                    child: DiscountBadge(label: offer.discountLabel),
                   ),
                   Positioned(
                     top: 8,
-                    right: 8,
+                    right: Spacings.xs,
                     child: FavoriteButton(offerId: offer.id),
                   ),
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(Spacings.sm + 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -73,7 +75,7 @@ class OfferCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: Spacings.sm),
                         Text(
                           CurrencyFormatter.lkr(offer.offerPrice),
                           style: textTheme.titleMedium?.copyWith(
@@ -83,7 +85,7 @@ class OfferCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Spacings.xs),
                     Text(
                       offer.restaurantName,
                       style: textTheme.bodyMedium?.copyWith(
@@ -91,7 +93,7 @@ class OfferCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: Spacings.xs),
                     Row(
                       children: [
                         const Icon(
@@ -99,7 +101,7 @@ class OfferCard extends StatelessWidget {
                           color: AppColors.ocean,
                           size: 18,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: Spacings.xxs),
                         Expanded(
                           child: Text(
                             offer.location,
@@ -132,26 +134,4 @@ class OfferCard extends StatelessWidget {
   }
 }
 
-class _DiscountBadge extends StatelessWidget {
-  const _DiscountBadge({required this.label});
 
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: AppColors.curry,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: context.colors.background,
-              fontWeight: FontWeight.w900,
-            ),
-      ),
-    );
-  }
-}

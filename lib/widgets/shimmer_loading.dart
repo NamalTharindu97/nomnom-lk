@@ -1,8 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
+import '../utils/spacings.dart';
+
+class _SkeletonBlock extends StatelessWidget {
+  const _SkeletonBlock({
+    this.width,
+    required this.height,
+  });
+
+  final double? width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+}
+
+class _SkeletonCircle extends StatelessWidget {
+  const _SkeletonCircle({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
 
 class OfferCardShimmer extends StatelessWidget {
   const OfferCardShimmer({super.key});
@@ -14,7 +54,7 @@ class OfferCardShimmer extends StatelessWidget {
       highlightColor: context.colors.surfaceAlt,
       child: Container(
         height: 280,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        margin: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.md),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
@@ -24,41 +64,26 @@ class OfferCardShimmer extends StatelessWidget {
           children: [
             Container(
               height: 150,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+              decoration: BoxDecoration(
+                color: context.colors.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(Spacings.sm),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 180,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 120,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 80,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                  const _SkeletonBlock(width: 180, height: 14),
+                  const SizedBox(height: Spacings.xs),
+                  const _SkeletonBlock(width: 120, height: 12),
+                  const SizedBox(height: Spacings.xs),
+                  Row(
+                    children: [
+                      const _SkeletonBlock(width: 16, height: 12),
+                      const SizedBox(width: 6),
+                      const _SkeletonBlock(width: 100, height: 12),
+                    ],
                   ),
                 ],
               ),
@@ -93,40 +118,28 @@ class RestaurantCardShimmer extends StatelessWidget {
       highlightColor: context.colors.surfaceAlt,
       child: Container(
         height: 100,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        margin: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.sm),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(Spacings.md),
+          child: Row(
             children: [
-              Container(
-                width: 140,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: 200,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: 80,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+              const _SkeletonCircle(size: 44),
+              const SizedBox(width: Spacings.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const _SkeletonBlock(width: 140, height: 14),
+                    const SizedBox(height: Spacings.xs),
+                    const _SkeletonBlock(width: 200, height: 12),
+                    const SizedBox(height: Spacings.xs),
+                    const _SkeletonBlock(width: 80, height: 10),
+                  ],
                 ),
               ),
             ],

@@ -8,6 +8,7 @@ import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/theme_provider.dart';
+import '../utils/spacings.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -37,7 +38,7 @@ class ProfileScreen extends StatelessWidget {
             final user = authProvider.user ?? AppUser.guest();
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+              padding: const EdgeInsets.fromLTRB(Spacings.lg, 18, Spacings.lg, Spacings.xxl),
               children: [
                 const SizedBox(height: 8),
                 _ProfileHeader(user: user),
@@ -138,7 +139,7 @@ class _ProfileHeader extends StatelessWidget {
         ],
         const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: Spacings.sm, vertical: 5),
           decoration: BoxDecoration(
             color: AppColors.curry.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
@@ -229,7 +230,7 @@ class _StatCard extends StatelessWidget {
     final colors = context.colors;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: Spacings.md),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(12),
@@ -317,7 +318,7 @@ class _ThemeTile extends StatelessWidget {
     return InkWell(
       onTap: themeProvider.toggle,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
         child: Row(
           children: [
             Container(
@@ -390,7 +391,7 @@ class _MenuTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
         child: Row(
           children: [
             Container(

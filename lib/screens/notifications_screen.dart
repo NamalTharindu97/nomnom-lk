@@ -5,7 +5,9 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
+import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/stagger_item.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -33,7 +35,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+              padding: const EdgeInsets.fromLTRB(Spacings.md, 18, Spacings.md, Spacings.sm),
               child: Row(
                 children: [
                   Expanded(
@@ -84,13 +86,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.only(bottom: Spacings.md),
                     itemCount: notifications.length,
                     itemBuilder: (context, index) {
                       final n = notifications[index];
-                      return _NotificationTile(
-                        notification: n,
-                        onTap: () => provider.markAsRead(n.id),
+                      return StaggerItem(
+                        index: index,
+                        child: _NotificationTile(
+                          notification: n,
+                          onTap: () => provider.markAsRead(n.id),
+                        ),
                       );
                     },
                   );
@@ -120,7 +125,7 @@ class _NotificationTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: 14),
         decoration: BoxDecoration(
           color: notification.isRead
               ? Colors.transparent
@@ -137,7 +142,7 @@ class _NotificationTile extends StatelessWidget {
             Container(
               width: 8,
               height: 8,
-              margin: const EdgeInsets.only(top: 6, right: 12),
+              margin: const EdgeInsets.only(top: 6, right: Spacings.sm),
               decoration: BoxDecoration(
                 color: notification.isRead ? Colors.transparent : AppColors.curry,
                 shape: BoxShape.circle,
@@ -155,7 +160,7 @@ class _NotificationTile extends StatelessWidget {
                           notification.isRead ? FontWeight.w600 : FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Spacings.xxs),
                   Text(
                     notification.body,
                     style: textTheme.bodyMedium?.copyWith(

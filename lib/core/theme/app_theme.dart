@@ -2,6 +2,34 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
+class _NomNomSlideTransitionBuilder extends PageTransitionsBuilder {
+  const _NomNomSlideTransitionBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0.08, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      )),
+      child: FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+    );
+  }
+}
+
 class AppTheme {
   const AppTheme._();
 
@@ -104,7 +132,7 @@ class AppTheme {
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.android: _NomNomSlideTransitionBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
@@ -210,7 +238,7 @@ class AppTheme {
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.android: _NomNomSlideTransitionBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),

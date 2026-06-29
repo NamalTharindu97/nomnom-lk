@@ -8,6 +8,7 @@ import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
+import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -199,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen>
               selector: (_, provider) => provider.isLoading,
               builder: (context, isLoading, child) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  padding: const EdgeInsets.symmetric(horizontal: Spacings.xl + 4),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -270,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen>
                               child: Divider(color: context.colors.surfaceAlt),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2),
                               child: Text(
                                 'or continue with',
                                 style: textTheme.bodySmall?.copyWith(
@@ -317,7 +318,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         Colors.white.withValues(alpha: 0.06),
                                   ),
                                 ),
-                                padding: const EdgeInsets.all(20),
+                                padding: const EdgeInsets.all(Spacings.lg),
                                 child: Column(
                                   children: [
                                     TextFormField(

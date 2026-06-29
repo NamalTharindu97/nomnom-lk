@@ -30,6 +30,7 @@ class OfferProvider extends ChangeNotifier {
   int _currentPage = 1;
   bool _hasMore = true;
   int _total = 0;
+  String? _selectedCuisine;
 
   List<Offer> get offers => _cachedOffers;
   List<Offer> get searchResults => _cachedSearchResults;
@@ -43,17 +44,48 @@ class OfferProvider extends ChangeNotifier {
   bool get hasMore => _hasMore;
   int get total => _total;
 
-  List<Offer> get favoriteOffers {
-    return _offers.where((offer) => offer.isFavorite).toList(growable: false);
+  String? get selectedCuisine => _selectedCuisine;
+
+  List<String> get allCuisineTags {
+    final tags = <String>{};
+    for (final offer in _offers) {
+      tags.addAll(offer.cuisineTags);
+    }
+    final sorted = tags.toList()..sort();
+    return sorted;
   }
 
   List<Offer> get filteredOffers {
-    final query = _searchQuery.trim().toLowerCase();
-    if (query.isEmpty) return offers;
-    return _offers.where((offer) {
-      return offer.title.toLowerCase().contains(query) ||
-          offer.restaurantName.toLowerCase().contains(query);
-    }).toList(growable: false);
+    var results = _offers;
+    if (_searchQuery.trim().isNotEmpty) {
+      final query = _searchQuery.trim().toLowerCase();
+      results = results.where((offer) {
+        return offer.title.toLowerCase().contains(query) ||
+            offer.restaurantName.toLowerCase().contains(query);
+      }).toList(growable: false);
+    }
+    if (_selectedCuisine != null) {
+      results = results.where((offer) {
+        return offer.cuisineTags.contains(_selectedCuisine);
+      }).toList(growable: false);
+    }
+    return results;
+  }
+
+  void filterByCuisine(String? tag) {
+    if (_selectedCuisine == tag) return;
+    _selectedCuisine = tag;
+    notifyListeners();
+  }
+
+  void clearCuisineFilter() {
+    if (_selectedCuisine == null) return;
+    _selectedCuisine = null;
+    notifyListeners();
+  }
+
+  List<Offer> get favoriteOffers {
+    return _offers.where((offer) => offer.isFavorite).toList(growable: false);
   }
 
   Offer? offerById(String id) {

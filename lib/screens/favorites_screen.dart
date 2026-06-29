@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/offer_provider.dart';
+import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/offer_card.dart';
+import '../widgets/stagger_item.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -20,7 +22,7 @@ class FavoritesScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+              padding: const EdgeInsets.fromLTRB(Spacings.md, 18, Spacings.md, Spacings.sm),
               child: Text(
                 'Favorites',
                 style: textTheme.headlineSmall?.copyWith(
@@ -47,10 +49,13 @@ class FavoritesScreen extends StatelessWidget {
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.only(top: 4, bottom: 16),
+                    padding: const EdgeInsets.only(top: Spacings.xxs, bottom: Spacings.md),
                     itemCount: offers.length,
                     itemBuilder: (context, index) {
-                      return OfferCard(offer: offers[index]);
+                      return StaggerItem(
+                        index: index,
+                        child: OfferCard(offer: offers[index]),
+                      );
                     },
                   );
                 },
