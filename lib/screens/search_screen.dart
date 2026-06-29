@@ -175,8 +175,8 @@ class _SearchScreenState extends State<SearchScreen> {
                         if (offers.isEmpty && restaurants.isEmpty) {
                           return const EmptyState(
                             icon: Icons.search_off_rounded,
-                            title: 'No matching deals',
-                            message: 'Try another food or restaurant name.',
+                            title: 'No deals found',
+                            message: 'Try another dish or restaurant name.',
                           );
                         }
 
@@ -294,8 +294,8 @@ class _SearchIdleState extends StatelessWidget {
 
     return const EmptyState(
       icon: Icons.search_rounded,
-      title: 'Find your next meal',
-      message: 'Search for food or restaurant names.',
+      title: 'What are you craving?',
+      message: 'Search for dishes, restaurants, or cuisines.',
     );
   }
 }

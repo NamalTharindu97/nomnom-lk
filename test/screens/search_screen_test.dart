@@ -56,7 +56,7 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.text('Find your next meal'), findsOneWidget);
+      expect(find.text('What are you craving?'), findsOneWidget);
       expect(find.text('Recent'), findsNothing);
     });
 
@@ -119,7 +119,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Chicken'), findsNothing);
-      expect(find.text('Find your next meal'), findsOneWidget);
+      expect(find.text('What are you craving?'), findsOneWidget);
     });
   });
 }

@@ -44,7 +44,7 @@ class FavoritesScreen extends StatelessWidget {
                     return const EmptyState(
                       icon: Icons.favorite_border_rounded,
                       title: 'No saved deals',
-                      message: 'Tap the heart on any offer to keep it here.',
+                      message: 'Tap the heart on any deal to save it here.',
                     );
                   }
 

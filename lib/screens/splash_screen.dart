@@ -7,7 +7,6 @@ import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
-import '../widgets/app_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,19 +18,48 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _fade;
-  late final Animation<double> _scale;
+  late final Animation<double> _iconScale;
+  late final Animation<double> _iconFade;
+  late final Animation<Offset> _textSlide;
+  late final Animation<double> _textFade;
+  late final Animation<double> _taglineFade;
+  late final Animation<double> _spinnerFade;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 850),
+      duration: const Duration(milliseconds: 1200),
     );
-    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.92, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+
+    _iconScale = Tween<double>(begin: 0.7, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.35, curve: Curves.easeOutBack),
+      ),
+    );
+    _iconFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
+    );
+    _textSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.25, 0.6, curve: Curves.easeOutCubic),
+      ),
+    );
+    _textFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.25, 0.6, curve: Curves.easeOut),
+    );
+    _taglineFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.5, 0.85, curve: Curves.easeOut),
+    );
+    _spinnerFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
     );
 
     _controller.forward();
@@ -47,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen>
       await Future.wait([
         authProvider.restoreSession(),
         offerProvider.loadOffers(),
-        Future<void>.delayed(const Duration(milliseconds: 1100)),
+        Future<void>.delayed(const Duration(milliseconds: 1500)),
       ]);
 
       if (mounted && authProvider.isLoggedIn) {
@@ -64,6 +92,9 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
+    await _controller.reverse();
+    if (!mounted) return;
+
     await Navigator.of(context).pushReplacementNamed(
       authProvider.canEnterApp ? AppRoutes.home : AppRoutes.login,
     );
@@ -79,54 +110,83 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.colors.background,
-      body: _SplashBody(
-        fade: _fade,
-        scale: _scale,
-      ),
-    );
-  }
-}
-
-class _SplashBody extends StatelessWidget {
-  const _SplashBody({
-    required this.fade,
-    required this.scale,
-  });
-
-  final Animation<double> fade;
-  final Animation<double> scale;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            context.colors.background,
-            context.colors.backgroundAlt,
-            const Color(0xFF26130F),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              context.colors.background,
+              context.colors.backgroundAlt,
+              const Color(0xFF26130F),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
-      ),
-      child: Center(
-        child: FadeTransition(
-          opacity: fade,
-          child: ScaleTransition(
-            scale: scale,
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppLogo(),
-                SizedBox(height: 28),
-                SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: CircularProgressIndicator(strokeWidth: 2.4),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FadeTransition(
+                opacity: _iconFade,
+                child: ScaleTransition(
+                  scale: _iconScale,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppColors.curry,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.curry.withValues(alpha: 0.35),
+                          blurRadius: 32,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.restaurant_menu_rounded,
+                      color: context.colors.background,
+                      size: 44,
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              SlideTransition(
+                position: _textSlide,
+                child: FadeTransition(
+                  opacity: _textFade,
+                  child: Text(
+                    'NomNom LK',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FadeTransition(
+                opacity: _taglineFade,
+                child: Text(
+                  "Discover Sri Lanka's Best Food Deals",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 36),
+              FadeTransition(
+                opacity: _spinnerFade,
+                child: const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                ),
+              ),
+            ],
           ),
         ),
       ),

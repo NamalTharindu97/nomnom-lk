@@ -70,3 +70,32 @@
 - Search isolation in providers (`_searchResults` separate from `_offers`)
 - Search screen rewritten as combined Restaurants + Offers layout
 - Favorite button fix: `ApiClient.post()` null/type guard for empty 201 responses
+
+## P25 — App Icon & Branding
+- Generated 1024×1024 app icon matching in-app brand logo (curry-orange `#FFB23F` background, white rounded container, fork & knife icon)
+- Added `flutter_launcher_icons` (v0.14.4) to `pubspec.yaml`, configured with adaptive icon support
+- Generated all platform icon sizes for Android (5 mipmap densities) and iOS (15 AppIcon sizes + App Store 1024×1024)
+- Adaptive icon XML created for Android 8+ with curry-orange background + foreground inset at 16%
+- Updated `AndroidManifest.xml` `android:label` from `nomnom_lk` → `NomNom LK`
+
+## P26 — Splash Screen Sequential Reveal
+- Refactored `SplashScreen` from single fade+scale (850ms) to staggered sequential reveal (1200ms):
+  - 0–35%: Icon container scales in with easeOutBack bounce + fade
+  - 25–60%: "NomNom LK" text slides up from below + fades in
+  - 50–85%: Tagline "Discover Sri Lanka's Best Food Deals" fades in
+  - 70–100%: `CircularProgressIndicator` fades in
+- Added exit fade: `_controller.reverse()` (200ms) before `pushReplacementNamed`
+- Removed dependency on `AppLogo` widget (splash now self-contained)
+- Increased minimum display from 1100ms → 1500ms to accommodate longer animation
+
+## P27 — Text Copy Refinement
+| File | Old | New |
+|------|-----|-----|
+| `home_screen.dart` | `'Today near you'` | `'Best deals near you'` |
+| `home_screen.dart` | `'Street food favorites, lunch packs...across Sri Lanka.'` | `'Discover the best food deals from your favorite local spots.'` |
+| `home_screen.dart` | `'No offers yet'` / `'Fresh deals will appear here soon.'` | `'No deals yet'` / `'Check back for new offers from your favorite eateries.'` |
+| `search_screen.dart` | `'Find your next meal'` / `'Search for food or restaurant names.'` | `'What are you craving?'` / `'Search for dishes, restaurants, or cuisines.'` |
+| `search_screen.dart` | `'No matching deals'` / `'Try another food or restaurant name.'` | `'No deals found'` / `'Try another dish or restaurant name.'` |
+| `favorites_screen.dart` | `'Tap the heart on any offer to keep it here.'` | `'Tap the heart on any deal to save it here.'` |
+| `main_shell.dart` | `'Alerts'` (tab label) | `'Notifications'` (matches screen title) |
+| `app_user.dart` | `'Guest foodie'` | `'Guest'` |

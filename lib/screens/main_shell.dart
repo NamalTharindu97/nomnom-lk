@@ -117,7 +117,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 activeIcon: Icons.notifications_rounded,
                 badge: context.watch<NotificationProvider>().unreadCount,
               ),
-              label: 'Alerts',
+              label: 'Notifications',
             ),
             BottomNavigationBarItem(
               icon: _NavIcon(

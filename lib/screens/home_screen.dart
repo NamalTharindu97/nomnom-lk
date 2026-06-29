@@ -98,8 +98,8 @@ class _HomeBody extends StatelessWidget {
             hasScrollBody: false,
             child: EmptyState(
               icon: Icons.no_food_rounded,
-              title: 'No offers yet',
-              message: 'Fresh deals will appear here soon.',
+              title: 'No deals yet',
+              message: 'Check back for new offers from your favorite eateries.',
             ),
           );
         }
@@ -191,7 +191,7 @@ class _HomeHeader extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Today near you',
+              'Best deals near you',
               style: textTheme.headlineSmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontWeight: FontWeight.w900,
@@ -199,7 +199,7 @@ class _HomeHeader extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Street food favorites, lunch packs, and tea-time bites across Sri Lanka.',
+              'Discover the best food deals from your favorite local spots.',
               style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
             ),
             const SizedBox(height: 18),

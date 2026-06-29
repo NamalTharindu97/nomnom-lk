@@ -15,7 +15,7 @@ class AppUser {
   factory AppUser.guest() {
     return const AppUser(
       id: 'guest',
-      name: 'Guest foodie',
+      name: 'Guest',
       email: '',
       isLoggedIn: false,
       isGuest: true,
