@@ -230,10 +230,10 @@ class _LoginScreenState extends State<LoginScreen>
                           child: Text(
                             "Find Sri Lanka's Best\nFood Deals",
                             textAlign: TextAlign.center,
-                            style: textTheme.titleMedium?.copyWith(
-                              color: context.colors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                              height: 1.2,
+                            style: textTheme.headlineMedium?.copyWith(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.w900,
+                              height: 1.15,
                             ),
                           ),
                         ),
@@ -274,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen>
                               padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2),
                               child: Text(
                                 'or continue with',
-                                style: textTheme.titleSmall?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                   color: AppColors.muted,
                                 ),
                               ),
@@ -406,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen>
                           children: [
                             Text(
                               "Don't have an account? ",
-                              style: textTheme.titleSmall?.copyWith(
+                              style: textTheme.bodySmall?.copyWith(
                                 color: AppColors.muted,
                               ),
                             ),
@@ -416,7 +416,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               child: Text(
                                 'Sign Up',
-                                style: textTheme.titleSmall?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                   color: AppColors.curry,
                                   fontWeight: FontWeight.w700,
                                 ),
