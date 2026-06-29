@@ -31,6 +31,11 @@ class OfferProvider extends ChangeNotifier {
   bool _hasMore = true;
   int _total = 0;
   String? _selectedCuisine;
+  int _filterVersion = 0;
+  List<Offer>? _cachedFilteredOffers;
+  int _cachedFilterVersion = -1;
+  List<Offer>? _cachedHotOffers;
+  int _cachedHotVersion = -1;
 
   List<Offer> get offers => _cachedOffers;
   List<Offer> get searchResults => _cachedSearchResults;
@@ -56,6 +61,9 @@ class OfferProvider extends ChangeNotifier {
   }
 
   List<Offer> get filteredOffers {
+    if (_cachedFilterVersion == _filterVersion && _cachedFilteredOffers != null) {
+      return _cachedFilteredOffers!;
+    }
     var results = _offers;
     if (_searchQuery.trim().isNotEmpty) {
       final query = _searchQuery.trim().toLowerCase();
@@ -69,18 +77,33 @@ class OfferProvider extends ChangeNotifier {
         return offer.cuisineTags.contains(_selectedCuisine);
       }).toList(growable: false);
     }
-    return results;
+    _cachedFilteredOffers = results;
+    _cachedFilterVersion = _filterVersion;
+    return _cachedFilteredOffers!;
+  }
+
+  List<Offer> get hotOffers {
+    if (_cachedHotOffers != null && _cachedHotVersion == _filterVersion) {
+      return _cachedHotOffers!;
+    }
+    final sorted = List<Offer>.from(filteredOffers)
+      ..sort((a, b) => b.discountPercent.compareTo(a.discountPercent));
+    _cachedHotOffers = sorted.length > 5 ? sorted.sublist(0, 5) : sorted;
+    _cachedHotVersion = _filterVersion;
+    return _cachedHotOffers!;
   }
 
   void filterByCuisine(String? tag) {
     if (_selectedCuisine == tag) return;
     _selectedCuisine = tag;
+    _filterVersion++;
     notifyListeners();
   }
 
   void clearCuisineFilter() {
     if (_selectedCuisine == null) return;
     _selectedCuisine = null;
+    _filterVersion++;
     notifyListeners();
   }
 
@@ -115,6 +138,7 @@ class OfferProvider extends ChangeNotifier {
       final result = await _offerService.fetchOffers(page: _currentPage);
       _offers = result.data;
       _rebuildOffersCache();
+      _filterVersion++;
       _hasMore = result.hasMore;
       _total = result.total;
       _hasLoaded = true;
@@ -135,6 +159,7 @@ class OfferProvider extends ChangeNotifier {
       _currentPage = nextPage;
       _offers = [..._offers, ...result.data];
       _rebuildOffersCache();
+      _filterVersion++;
     } catch (e) {
       debugPrint('Failed to load more offers: $e');
     }
@@ -150,6 +175,7 @@ class OfferProvider extends ChangeNotifier {
   Future<void> searchOffers(String query) async {
     if (query.trim().isEmpty) {
       _searchQuery = '';
+      _filterVersion++;
       _searchError = null;
       _searchResults = const [];
       _rebuildSearchCache();
@@ -158,6 +184,7 @@ class OfferProvider extends ChangeNotifier {
     }
     _isSearching = true;
     _searchQuery = query;
+    _filterVersion++;
     _searchError = null;
     notifyListeners();
     try {
@@ -212,6 +239,7 @@ class OfferProvider extends ChangeNotifier {
   void updateSearchQuery(String value) {
     if (_searchQuery == value) return;
     _searchQuery = value;
+    _filterVersion++;
     notifyListeners();
   }
 
@@ -223,6 +251,7 @@ class OfferProvider extends ChangeNotifier {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);
       _rebuildOffersCache();
+      _filterVersion++;
       _searchResults = _searchResults.map((offer) {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);

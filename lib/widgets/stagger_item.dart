@@ -5,8 +5,8 @@ class StaggerItem extends StatefulWidget {
     super.key,
     required this.index,
     required this.child,
-    this.duration = const Duration(milliseconds: 350),
-    this.offsetY = 24,
+    this.duration = const Duration(milliseconds: 120),
+    this.offsetY = 8,
   });
 
   final int index;
@@ -52,7 +52,7 @@ class _StaggerItemState extends State<StaggerItem>
           begin: Offset(0, widget.offsetY),
           end: Offset.zero,
         ).animate(_animation),
-        child: widget.child,
+        child: RepaintBoundary(child: widget.child),
       ),
     );
   }

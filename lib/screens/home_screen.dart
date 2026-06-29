@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -116,6 +117,7 @@ class _HomeBody extends StatelessWidget {
                   );
                 }
                 return StaggerItem(
+                  key: ValueKey(offers[index].id),
                   index: index,
                   child: OfferCard(offer: offers[index]),
                 );
@@ -138,6 +140,18 @@ class _BodyState {
     required this.isLoadingMore,
     required this.offers,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _BodyState &&
+          error == other.error &&
+          isLoading == other.isLoading &&
+          isLoadingMore == other.isLoadingMore &&
+          listEquals(offers, other.offers);
+
+  @override
+  int get hashCode => Object.hash(error, isLoading, isLoadingMore, Object.hashAll(offers));
 }
 
 class _CuisineState {
@@ -245,11 +259,7 @@ class _TrendingCarousel extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Selector<OfferProvider, List<Offer>>(
-      selector: (_, p) {
-        final sorted = List<Offer>.from(p.filteredOffers)
-          ..sort((a, b) => b.discountPercent.compareTo(a.discountPercent));
-        return sorted.length > 5 ? sorted.sublist(0, 5) : sorted;
-      },
+      selector: (_, p) => p.hotOffers,
       shouldRebuild: (prev, next) => prev != next,
       builder: (_, hotOffers, __) {
         if (hotOffers.length < 2) return const SizedBox.shrink();
