@@ -69,11 +69,12 @@ func (s *NotificationService) GetUnreadCount(userID uuid.UUID) (int64, error) {
 }
 
 type SendPushInput struct {
-	Title  string
-	Body   string
-	Data   map[string]string
-	UserID *uuid.UUID
-	Type   string
+	Title   string
+	Body    string
+	Data    map[string]string
+	UserID  *uuid.UUID
+	Type    string
+	OfferID *uuid.UUID
 }
 
 func (s *NotificationService) SendPush(input SendPushInput) error {
@@ -96,17 +97,19 @@ func (s *NotificationService) SendPush(input SendPushInput) error {
 	// Create notifications for ALL users (each sees it in their list)
 	notifications := make([]models.Notification, len(tokens))
 	for i, token := range tokens {
-		notifications[i] = models.Notification{
-			UserID: token.UserID,
-			Type:   input.Type,
-			Title:  input.Title,
-			Body:   strPtr(input.Body),
+		n := models.Notification{
+			UserID:  token.UserID,
+			Type:    input.Type,
+			Title:   input.Title,
+			Body:    strPtr(input.Body),
+			OfferID: input.OfferID,
 		}
 		if input.Data != nil {
 			data, _ := json.Marshal(input.Data)
 			raw := json.RawMessage(data)
-			notifications[i].Data = &raw
+			n.Data = &raw
 		}
+		notifications[i] = n
 	}
 
 	if err := s.notificationRepo.CreateBatch(notifications); err != nil {

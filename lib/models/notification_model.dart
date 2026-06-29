@@ -9,6 +9,7 @@ class AppNotification {
     required this.body,
     required this.isRead,
     required this.createdAt,
+    this.offerId,
   });
 
   final String id;
@@ -17,6 +18,7 @@ class AppNotification {
   final String body;
   final bool isRead;
   final DateTime createdAt;
+  final String? offerId;
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
@@ -28,6 +30,7 @@ class AppNotification {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
+      offerId: json['offer_id'] as String?,
     );
   }
 
@@ -38,6 +41,7 @@ class AppNotification {
     String? body,
     bool? isRead,
     DateTime? createdAt,
+    String? offerId,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -46,6 +50,7 @@ class AppNotification {
       body: body ?? this.body,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
+      offerId: offerId ?? this.offerId,
     );
   }
 }

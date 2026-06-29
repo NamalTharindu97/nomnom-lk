@@ -96,6 +96,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 			"title":      n.Title,
 			"body":       n.Body,
 			"data":       n.Data,
+			"offer_id":   n.OfferID,
 			"is_read":    n.IsRead,
 			"created_at": n.CreatedAt,
 		}
@@ -168,6 +169,13 @@ func (h *NotificationHandler) SendPush(c *gin.Context) {
 		uid, err := uuid.Parse(req.UserID)
 		if err == nil {
 			input.UserID = &uid
+		}
+	}
+
+	if req.OfferID != "" {
+		oid, err := uuid.Parse(req.OfferID)
+		if err == nil {
+			input.OfferID = &oid
 		}
 	}
 

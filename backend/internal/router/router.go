@@ -36,7 +36,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	favoriteService := services.NewFavoriteService(favoriteRepo)
 	searchService := services.NewSearchService(db)
 	notificationService := services.NewNotificationService(notificationRepo, deviceTokenRepo, &cfg.Firebase)
-	cronService := services.NewCronService(db, notificationService)
+	cronService := services.NewCronService(db, notificationService, notificationRepo)
 
 	uploadService, err := services.NewUploadService(&cfg.AWS)
 	if err != nil {

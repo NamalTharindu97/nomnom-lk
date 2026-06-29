@@ -111,3 +111,12 @@
 - Applied cascade: NomNom LK `headlineMedium` (28px) → tagline `titleMedium` (16px) → divider/footer `titleSmall` (14px)
 - Tagline color: `context.colors.textSecondary` (muted) instead of `textPrimary`
 - Divider/footer bumped from `bodySmall` (12px) to `titleSmall` (14px) for consistent visual flow
+
+## P30 — Notification Expiry Based on Offer Dates
+- Added `offer_id` (`*uuid.UUID`) column to `Notification` model via GORM AutoMigrate
+- Backend DTO: `SendPushRequest` accepts optional `offer_id`, wired into `SendPushInput.OfferID`
+- `NotificationHandler.List` and `AdminHandler.ListNotifications` return `offer_id` in response
+- `CronService.MarkExpiredOffers`: after marking expired offers, deletes all notifications linked to those offer IDs via `NotificationRepo.DeleteByOfferIDs`
+- `CronService.NotifyExpiringSoon`: passes `OfferID` into `SendPushInput` so expiring-soon notifications carry the offer reference
+- Flutter `AppNotification` model: added nullable `offerId` field, deserialized from `offer_id`
+- `NotificationsScreen`: on tap, if notification has `offerId`, navigates to `OfferDetailsScreen` via `pushNamed(AppRoutes.offerDetails, arguments: n.offerId)`

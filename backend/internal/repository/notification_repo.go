@@ -77,3 +77,10 @@ func (r *NotificationRepo) FindAllAdmin(offset, limit int) ([]models.Notificatio
 func (r *NotificationRepo) Delete(id uuid.UUID) error {
 	return r.db.Delete(&models.Notification{}, id).Error
 }
+
+func (r *NotificationRepo) DeleteByOfferIDs(offerIDs []uuid.UUID) error {
+	if len(offerIDs) == 0 {
+		return nil
+	}
+	return r.db.Where("offer_id IN ?", offerIDs).Delete(&models.Notification{}).Error
+}

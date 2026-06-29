@@ -95,6 +95,7 @@ func (h *AdminHandler) ListNotifications(c *gin.Context) {
 			"type":       n.Type,
 			"title":      n.Title,
 			"body":       n.Body,
+			"offer_id":   n.OfferID,
 			"is_read":    n.IsRead,
 			"created_at": n.CreatedAt,
 		}

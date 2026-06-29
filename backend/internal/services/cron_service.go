@@ -6,33 +6,45 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/models"
+	"github.com/nomnom-lk/backend/internal/repository"
 	"gorm.io/gorm"
 )
 
 type CronService struct {
-	db              *gorm.DB
-	notificationSvc *NotificationService
+	db               *gorm.DB
+	notificationSvc  *NotificationService
+	notificationRepo *repository.NotificationRepo
 }
 
-func NewCronService(db *gorm.DB, notificationSvc *NotificationService) *CronService {
+func NewCronService(db *gorm.DB, notificationSvc *NotificationService, notificationRepo *repository.NotificationRepo) *CronService {
 	return &CronService{
-		db:              db,
-		notificationSvc: notificationSvc,
+		db:               db,
+		notificationSvc:  notificationSvc,
+		notificationRepo: notificationRepo,
 	}
 }
 
 func (s *CronService) MarkExpiredOffers() {
-	result := s.db.Model(&models.Offer{}).
+	var expiredIDs []uuid.UUID
+	s.db.Model(&models.Offer{}).
 		Where("status = ? AND end_date < NOW()", models.OfferApproved).
-		Update("status", models.OfferExpired)
+		Pluck("id", &expiredIDs)
 
-	if result.Error != nil {
-		fmt.Printf("CRON: failed to mark expired offers: %v\n", result.Error)
-		return
-	}
-
-	if result.RowsAffected > 0 {
+	if len(expiredIDs) > 0 {
+		result := s.db.Model(&models.Offer{}).
+			Where("id IN ?", expiredIDs).
+			Update("status", models.OfferExpired)
+		if result.Error != nil {
+			fmt.Printf("CRON: failed to mark expired offers: %v\n", result.Error)
+			return
+		}
 		fmt.Printf("CRON: marked %d offers as expired\n", result.RowsAffected)
+
+		if err := s.notificationRepo.DeleteByOfferIDs(expiredIDs); err != nil {
+			fmt.Printf("CRON: failed to delete notifications for expired offers: %v\n", err)
+		} else {
+			fmt.Printf("CRON: deleted notifications for %d expired offers\n", len(expiredIDs))
+		}
 	}
 }
 
@@ -64,10 +76,11 @@ func (s *CronService) NotifyExpiringSoon() {
 
 		for _, userID := range userIDs {
 			s.notificationSvc.SendPush(SendPushInput{
-				Title:  title,
-				Body:   body,
-				Type:   "offer_expiring",
-				UserID: &userID,
+				Title:   title,
+				Body:    body,
+				Type:    "offer_expiring",
+				UserID:  &userID,
+				OfferID: &offer.ID,
 			})
 		}
 	}

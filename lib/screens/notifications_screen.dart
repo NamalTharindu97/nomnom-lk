@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/notification_model.dart';
@@ -94,7 +95,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         index: index,
                         child: _NotificationTile(
                           notification: n,
-                          onTap: () => provider.markAsRead(n.id),
+                          onTap: () {
+                            provider.markAsRead(n.id);
+                            if (n.offerId != null && n.offerId!.isNotEmpty) {
+                              Navigator.of(context).pushNamed(
+                                AppRoutes.offerDetails,
+                                arguments: n.offerId,
+                              );
+                            }
+                          },
                         ),
                       );
                     },
