@@ -99,3 +99,15 @@
 | `favorites_screen.dart` | `'Tap the heart on any offer to keep it here.'` | `'Tap the heart on any deal to save it here.'` |
 | `main_shell.dart` | `'Alerts'` (tab label) | `'Notifications'` (matches screen title) |
 | `app_user.dart` | `'Guest foodie'` | `'Guest'` |
+
+## P28 — App Icon Branding Match
+- Rendered exact `restaurant_menu_rounded` Material icon path (from Google Fonts CDN) via cairosvg at 1024×1024
+- Curry-orange `#FFB23F` background + white icon — matches in-app `AppLogo` widget
+- Regenerated all Android (5 mipmap densities + adaptive icon) and iOS (21 sizes) launcher icons
+- Updated `AndroidManifest.xml` `android:label` from `nomnom_lk` → `NomNom LK`
+
+## P29 — Login Screen Typography Hierarchy
+- Researched DoorDash, Uber Eats, Grubhub login typography (28–30pt brand → 13–15pt body → 11–13pt meta)
+- Applied cascade: NomNom LK `headlineMedium` (28px) → tagline `titleMedium` (16px) → divider/footer `titleSmall` (14px)
+- Tagline color: `context.colors.textSecondary` (muted) instead of `textPrimary`
+- Divider/footer bumped from `bodySmall` (12px) to `titleSmall` (14px) for consistent visual flow
