@@ -370,7 +370,7 @@ func uploadToMinIO(ctx context.Context, mc *minio.Client, bucket, env, filePath,
 		if err != nil {
 			return "", fmt.Errorf("image decode failed: %w", err)
 		}
-		cropped := imaging.Fill(img, 1200, 675, imaging.Center, imaging.Lanczos)
+		cropped := imaging.Fill(img, 1024, 1024, imaging.Center, imaging.Lanczos)
 		buf := new(bytes.Buffer)
 		if err := imaging.Encode(buf, cropped, imaging.JPEG, imaging.JPEGQuality(85)); err != nil {
 			return "", fmt.Errorf("image encode failed: %w", err)

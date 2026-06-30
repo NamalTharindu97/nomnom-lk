@@ -91,7 +91,11 @@ export default function ImageCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onCancel() }}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent
+        className="sm:max-w-2xl"
+        onEscapeKeyDown={(e) => { e.preventDefault(); onCancel(); }}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             Crop Image{total > 1 ? ` (${index + 1} of ${total})` : ""}
@@ -103,7 +107,7 @@ export default function ImageCropDialog({
             image={imageUrl}
             crop={crop}
             zoom={zoom}
-            aspect={16 / 9}
+            aspect={1 / 1}
             onCropChange={handleCropChange}
             onZoomChange={handleZoomChange}
             onCropComplete={handleCropComplete}

@@ -268,7 +268,7 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
         onCancel={handleCropCancel}
       />
 
-      <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
+      <Dialog open={open} onOpenChange={(v) => { if (!v && currentCropIndex < 0) onClose() }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit Offer" : "New Offer"}</DialogTitle>
@@ -344,8 +344,8 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
               <div className="grid gap-2">
                 <Label>Images</Label>
                 <p className="text-xs text-muted-foreground">
-                  Images are cropped to 16:9. Adjust the crop window to frame your image.
-                  {!isEdit && <span> New images replace existing ones on edit.</span>}
+                  Images are cropped to 1024×1024 (square). Adjust the crop window to frame your image.
+                  {isEdit && <span> New images replace existing ones.</span>}
                 </p>
                 <div className="flex items-center gap-2">
                   <Input ref={fileInputRef} type="file" multiple accept="image/*" onChange={onFileSelect} className="file:text-xs" />

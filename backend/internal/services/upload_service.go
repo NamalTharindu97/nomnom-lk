@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	cropWidth  = 1200
-	cropHeight = 675
+	cropWidth  = 1024
+	cropHeight = 1024
 )
 
 type UploadService struct {
