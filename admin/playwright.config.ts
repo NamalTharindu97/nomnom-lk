@@ -17,6 +17,7 @@ export default defineConfig({
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
   },
+  globalTeardown: "./tests/global-teardown.ts",
   projects: [
     {
       name: "setup",
