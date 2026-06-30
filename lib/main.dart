@@ -137,17 +137,39 @@ class _SseListener extends StatefulWidget {
   State<_SseListener> createState() => _SseListenerState();
 }
 
-class _SseListenerState extends State<_SseListener> {
+class _SseListenerState extends State<_SseListener> with WidgetsBindingObserver {
   SSEService? _sseService;
   StreamSubscription<SSEEvent>? _subscription;
   Timer? _debounce;
+  Timer? _pollTimer;
   bool _needsOfferRefresh = false;
   bool _needsRestaurantRefresh = false;
+  bool _hasSseConnection = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _initSse());
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshIfNeeded();
+    }
+  }
+
+  void _refreshIfNeeded() {
+    if (_hasSseConnection) return;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      final apiClient = context.read<ApiClient>();
+      apiClient.invalidateCache('/offers');
+      context.read<OfferProvider>().refreshOffers();
+      apiClient.invalidateCache('/restaurants');
+      context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
+    });
   }
 
   Future<void> _initSse() async {
@@ -155,13 +177,16 @@ class _SseListenerState extends State<_SseListener> {
     _sseService = sse;
     try {
       await sse.connect();
+      _hasSseConnection = sse.isConnected;
       _subscription = sse.events.listen(_handleEvent);
     } catch (e) {
       debugPrint('_initSse error: $e');
     }
+    _startPolling();
   }
 
   void _handleEvent(SSEEvent event) {
+    _hasSseConnection = true;
     switch (event.event) {
       case 'offer.created':
       case 'offer.approved':
@@ -194,11 +219,21 @@ class _SseListenerState extends State<_SseListener> {
     }
   }
 
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (_hasSseConnection) return;
+      _refreshIfNeeded();
+    });
+  }
+
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _debounce?.cancel();
     _subscription?.cancel();
     _sseService?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

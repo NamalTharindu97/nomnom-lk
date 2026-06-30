@@ -3,17 +3,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -101,128 +102,141 @@ func main() {
 
 	restaurants := []restaurantSeed{
 		{
-			Name: "Kottu House", NameSi: "කොත්තු හවුස්", NameTa: "கொத்து ஹவுஸ்",
-			Description: "Best kottu roti in Colombo with spicy flavors", DescSi: "කොළඹ හොඳම කොත්තු රොටි කුළුබඩු රසයෙන්", DescTa: "கொழும்பில் சிறந்த கொத்து ரொட்டி காரமான சுவையில்",
-			Address: "42 Galle Road, Colombo 03", Latitude: 6.9020, Longitude: 79.8612,
-			CuisineTags: []string{"Kottu", "Sri Lankan", "Street Food"}, ImageSeed: "kottu-house",
+			Name: "Pizza Hut", NameSi: "පිස්සා හට්", NameTa: "பிஸ்ஸா ஹட்",
+			Description: "Delicious pizzas, pasta, and Italian dishes", DescSi: "රසවත් පිස්සා, පැස්ටා, සහ ඉතාලි කෑම", DescTa: "சுவையான பிஸ்ஸா, பாஸ்தா, மற்றும் இத்தாலிய உணவுகள்",
+			Address: "55 Galle Road, Colombo 03", Latitude: 6.9020, Longitude: 79.8612,
+			CuisineTags: []string{"Pizza", "Italian", "Fast Food"}, ImageSeed: "pizza-hut",
 		},
 		{
-			Name: "Rice & Curry Paradise", NameSi: "රයිස් ඇන්ඩ් කරී පැරඩයිස්", NameTa: "ரைஸ் அண்ட் கறி பரடைஸ்",
-			Description: "Traditional rice and curry with authentic Sri Lankan flavors", DescSi: "සම්ප්‍රදායික බත් සහ ව්‍යංජන සැබෑ ලංකා රසයෙන්", DescTa: "பாரம்பரிய சாதமும் கறியும் உண்மையான இலங்கை சுவையில்",
-			Address: "125 Kandy Road, Kadawatha", Latitude: 7.0000, Longitude: 79.9500,
-			CuisineTags: []string{"Rice & Curry", "Sri Lankan", "Traditional"}, ImageSeed: "rice-curry",
+			Name: "KFC", NameSi: "කේඑෆ්සී", NameTa: "கேஎப்சி",
+			Description: "Fried chicken, burgers, and crispy treats", DescSi: "ෆ්‍රයිඩ් චිකන්, බර්ගර්, සහ හැපෙනසුළු කෑම", DescTa: "வறுத்த கோழி, பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
+			Address: "100 Galle Road, Colombo 04", Latitude: 6.8930, Longitude: 79.8560,
+			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "kfc",
 		},
 		{
-			Name: "Hoppers Spot", NameSi: "හොප්පර්ස් ස්පොට්", NameTa: "ஹொப்பர்ஸ் ஸ்பாட்",
-			Description: "Crispy hoppers and string hoppers with sambol", DescSi: "හැපෙනසුළු ආප්ප සහ ඉඳිආප්ප සම්බෝල සමඟ", DescTa: "மிருதுவான அப்பம் மற்றும் இடியாப்பம் சம்பலுடன்",
-			Address: "78 Marine Drive, Colombo 07", Latitude: 6.9120, Longitude: 79.8530,
-			CuisineTags: []string{"Hoppers", "Sri Lankan", "Breakfast"}, ImageSeed: "hoppers",
+			Name: "Bread Talk", NameSi: "බ්‍රෙඩ් ටෝක්", NameTa: "பிரெட் டாக்",
+			Description: "Freshly baked breads, cakes, and pastries", DescSi: "නැවුම් බේක් කළ පාන්, කේක්, සහ පේස්ට්‍රි", DescTa: "புதிதாக சுடப்பட்ட ரொட்டிகள், கேக்குகள், மற்றும் பேஸ்ட்ரிகள்",
+			Address: "22 Union Place, Colombo 02", Latitude: 6.9180, Longitude: 79.8540,
+			CuisineTags: []string{"Bakery", "Cakes", "Pastries"}, ImageSeed: "bread-talk",
 		},
 		{
-			Name: "Pittu Place", NameSi: "පිට්ටු ප්ලේස්", NameTa: "பிட்டு பிளேஸ்",
-			Description: "Authentic pittu with coconut and various curries", DescSi: "පොල් සහ විවිධ ව්‍යංජන සමඟ සැබෑ පිට්ටු", DescTa: "தேங்காய் மற்றும் பல்வேறு கறிகளுடன் உண்மையான பிட்டு",
-			Address: "56 Highlevel Road, Nugegoda", Latitude: 6.8670, Longitude: 79.8930,
-			CuisineTags: []string{"Pittu", "Sri Lankan", "Traditional"}, ImageSeed: "pittu",
+			Name: "Keells", NameSi: "කීල්ස්", NameTa: "கீல்ஸ்",
+			Description: "Quick bites, burgers, and crispy snacks", DescSi: "ඉක්මන් කෑම, බර්ගර්, සහ හැපෙනසුළු ස්නැක්ස්", DescTa: "விரைவு உணவுகள், பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
+			Address: "77 Havelock Road, Colombo 05", Latitude: 6.8780, Longitude: 79.8680,
+			CuisineTags: []string{"Fast Food", "Burgers", "Snacks"}, ImageSeed: "keells",
 		},
 		{
-			Name: "Lamprais Lanka", NameSi: "ලම්ප්‍රයිස් ලංකා", NameTa: "லம்ப்ரைஸ் லங்கா",
-			Description: "Dutch-Burgher style lamprais with all traditional accompaniments", DescSi: "ලන්දේසි-බර්ගර් විලාසිතාවේ ලම්ප්‍රයිස් සියළු සාම්ප්‍රදායික අනුභව සමඟ", DescTa: "டச்சு-பெர்கர் பாணி லம்ப்ரைஸ் அனைத்து பாரம்பரிய துணை உணவுகளுடன்",
-			Address: "23 Dickmans Road, Colombo 05", Latitude: 6.8890, Longitude: 79.8710,
-			CuisineTags: []string{"Lamprais", "Burgher", "Fusion"}, ImageSeed: "lamprais",
+			Name: "Fab", NameSi: "ෆැබ්", NameTa: "ஃபேப்",
+			Description: "Cakes, pastries, and sweet treats", DescSi: "කේක්, පේස්ට්‍රි, සහ පැණි රස කෑම", DescTa: "கேக்குகள், பேஸ்ட்ரிகள், மற்றும் இனிப்பு தின்பண்டங்கள்",
+			Address: "45 Nawala Road, Nugegoda", Latitude: 6.8720, Longitude: 79.8920,
+			CuisineTags: []string{"Bakery", "Cakes", "Desserts"}, ImageSeed: "fab",
 		},
 		{
-			Name: "Biryani Bistro", NameSi: "බිරියානි බිස්ට්‍රෝ", NameTa: "பிரியாணி பிஸ்ட்ரோ",
-			Description: "Fragrant biryani with tender meat and aromatic rice", DescSi: "ඇරෝමැටික බිරියානි මෘදු මස් හා සුවඳ බත් සමඟ", DescTa: "மணம் மிக்க பிரியாணி மென்மையான இறைச்சி மற்றும் வாசனை சாதத்துடன்",
-			Address: "310 Galle Road, Colombo 06", Latitude: 6.8810, Longitude: 79.8590,
-			CuisineTags: []string{"Biryani", "Muslim", "Rice"}, ImageSeed: "biryani",
+			Name: "Popeyes", NameSi: "පොප්අයිස්", NameTa: "பாப்ஐஸ்",
+			Description: "Louisiana-style fried chicken and burgers", DescSi: "ලුසියානා විලාසිතාවේ ෆ්‍රයිඩ් චිකන් සහ බර්ගර්", DescTa: "லூசியானா பாணி வறுத்த கோழி மற்றும் பர்கர்கள்",
+			Address: "200 Galle Road, Dehiwala", Latitude: 6.8570, Longitude: 79.8640,
+			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "popeyes",
 		},
 		{
-			Name: "String Hopper Hut", NameSi: "ඉඳිආප්ප හට්", NameTa: "இடியாப்ப ஹட்",
-			Description: "Soft string hoppers with curry and coconut milk", DescSi: "මෘදු ඉඳිආප්ප ව්‍යංජන හා පොල් කිරි සමඟ", DescTa: "மென்மையான இடியாப்பம் கறி மற்றும் தேங்காய் பாலுடன்",
-			Address: "89 Nawala Road, Nugegoda", Latitude: 6.8770, Longitude: 79.8860,
-			CuisineTags: []string{"String Hoppers", "Sri Lankan", "Breakfast"}, ImageSeed: "string-hopper",
+			Name: "Solo Bowl", NameSi: "සොලෝ බෝල්", NameTa: "சோலோ பௌல்",
+			Description: "Rice bowls, noodles, and Asian fusion", DescSi: "බත් බෝල, නූඩ්ල්ස්, සහ ආසියානු ෆියුෂන්", DescTa: "சாதம் பௌல்கள், நூடுல்ஸ், மற்றும் ஆசிய கலப்பு உணவுகள்",
+			Address: "33 Horton Place, Colombo 07", Latitude: 6.9120, Longitude: 79.8710,
+			CuisineTags: []string{"Rice Bowls", "Asian", "Noodles"}, ImageSeed: "solo-bowl",
 		},
 		{
-			Name: "Pol Roti Shop", NameSi: "පොල් රොටි ෂොප්", NameTa: "பொல் ரொட்டி கடை",
-			Description: "Coconut roti with spicy sambol and dhal curry", DescSi: "පොල් රොටි කුළු සම්බෝල හා පරිප්පු ව්‍යංජන සමඟ", DescTa: "தேங்காய் ரொட்டி கார சம்பல் மற்றும் பருப்பு கறியுடன்",
-			Address: "45 Stanley Road, Jaffna", Latitude: 9.6615, Longitude: 80.0255,
-			CuisineTags: []string{"Pol Roti", "Sri Lankan", "Street Food"}, ImageSeed: "pol-roti",
+			Name: "Spar", NameSi: "ස්පාර්", NameTa: "ஸ்பார்",
+			Description: "Desserts, cakes, and sweet delights", DescSi: "අතුරුපස, කේක්, සහ පැණි රස", DescTa: "இனிப்புகள், கேக்குகள், மற்றும் இனிப்பு விருந்துகள்",
+			Address: "15 Station Road, Colombo 10", Latitude: 6.9300, Longitude: 79.8650,
+			CuisineTags: []string{"Desserts", "Cakes", "Sweets"}, ImageSeed: "spar",
+		},
+		{
+			Name: "Street Burger", NameSi: "ස්ට්‍රීට් බර්ගර්", NameTa: "ஸ்ட்ரீட் பர்கர்",
+			Description: "Gourmet burgers, fries, and American comfort food", DescSi: "ගවර්මෙට් බර්ගර්, ෆ්‍රයිස්, සහ ඇමරිකානු සැනසිලි කෑම", DescTa: "கார்மெட் பர்கர்கள், பொரியல்கள், மற்றும் அமெரிக்க இதமான உணவுகள்",
+			Address: "88 Galle Road, Bambalapitiya", Latitude: 6.8850, Longitude: 79.8600,
+			CuisineTags: []string{"Burgers", "American", "Fast Food"}, ImageSeed: "street-burger",
+		},
+		{
+			Name: "Subway", NameSi: "සබ්වේ", NameTa: "சப்வே",
+			Description: "Fresh submarine sandwiches and salads", DescSi: "නැවුම් සබ්මැරීන් සැන්ඩ්විච් සහ සලාද", DescTa: "புதிய சப்மரைன் சாண்ட்விச்கள் மற்றும் சாலடுகள்",
+			Address: "60 Galle Road, Colombo 03", Latitude: 6.9060, Longitude: 79.8580,
+			CuisineTags: []string{"Sandwiches", "Healthy", "Fast Food"}, ImageSeed: "subway",
+		},
+		{
+			Name: "Taco Bell", NameSi: "ටැකෝ බෙල්", NameTa: "டாகோ பெல்",
+			Description: "Mexican-inspired tacos, burritos, and quesadillas", DescSi: "මෙක්සිකානු ආභාසයෙන් ටැකෝ, බුරිටෝ, සහ ක්වෙසාඩිලා", DescTa: "மெக்சிகன் பாணி டாகோஸ், புரிட்டோஸ், மற்றும் குவெசடிலாஸ்",
+			Address: "120 Galle Road, Colombo 04", Latitude: 6.8950, Longitude: 79.8550,
+			CuisineTags: []string{"Mexican", "Tacos", "Fast Food"}, ImageSeed: "taco-bell",
 		},
 	}
 
 	offers := []offerSeed{
-		{RestaurantIdx: 0, Title: "Chicken Kottu Special", TitleSi: "චිකන් කොත්තු ස්පෙශල්", TitleTa: "சிக்கன் கொத்து ஸ்பெஷல்", Description: "Large chicken kottu with extra cheese and a drink", DescSi: "අමතර චීස් හා බීම සමග විශාල චිකන් කොත්තු", DescTa: "கூடுதல் சீஸ் மற்றும் பானத்துடன் பெரிய சிக்கன் கொத்து", OriginalPrice: 1500, OfferPrice: 990, ImageSeed: "chicken-kottu", DaysValid: 30},
-		{RestaurantIdx: 0, Title: "Kottu Combo for Two", TitleSi: "දෙදෙනෙකුට කොත්තු කොම්බෝ", TitleTa: "இருவருக்கு கொத்து காம்போ", Description: "Two kottus, two drinks, and an extra side of sambol", DescSi: "කොත්තු දෙකක්, බීම දෙකක්, සහ අමතර සම්බෝල පැත්තක්", DescTa: "இரண்டு கொத்து, இரண்டு பானங்கள், மற்றும் கூடுதல் சம்பல் பக்க உணவு", OriginalPrice: 2800, OfferPrice: 1790, ImageSeed: "kottu-combo", DaysValid: 45},
-		{RestaurantIdx: 1, Title: "Family Rice & Curry Bundle", TitleSi: "පවුල් බත් හා ව්‍යංජන බණ්ඩල්", TitleTa: "குடும்ப சாதமும் கறியும் தொகுப்பு", Description: "Rice and curry for 4 with 3 curries, papadum, and dessert", DescSi: "ව්‍යංජන 3ක්, පපඩම්, සහ අතුරුපස සමඟ 4 දෙනෙකුට බත් හා ව්‍යංජන", DescTa: "4 பேருக்கு சாதமும் கறியும் 3 கறிகள், பப்படம், மற்றும் இனிப்புடன்", OriginalPrice: 4500, OfferPrice: 2990, ImageSeed: "family-rice", DaysValid: 60},
-		{RestaurantIdx: 1, Title: "Lunch Special Rice", TitleSi: "දිවා භෝජන විශේෂ බත්", TitleTa: "மதிய சிறப்பு சாதம்", Description: "Rice with 2 curries, salad, and a drink", DescSi: "ව්‍යංජන 2ක්, සලාදයක්, සහ බීමක් සමඟ බත්", DescTa: "2 கறிகள், சாலட், மற்றும் பானத்துடன் சாதம்", OriginalPrice: 1200, OfferPrice: 790, ImageSeed: "lunch-rice", DaysValid: 14},
-		{RestaurantIdx: 2, Title: "Egg Hoppers 5 Pack", TitleSi: "බිත්තර ආප්ප 5ක පැක්", TitleTa: "முட்டை அப்பம் 5 பொதி", Description: "5 egg hoppers with lunu miris and coconut sambol", DescSi: "ලූනු මිරිස් හා පොල් සම්බෝල සමඟ බිත්තර ආප්ප 5ක්", DescTa: "லுனு மிரிஸ் மற்றும் தேங்காய் சம்பலுடன் 5 முட்டை அப்பம்", OriginalPrice: 800, OfferPrice: 550, ImageSeed: "egg-hoppers", DaysValid: 30},
-		{RestaurantIdx: 2, Title: "Hoppers & Curry Breakfast", TitleSi: "ආප්ප හා ව්‍යංජන උදෑසන", TitleTa: "அப்பமும் கறியும் காலை உணவு", Description: "4 plain hoppers with potato curry and seeni sambol", DescSi: "අල ව්‍යංජන හා සීනි සම්බෝල සමඟ සාමාන්‍ය ආප්ප 4ක්", DescTa: "உருளைக்கிழங்கு கறி மற்றும் சீனி சம்பலுடன் 4 சாதாரண அப்பம்", OriginalPrice: 650, OfferPrice: 450, ImageSeed: "hoppers-breakfast", DaysValid: 21},
-		{RestaurantIdx: 3, Title: "Pittu Platter", TitleSi: "පිට්ටු තැටිය", TitleTa: "பிட்டு தட்டு", Description: "Mixed pittu with coconut, curry, and seeni sambol", DescSi: "පොල්, ව්‍යංජන, සහ සීනි සම්බෝල සමඟ මිශ්‍ර පිට්ටු", DescTa: "தேங்காய், கறி, மற்றும் சீனி சம்பலுடன் கலவை பிட்டு", OriginalPrice: 900, OfferPrice: 650, ImageSeed: "pittu-platter", DaysValid: 30},
-		{RestaurantIdx: 3, Title: "Pittu & Dhal Curry", TitleSi: "පිට්ටු හා පරිප්පු ව්‍යංජන", TitleTa: "பிட்டும் பருப்பு கறியும்", Description: "Coconut pittu with dhal curry and pol sambol", DescSi: "පරිප්පු ව්‍යංජන හා පොල් සම්බෝල සමඟ පොල් පිට්ටු", DescTa: "பருப்பு கறி மற்றும் தேங்காய் சம்பலுடன் தேங்காய் பிட்டு", OriginalPrice: 550, OfferPrice: 390, ImageSeed: "pittu-dhal", DaysValid: 14},
-		{RestaurantIdx: 4, Title: "Lamprais Family Pack", TitleSi: "ලම්ප්‍රයිස් පවුල් පැක්", TitleTa: "லம்ப்ரைஸ் குடும்ப பொதி", Description: "Traditional lamprais for 2 with all accompaniments", DescSi: "සියළු අනුභව සමඟ 2 දෙනෙකුට සාම්ප්‍රදායික ලම්ප්‍රයිස්", DescTa: "அனைத்து துணை உணவுகளுடன் 2 பேருக்கு பாரம்பரிய லம்ப்ரைஸ்", OriginalPrice: 3200, OfferPrice: 2200, ImageSeed: "lamprais-family", DaysValid: 45},
-		{RestaurantIdx: 4, Title: "Single Lamprais Meal", TitleSi: "තනි ලම්ප්‍රයිස් භෝජනය", TitleTa: "தனி லம்ப்ரைஸ் உணவு", Description: "Classic lamprais with rice, meat, sambol, and frikkadels", DescSi: "බත්, මස්, සම්බෝල, සහ ෆ්‍රිකැඩෙල්ස් සමඟ සම්භාව්‍ය ලම්ප්‍රයිස්", DescTa: "சாதம், இறைச்சி, சம்பல், மற்றும் ஃப்ரிக்கடெல்ஸுடன் கிளாசிக் லம்ப்ரைஸ்", OriginalPrice: 1500, OfferPrice: 1100, ImageSeed: "single-lamprais", DaysValid: 30},
-		{RestaurantIdx: 5, Title: "Chicken Biryani Special", TitleSi: "චිකන් බිරියානි ස්පෙශල්", TitleTa: "சிக்கன் பிரியாணி ஸ்பெஷல்", Description: "Fragrant chicken biryani with raita and brinjal pickle", DescSi: "රයිතා හා වම්බටු අච්චාරු සමඟ ඇරෝමැටික චිකන් බිරියානි", DescTa: "ரைத்தா மற்றும் கத்தரிக்காய் ஊறுகாயுடன் மணம் மிக்க சிக்கன் பிரியாணி", OriginalPrice: 1800, OfferPrice: 1250, ImageSeed: "chicken-biryani", DaysValid: 21},
-		{RestaurantIdx: 5, Title: "Mutton Biryani Feast", TitleSi: "මටන් බිරියානි මංගල්‍යය", TitleTa: "மட்டன் பிரியாணி விருந்து", Description: "Premium mutton biryani with extra meat, boiled egg, and salad", DescSi: "අමතර මස්, තම්බා බිත්තර, සහ සලාද සමඟ ප්‍රිමියම් මටන් බிரියානි", DescTa: "கூடுதல் இறைச்சி, வேக வைத்த முட்டை, மற்றும் சாலட்டுடன் பிரீமியம் மட்டன் பிரியாணி", OriginalPrice: 2500, OfferPrice: 1800, ImageSeed: "mutton-biryani", DaysValid: 30},
-		{RestaurantIdx: 6, Title: "String Hopper & Kiri Hodi", TitleSi: "ඉඳිආප්ප හා කිරිහොදි", TitleTa: "இடியாப்பமும் தேங்காய் பால் கறியும்", Description: "Soft string hoppers with coconut milk curry and sambol", DescSi: "පොල් කිරි ව්‍යංජන හා සම්බෝල සමඟ මෘදු ඉඳිආප්ප", DescTa: "தேங்காய் பால் கறி மற்றும் சம்பலுடன் மென்மையான இடியாப்பம்", OriginalPrice: 600, OfferPrice: 420, ImageSeed: "string-hopper-meal", DaysValid: 14},
-		{RestaurantIdx: 6, Title: "String Hopper Breakfast", TitleSi: "ඉඳිආප්ප උදෑසන", TitleTa: "இடியாப்ப காலை உணவு", Description: "8 string hoppers with pol sambol, seeni sambol, and dhal", DescSi: "පොල් සම්බෝල, සීනි සම්බෝල, සහ පරිප්පු සමඟ ඉඳිආප්ප 8ක්", DescTa: "தேங்காய் சம்பல், சீனி சம்பல், மற்றும் பருப்புடன் 8 இடியாப்பம்", OriginalPrice: 500, OfferPrice: 350, ImageSeed: "string-hopper-breakfast", DaysValid: 7},
-		{RestaurantIdx: 7, Title: "Pol Roti with Sambol", TitleSi: "පොල් රොටි සම්බෝල සමඟ", TitleTa: "தேங்காய் ரொட்டி சம்பலுடன்", Description: "2 coconut rotis with lunu miris and fresh pol sambol", DescSi: "ලූනු මිරිස් හා නැවුම් පොල් සම්බෝල සමඟ පොල් රොටි 2ක්", DescTa: "லுனு மிரிஸ் மற்றும் புதிய தேங்காய் சம்பலுடன் 2 தேங்காய் ரொட்டி", OriginalPrice: 400, OfferPrice: 250, ImageSeed: "pol-roti-sambol", DaysValid: 14},
-		{RestaurantIdx: 7, Title: "Pol Roti & Curry Combo", TitleSi: "පොල් රොටි හා ව්‍යංජන සංයෝගය", TitleTa: "தேங்காய் ரொட்டி மற்றும் கறி காம்போ", Description: "2 pol rotis with dhal curry and seeni sambol", DescSi: "පරිප්පු ව්‍යංජන හා සීනි සම්බෝල සමඟ පොල් රොටි 2ක්", DescTa: "பருப்பு கறி மற்றும் சீனி சம்பலுடன் 2 தேங்காய் ரொட்டி", OriginalPrice: 350, OfferPrice: 220, ImageSeed: "pol-roti-combo", DaysValid: 10},
-		{RestaurantIdx: 0, Title: "Cheese Kottu Deluxe", TitleSi: "චීස් කොත්තු ඩීලක්ස්", TitleTa: "சீஸ் கொத்து டீலக்ஸ்", Description: "Cheese kottu with chicken, egg, and spicy sauce", DescSi: "චිකන්, බිත්තර, සහ කුළු සෝස් සමඟ චීස් කොත්තු", DescTa: "சிக்கன், முட்டை, மற்றும் காரமான சாஸுடன் சீஸ் கொத்து", OriginalPrice: 1800, OfferPrice: 1290, ImageSeed: "cheese-kottu", DaysValid: 30},
-		{RestaurantIdx: 1, Title: "Seafood Rice & Curry", TitleSi: "මුහුදු ආහාර බත් හා ව්‍යංජන", TitleTa: "கடல் உணவு சாதமும் கறியும்", Description: "Rice with fish ambulance, prawn curry, and crab sambol", DescSi: "මාළු ඇම්බුල් තියල්, ඉස්සෝ ව්‍යංජන, සහ කකුළු සම්බෝල සමඟ බත්", DescTa: "மீன் அம்புல் தியல், இறால் கறி, மற்றும் நண்டு சம்பலுடன் சாதம்", OriginalPrice: 2200, OfferPrice: 1650, ImageSeed: "seafood-rice", DaysValid: 30},
+		{RestaurantIdx: 0, Title: "Grand Dipper", Description: "Pizza Hut Grand Dipper — loaded with toppings", OriginalPrice: 2500, OfferPrice: 1590, ImageSeed: "pizza-hut-granddipper", DaysValid: 30},
+		{RestaurantIdx: 0, Title: "Lunch Deals 2 for 1", Description: "Two lunch pizzas for the price of one at Pizza Hut", OriginalPrice: 3000, OfferPrice: 1500, ImageSeed: "pizza-hut-lunch2", DaysValid: 45},
+		{RestaurantIdx: 0, Title: "Lunch Pizza Deals", Description: "Special lunch pizza deals with a complimentary drink", OriginalPrice: 1800, OfferPrice: 1190, ImageSeed: "pizza-hut-lunch-pizza", DaysValid: 30},
+		{RestaurantIdx: 0, Title: "Pepperoni Special", Description: "Classic pepperoni pizza at a great price", OriginalPrice: 2200, OfferPrice: 1390, ImageSeed: "pizza1", DaysValid: 21},
+		{RestaurantIdx: 0, Title: "Veggie Supreme", Description: "Loaded veggie pizza with fresh garden toppings", OriginalPrice: 2000, OfferPrice: 1290, ImageSeed: "pizza2", DaysValid: 21},
+		{RestaurantIdx: 1, Title: "Chicken Bucket 1", Description: "8 pieces of fried chicken with fries and coleslaw", OriginalPrice: 2200, OfferPrice: 1590, ImageSeed: "kfc1", DaysValid: 30},
+		{RestaurantIdx: 1, Title: "Chicken Bucket 2", Description: "12 pieces of fried chicken family bucket", OriginalPrice: 3500, OfferPrice: 2490, ImageSeed: "kfc2", DaysValid: 45},
+		{RestaurantIdx: 1, Title: "Chicken Bucket 3", Description: "6 pieces of fried chicken with a large drink", OriginalPrice: 1600, OfferPrice: 1190, ImageSeed: "kfc3", DaysValid: 21},
+		{RestaurantIdx: 2, Title: "Carrot Cake Offer", Description: "Freshly baked carrot cake with cream cheese frosting", OriginalPrice: 1200, OfferPrice: 750, ImageSeed: "bread-talk-carrot", DaysValid: 14},
+		{RestaurantIdx: 3, Title: "Burger Deal", Description: "Classic beef burger with fries and a drink", OriginalPrice: 1100, OfferPrice: 750, ImageSeed: "keels-burgers", DaysValid: 21},
+		{RestaurantIdx: 3, Title: "Crispy Combo", Description: "Crispy chicken strips with dip and fries", OriginalPrice: 1300, OfferPrice: 890, ImageSeed: "keels-crispy", DaysValid: 30},
+		{RestaurantIdx: 3, Title: "Fish Roll Pack", Description: "6 crispy fish rolls with spicy sauce", OriginalPrice: 800, OfferPrice: 550, ImageSeed: "keels-fish-rolls", DaysValid: 14},
+		{RestaurantIdx: 4, Title: "Fab Cake Slice", Description: "Rich chocolate cake slice with cream", OriginalPrice: 600, OfferPrice: 390, ImageSeed: "fab-cake", DaysValid: 14},
+		{RestaurantIdx: 4, Title: "Fab Cake 2", Description: "Mixed berry cheesecake slice", OriginalPrice: 750, OfferPrice: 490, ImageSeed: "fab-cake2", DaysValid: 14},
+		{RestaurantIdx: 4, Title: "Combo Meal Deal", Description: "Cake slice with coffee or tea", OriginalPrice: 900, OfferPrice: 590, ImageSeed: "fab-combo", DaysValid: 21},
+		{RestaurantIdx: 5, Title: "Chicken Burgers", Description: "2 crispy chicken burgers with fries", OriginalPrice: 1800, OfferPrice: 1290, ImageSeed: "popeyes-burgers", DaysValid: 30},
+		{RestaurantIdx: 6, Title: "Mongolian Rice Bowl", Description: "Savory Mongolian rice bowl with your choice of protein", OriginalPrice: 1400, OfferPrice: 990, ImageSeed: "solo-bowl-rice", DaysValid: 21},
+		{RestaurantIdx: 7, Title: "Strawberry Cheese Cake", Description: "Creamy strawberry cheesecake slice", OriginalPrice: 850, OfferPrice: 550, ImageSeed: "spar-cake", DaysValid: 14},
+		{RestaurantIdx: 8, Title: "Burger Trio", Description: "Three gourmet burgers with truffle fries", OriginalPrice: 3200, OfferPrice: 2190, ImageSeed: "street-burger3", DaysValid: 45},
+		{RestaurantIdx: 8, Title: "Double Cheeseburger", Description: "Double cheeseburger with bacon and onion rings", OriginalPrice: 1800, OfferPrice: 1290, ImageSeed: "street-burger2", DaysValid: 30},
+		{RestaurantIdx: 8, Title: "Classic Burgers", Description: "Classic beef burger combo with fries and a shake", OriginalPrice: 1500, OfferPrice: 990, ImageSeed: "street-burgers", DaysValid: 30},
+		{RestaurantIdx: 9, Title: "Submarine Offers", Description: "Footlong sub with your choice of fillings and a drink", OriginalPrice: 1600, OfferPrice: 1100, ImageSeed: "subway-sub", DaysValid: 30},
+		{RestaurantIdx: 10, Title: "Taco Deal", Description: "3 tacos with salsa, guacamole, and sour cream", OriginalPrice: 1500, OfferPrice: 990, ImageSeed: "taco-bell-tacos", DaysValid: 21},
 	}
 
-	sourceURLs := map[string]string{
-		"kottu-house":             "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop",
-		"rice-curry":              "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop",
-		"hoppers":                 "https://images.unsplash.com/photo-1604909052743-94e838911d9a?w=400&h=300&fit=crop",
-		"pittu":                   "https://images.unsplash.com/photo-1481931098730-318b6f776db0?w=400&h=300&fit=crop",
-		"lamprais":                "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop",
-		"biryani":                 "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&h=300&fit=crop",
-		"string-hopper":           "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&h=300&fit=crop",
-		"pol-roti":                "https://images.unsplash.com/photo-1506084869-89b14b2b4bf4?w=400&h=300&fit=crop",
-		"chicken-kottu":           "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop",
-		"kottu-combo":             "https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=300&fit=crop",
-		"family-rice":             "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop",
-		"lunch-rice":              "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=300&fit=crop",
-		"egg-hoppers":             "https://images.unsplash.com/photo-1604909052743-94e838911d9a?w=400&h=300&fit=crop",
-		"hoppers-breakfast":       "https://images.unsplash.com/photo-1604909052743-94e838911d9a?w=400&h=300&fit=crop",
-		"pittu-platter":           "https://images.unsplash.com/photo-1481931098730-318b6f776db0?w=400&h=300&fit=crop",
-		"pittu-dhal":              "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=300&fit=crop",
-		"lamprais-family":         "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop",
-		"single-lamprais":         "https://images.unsplash.com/photo-1551218805-3034e18d68a3?w=400&h=300&fit=crop",
-		"chicken-biryani":         "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&h=300&fit=crop",
-		"mutton-biryani":          "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400&h=300&fit=crop",
-		"string-hopper-meal":      "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&h=300&fit=crop",
-		"string-hopper-breakfast": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=300&fit=crop",
-		"pol-roti-sambol":         "https://images.unsplash.com/photo-1506084869-89b14b2b4bf4?w=400&h=300&fit=crop",
-		"pol-roti-combo":          "https://images.unsplash.com/photo-1476124369491-e7addf5dc371?w=400&h=300&fit=crop",
-		"cheese-kottu":            "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop",
-		"seafood-rice":            "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop",
-	}
+	samplesBase := "/Users/namal/dev/MobileApps/NomNom LK/assets/samples"
 
-	tmpDir, err := os.MkdirTemp("", "nomnom-seed-*")
-	if err != nil {
-		log.Fatalf("Failed to create temp dir: %v", err)
+	sampleFiles := map[string]string{
+		"pizza-hut":              filepath.Join(samplesBase, "pizza hut granddipper.jpeg"),
+		"pizza-hut-granddipper":  filepath.Join(samplesBase, "pizza hut granddipper.jpeg"),
+		"pizza-hut-lunch2":       filepath.Join(samplesBase, "pizza hut lunch deals 2.jpeg"),
+		"pizza-hut-lunch-pizza":  filepath.Join(samplesBase, "pizza hut lunch pizza deals.jpeg"),
+		"pizza1":                 filepath.Join(samplesBase, "pizza1.jpeg"),
+		"pizza2":                 filepath.Join(samplesBase, "pizza2.jpeg"),
+		"kfc":                    filepath.Join(samplesBase, "kfc1.jpeg"),
+		"kfc1":                   filepath.Join(samplesBase, "kfc1.jpeg"),
+		"kfc2":                   filepath.Join(samplesBase, "kfc2.jpeg"),
+		"kfc3":                   filepath.Join(samplesBase, "kfc3.jpeg"),
+		"bread-talk":             filepath.Join(samplesBase, "bread talk offers carrort cake.jpeg"),
+		"bread-talk-carrot":      filepath.Join(samplesBase, "bread talk offers carrort cake.jpeg"),
+		"keells":                 filepath.Join(samplesBase, "keels burgers.jpeg"),
+		"keels-burgers":          filepath.Join(samplesBase, "keels burgers.jpeg"),
+		"keels-crispy":           filepath.Join(samplesBase, "keels crispy combo.jpeg"),
+		"keels-fish-rolls":       filepath.Join(samplesBase, "keels fish rolls.jpeg"),
+		"fab":                    filepath.Join(samplesBase, "Fab cake.jpeg"),
+		"fab-cake":               filepath.Join(samplesBase, "Fab cake.jpeg"),
+		"fab-cake2":              filepath.Join(samplesBase, "fab cake2.jpeg"),
+		"fab-combo":              filepath.Join(samplesBase, "fab combo meal.jpeg"),
+		"popeyes":                filepath.Join(samplesBase, "popeyes burgers.jpeg"),
+		"popeyes-burgers":        filepath.Join(samplesBase, "popeyes burgers.jpeg"),
+		"solo-bowl":              filepath.Join(samplesBase, "solo bowl mongolien rice.jpeg"),
+		"solo-bowl-rice":         filepath.Join(samplesBase, "solo bowl mongolien rice.jpeg"),
+		"spar":                   filepath.Join(samplesBase, "spar stowberry cheese cake.jpeg"),
+		"spar-cake":              filepath.Join(samplesBase, "spar stowberry cheese cake.jpeg"),
+		"street-burger":          filepath.Join(samplesBase, "streat_burger burger3.jpeg"),
+		"street-burger3":         filepath.Join(samplesBase, "streat_burger burger3.jpeg"),
+		"street-burger2":         filepath.Join(samplesBase, "streeat bregers beger2.jpeg"),
+		"street-burgers":         filepath.Join(samplesBase, "streeat bugger buggers.jpeg"),
+		"subway":                 filepath.Join(samplesBase, "sub way submarine offers.jpeg"),
+		"subway-sub":             filepath.Join(samplesBase, "sub way submarine offers.jpeg"),
+		"taco-bell":              filepath.Join(samplesBase, "taco bell tacos.jpeg"),
+		"taco-bell-tacos":        filepath.Join(samplesBase, "taco bell tacos.jpeg"),
 	}
-	defer os.RemoveAll(tmpDir)
 
 	uploaded := make(map[string]string)
 
-	for seed, url := range sourceURLs {
-		ext := ".jpg"
-		filePath := filepath.Join(tmpDir, seed+ext)
-
-		if err := downloadImage(url, filePath); err != nil {
-			fmt.Printf("  ⚠️  Download failed for %s: %v. Using fallback.\n", seed, err)
-			fallbackFile := filepath.Join(tmpDir, seed+"-fallback"+ext)
-			picsumURL := fmt.Sprintf("https://picsum.photos/seed/%s/400/300", seed)
-			if err := downloadImage(picsumURL, fallbackFile); err != nil {
-				fmt.Printf("  ❌ Fallback also failed for %s: %v\n", seed, err)
-				continue
-			}
-			filePath = fallbackFile
-		}
-
+	for seed, filePath := range sampleFiles {
 		uploadedURL, err := uploadToMinIO(ctx, mc, bucket, env, filePath, "images")
 		if err != nil {
 			fmt.Printf("  ❌ Upload failed for %s: %v\n", seed, err)
@@ -236,7 +250,7 @@ func main() {
 	for i, r := range restaurants {
 		coverImage := uploaded[r.ImageSeed]
 		if coverImage == "" {
-			coverImage = uploaded["kottu-house"]
+			coverImage = uploaded["pizza-hut"]
 		}
 
 		translations := buildTranslations(r.NameSi, r.NameTa, r.DescSi, r.DescTa, "name", "description")
@@ -272,13 +286,12 @@ func main() {
 			continue
 		}
 
-		imageSeed := o.ImageSeed
-		imgURL := uploaded[imageSeed]
+		imgURL := uploaded[o.ImageSeed]
 		if imgURL == "" {
 			imgURL = uploaded[restaurants[o.RestaurantIdx].ImageSeed]
 		}
 		if imgURL == "" {
-			imgURL = uploaded["kottu-house"]
+			imgURL = uploaded["pizza-hut"]
 		}
 
 		var imageURLs models.JSONStringSlice
@@ -317,30 +330,6 @@ func main() {
 	fmt.Printf("  📍 %d images uploaded\n", len(uploaded))
 }
 
-func downloadImage(url, filePath string) error {
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		return fmt.Errorf("http get failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status: %d", resp.StatusCode)
-	}
-
-	out, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("file create failed: %w", err)
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return fmt.Errorf("file write failed: %w", err)
-	}
-	return nil
-}
-
 func uploadToMinIO(ctx context.Context, mc *minio.Client, bucket, env, filePath, folder string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -348,25 +337,36 @@ func uploadToMinIO(ctx context.Context, mc *minio.Client, bucket, env, filePath,
 	}
 	defer file.Close()
 
-	stat, err := file.Stat()
+	data, err := io.ReadAll(file)
 	if err != nil {
-		return "", fmt.Errorf("file stat failed: %w", err)
+		return "", fmt.Errorf("file read failed: %w", err)
 	}
 
 	ext := strings.ToLower(filepath.Ext(filePath))
-	objectKey := fmt.Sprintf("%s/%s/%s%s", env, folder, uuid.New().String(), ext)
+	objectKey := fmt.Sprintf("%s/%s/%s.jpg", env, folder, uuid.New().String())
 
-	contentType := "image/jpeg"
-	switch ext {
-	case ".png":
-		contentType = "image/png"
-	case ".gif":
-		contentType = "image/gif"
-	case ".webp":
-		contentType = "image/webp"
+	var uploadData []byte
+	var contentType string
+
+	if ext == ".svg" {
+		objectKey = fmt.Sprintf("%s/%s/%s.svg", env, folder, uuid.New().String())
+		uploadData = data
+		contentType = "image/svg+xml"
+	} else {
+		img, err := imaging.Decode(bytes.NewReader(data))
+		if err != nil {
+			return "", fmt.Errorf("image decode failed: %w", err)
+		}
+		cropped := imaging.Fill(img, 1024, 1024, imaging.Center, imaging.Lanczos)
+		buf := new(bytes.Buffer)
+		if err := imaging.Encode(buf, cropped, imaging.JPEG, imaging.JPEGQuality(85)); err != nil {
+			return "", fmt.Errorf("image encode failed: %w", err)
+		}
+		uploadData = buf.Bytes()
+		contentType = "image/jpeg"
 	}
 
-	_, err = mc.PutObject(ctx, bucket, objectKey, file, stat.Size(), minio.PutObjectOptions{
+	_, err = mc.PutObject(ctx, bucket, objectKey, bytes.NewReader(uploadData), int64(len(uploadData)), minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {

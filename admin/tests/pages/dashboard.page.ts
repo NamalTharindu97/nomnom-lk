@@ -31,7 +31,7 @@ export class DashboardPage {
 
   async getStatCardValue(title: string): Promise<string> {
     const card = this.page.getByRole("heading", { name: title }).locator("..")
-    return card.locator("p.text-2xl").textContent() || ""
+    return (await card.locator("p.text-2xl").textContent()) || ""
   }
 
   async expectStatCardsVisible() {

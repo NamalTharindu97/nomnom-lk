@@ -43,7 +43,10 @@ class OfferImage extends StatelessWidget {
           imageUrl: ApiConfig.resolveUrl(imageUrl),
           fit: BoxFit.cover,
           placeholder: (context, url) => const _ImageFallback(isLoading: true),
-          errorWidget: (context, url, error) => const _ImageFallback(),
+          errorWidget: (context, url, error) {
+            debugPrint('OfferImage error: $error for URL: $url');
+            return const _ImageFallback();
+          },
         ),
       ),
     );
