@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -9,10 +10,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/nomnom-lk/backend/internal/config"
+)
+
+const (
+	cropWidth  = 1200
+	cropHeight = 675
 )
 
 type UploadService struct {
@@ -63,44 +70,51 @@ func (s *UploadService) UploadSingle(file *multipart.FileHeader, folder string) 
 	}
 	defer src.Close()
 
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	objectKey := fmt.Sprintf("%s/%s/%s%s", s.prefix, folder, uuid.New().String(), ext)
-
-	contentType := file.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-
-	ctx := context.Background()
-	_, err = s.client.PutObject(ctx, s.bucket, objectKey, src, file.Size, minio.PutObjectOptions{
-		ContentType: contentType,
-	})
+	data, err := io.ReadAll(src)
 	if err != nil {
-		return "", fmt.Errorf("failed to upload file: %w", err)
+		return "", fmt.Errorf("failed to read file: %w", err)
 	}
 
-	url := fmt.Sprintf("/api/v1/uploads/%s", objectKey)
-	return url, nil
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	return s.uploadCropped(data, ext, folder)
 }
 
 func (s *UploadService) UploadReader(reader io.Reader, size int64, filename, folder string) (string, error) {
-	ext := strings.ToLower(filepath.Ext(filename))
-	objectKey := fmt.Sprintf("%s/%s/%s%s", s.prefix, folder, uuid.New().String(), ext)
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
 
-	contentType := "image/jpeg"
-	switch ext {
-	case ".png":
-		contentType = "image/png"
-	case ".gif":
-		contentType = "image/gif"
-	case ".webp":
-		contentType = "image/webp"
-	case ".svg":
+	ext := strings.ToLower(filepath.Ext(filename))
+	return s.uploadCropped(data, ext, folder)
+}
+
+func (s *UploadService) uploadCropped(data []byte, ext, folder string) (string, error) {
+	objectKey := fmt.Sprintf("%s/%s/%s.jpg", s.prefix, folder, uuid.New().String())
+
+	var uploadData []byte
+	var contentType string
+
+	if ext == ".svg" {
+		objectKey = fmt.Sprintf("%s/%s/%s.svg", s.prefix, folder, uuid.New().String())
+		uploadData = data
 		contentType = "image/svg+xml"
+	} else {
+		img, err := imaging.Decode(bytes.NewReader(data))
+		if err != nil {
+			return "", fmt.Errorf("failed to decode image: %w", err)
+		}
+		cropped := imaging.Fill(img, cropWidth, cropHeight, imaging.Center, imaging.Lanczos)
+		buf := new(bytes.Buffer)
+		if err := imaging.Encode(buf, cropped, imaging.JPEG, imaging.JPEGQuality(85)); err != nil {
+			return "", fmt.Errorf("failed to encode image: %w", err)
+		}
+		uploadData = buf.Bytes()
+		contentType = "image/jpeg"
 	}
 
 	ctx := context.Background()
-	_, err := s.client.PutObject(ctx, s.bucket, objectKey, reader, size, minio.PutObjectOptions{
+	_, err := s.client.PutObject(ctx, s.bucket, objectKey, bytes.NewReader(uploadData), int64(len(uploadData)), minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {

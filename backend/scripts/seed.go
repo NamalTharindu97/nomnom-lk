@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -348,25 +350,36 @@ func uploadToMinIO(ctx context.Context, mc *minio.Client, bucket, env, filePath,
 	}
 	defer file.Close()
 
-	stat, err := file.Stat()
+	data, err := io.ReadAll(file)
 	if err != nil {
-		return "", fmt.Errorf("file stat failed: %w", err)
+		return "", fmt.Errorf("file read failed: %w", err)
 	}
 
 	ext := strings.ToLower(filepath.Ext(filePath))
-	objectKey := fmt.Sprintf("%s/%s/%s%s", env, folder, uuid.New().String(), ext)
+	objectKey := fmt.Sprintf("%s/%s/%s.jpg", env, folder, uuid.New().String())
 
-	contentType := "image/jpeg"
-	switch ext {
-	case ".png":
-		contentType = "image/png"
-	case ".gif":
-		contentType = "image/gif"
-	case ".webp":
-		contentType = "image/webp"
+	var uploadData []byte
+	var contentType string
+
+	if ext == ".svg" {
+		objectKey = fmt.Sprintf("%s/%s/%s.svg", env, folder, uuid.New().String())
+		uploadData = data
+		contentType = "image/svg+xml"
+	} else {
+		img, err := imaging.Decode(bytes.NewReader(data))
+		if err != nil {
+			return "", fmt.Errorf("image decode failed: %w", err)
+		}
+		cropped := imaging.Fill(img, 1200, 675, imaging.Center, imaging.Lanczos)
+		buf := new(bytes.Buffer)
+		if err := imaging.Encode(buf, cropped, imaging.JPEG, imaging.JPEGQuality(85)); err != nil {
+			return "", fmt.Errorf("image encode failed: %w", err)
+		}
+		uploadData = buf.Bytes()
+		contentType = "image/jpeg"
 	}
 
-	_, err = mc.PutObject(ctx, bucket, objectKey, file, stat.Size(), minio.PutObjectOptions{
+	_, err = mc.PutObject(ctx, bucket, objectKey, bytes.NewReader(uploadData), int64(len(uploadData)), minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {

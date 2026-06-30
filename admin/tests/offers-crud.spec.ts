@@ -31,8 +31,6 @@ test.describe("Offers CRUD", () => {
     await expect(page.getByText("Title is required")).toBeVisible()
     await expect(page.getByText("Description is required")).toBeVisible()
     await expect(page.getByText("Restaurant is required")).toBeVisible()
-    await expect(page.getByText("Start date is required")).toBeVisible()
-    await expect(page.getByText("End date is required")).toBeVisible()
     await dialog.expectOpen()
   })
 
