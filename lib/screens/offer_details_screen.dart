@@ -98,96 +98,75 @@ class _OfferDetailsContent extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 310,
-            pinned: true,
-            stretch: true,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: Spacings.xs),
-                child: FavoriteButton(offerId: offer.id),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: OfferImage(
-                imageUrl: offer.primaryImage,
-                heroTag: 'offer-image-${offer.id}',
-                borderRadius: BorderRadius.zero,
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Spacings.lg, 22, Spacings.lg, Spacings.xl + 4),
-              child: Column(
+      appBar: AppBar(
+        title: Text(
+          offer.restaurantName,
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Spacings.lg, Spacings.xl, Spacings.lg, Spacings.xxl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              offer.title,
-                              style: textTheme.headlineSmall?.copyWith(
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              offer.restaurantName,
-                              style: textTheme.titleMedium?.copyWith(
-                                color: context.colors.textSecondary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
+                  Expanded(
+                    child: Text(
+                      offer.title,
+                      style: textTheme.headlineSmall?.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w900,
                       ),
-                      const SizedBox(width: 12),
-                      _DiscountPill(label: offer.discountLabel),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _PricePanel(offer: offer),
-                  const SizedBox(height: 22),
-                  Text(
-                    offer.description,
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: context.colors.textSecondary,
-                      height: 1.45,
                     ),
                   ),
-                  const SizedBox(height: 22),
-                  _InfoRow(
-                    icon: Icons.storefront_rounded,
-                    title: 'Restaurant',
-                    value: offer.restaurantName,
-                  ),
-                  const SizedBox(height: 12),
-                  _InfoRow(
-                    icon: Icons.location_on_rounded,
-                    title: 'Location',
-                    value: offer.location,
-                  ),
-                  const SizedBox(height: 12),
-                  _InfoRow(
-                    icon: Icons.local_offer_rounded,
-                    title: 'Discount',
-                    value: offer.discountLabel,
-                  ),
-                  const SizedBox(height: 28),
-                  FavoriteButton(offerId: offer.id, showLabel: true),
+                  const SizedBox(width: 12),
+                  _DiscountPill(label: offer.discountLabel),
                 ],
               ),
-            ),
+              const SizedBox(height: Spacings.xl),
+              Text(
+                offer.description,
+                style: textTheme.bodyLarge?.copyWith(
+                  color: context.colors.textSecondary,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: Spacings.xl),
+              AspectRatio(
+                aspectRatio: 1 / 1,
+                child: OfferImage(
+                  imageUrl: offer.primaryImage,
+                  heroTag: 'offer-image-${offer.id}',
+                ),
+              ),
+              const SizedBox(height: Spacings.xl),
+              _PricePanel(offer: offer),
+              const SizedBox(height: Spacings.xl),
+              _InfoRow(
+                icon: Icons.storefront_rounded,
+                title: 'Restaurant',
+                value: offer.restaurantName,
+              ),
+              const SizedBox(height: 12),
+              _InfoRow(
+                icon: Icons.location_on_rounded,
+                title: 'Location',
+                value: offer.location,
+              ),
+              const SizedBox(height: 12),
+              _InfoRow(
+                icon: Icons.local_offer_rounded,
+                title: 'Discount',
+                value: offer.discountLabel,
+              ),
+              const SizedBox(height: Spacings.xxl),
+              FavoriteButton(offerId: offer.id, showLabel: true),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -207,7 +186,7 @@ class _PricePanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.06)),
       ),
       child: Row(
         children: [
@@ -276,7 +255,7 @@ class _InfoRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.all(Spacings.sm + 2),
+      padding: const EdgeInsets.all(Spacings.md),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
