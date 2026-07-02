@@ -68,10 +68,12 @@ jobs:
       - name: Run integration tests
         run: |
           for i in {1..10}; do
-            PGPASSWORD=nomnom123 psql -h localhost -U nomnom -d nomnom_test -c 'SELECT 1;' 2>/dev/null && break
-            echo "Waiting for Postgres... attempt $i"
+            echo "Checking Postgres (attempt $i)..."
+            PGPASSWORD=nomnom123 psql -h localhost -U nomnom -d nomnom_test -c 'SELECT 1;' && break
+            echo "Waiting for Postgres..."
             sleep 3
           done
+          echo "Running integration tests..."
           go test -tags=integration ./internal/handlers/... -v -count=1 -timeout 120s
         working-directory: backend
         env:
@@ -169,8 +171,9 @@ jobs:
       - name: Run migration
         run: |
           for i in {1..10}; do
-            PGPASSWORD=nomnom123 psql -h localhost -U nomnom -d nomnom -c 'SELECT 1;' 2>/dev/null && break
-            echo "Waiting for Postgres... attempt $i"
+            echo "Checking Postgres (attempt $i)..."
+            PGPASSWORD=nomnom123 psql -h localhost -U nomnom -d nomnom -c 'SELECT 1;' && break
+            echo "Waiting for Postgres..."
             sleep 3
           done
           go run -tags=migration ./scripts/migrate.go up
