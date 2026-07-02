@@ -152,7 +152,12 @@ jobs:
 
       - name: Run migration
         run: |
-          go run ./scripts/dbcheck.go 2>&1
+          LOGFILE=$(mktemp)
+          go run ./scripts/dbcheck.go > "$LOGFILE" 2>&1; EXIT_CODE=$?
+          cat "$LOGFILE"
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            exit "$EXIT_CODE"
+          fi
           echo "=== Running migration ==="
           go run -tags=migration ./scripts/migrate.go up
         working-directory: backend
