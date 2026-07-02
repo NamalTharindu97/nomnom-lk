@@ -134,6 +134,17 @@ jobs:
           go-version: "1.25"
           cache-dependency-path: backend/go.sum
 
+      - name: Debug Postgres connection
+        run: |
+          echo "Checking Postgres TCP connectivity..."
+          if command -v nc &>/dev/null; then
+            nc -zv localhost 5432 || echo "nc: port 5432 connection failed"
+          fi
+          if command -v ss &>/dev/null; then
+            ss -tln | grep 5432 || echo "ss: no listener on 5432"
+          fi
+          echo "Done checking"
+
       - name: Start backend
         run: |
           go build -o /tmp/server ./cmd/server/main.go
