@@ -153,8 +153,7 @@ jobs:
       - name: Run migration
         shell: bash
         run: |
-          go run ./scripts/dbcheck.go 2>&1 | tee /tmp/dbcheck_result.txt
-          /bin/true  # ignore dbcheck exit code
+          go run ./scripts/dbcheck.go 2>&1 | tee /tmp/dbcheck_result.txt || true
 
       - name: Upload dbcheck result
         if: always()
