@@ -70,3 +70,6 @@
 - `lib/models/` — paginated_response, restaurant, offer
 - `lib/main.dart` — `_FcmInitializer` + `_SseListener` widgets
 - `lib/core/` — api_config, app_routes
+
+## Recent Work
+- **2026-06-30:** Offer detail screen restructured — content-first layout (title → description → image → price → info → favorite). Replaced SliverAppBar with regular AppBar, image now `AspectRatio(1/1)` card with rounded corners. Standardized spacing to `Spacings` constants.

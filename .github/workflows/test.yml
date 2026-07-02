@@ -1,0 +1,207 @@
+name: Test
+
+on:
+  push:
+    branches: [master, "phase/**"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  backend:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nomnom
+          POSTGRES_PASSWORD: nomnom123
+          POSTGRES_DB: nomnom_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      minio:
+        image: minio/minio
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports:
+          - 9000:9000
+          - 9001:9001
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.sum
+
+      - name: Install dependencies
+        run: go mod tidy
+        working-directory: backend
+
+      - name: Run unit tests
+        run: go test ./internal/... -v -count=1 -race
+        working-directory: backend
+
+      - name: Run integration tests
+        run: go test -tags=integration ./internal/handlers/... -v -count=1
+        working-directory: backend
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: nomnom
+          TEST_DB_PASSWORD: nomnom123
+          TEST_DB_NAME: nomnom_test
+          TEST_REDIS_HOST: localhost
+          TEST_MINIO_HOST: localhost
+          TEST_MINIO_ACCESS_KEY: minioadmin
+          TEST_MINIO_SECRET: minioadmin
+
+  admin:
+    name: Admin (Next.js + Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nomnom
+          POSTGRES_PASSWORD: nomnom123
+          POSTGRES_DB: nomnom
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+      minio:
+        image: minio/minio
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports:
+          - 9000:9000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: admin
+
+      - name: Build
+        run: npm run build
+        working-directory: admin
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Start backend
+        run: |
+          go mod tidy
+          go run ./cmd/server/main.go &
+          sleep 5
+        working-directory: backend
+        env:
+          APP_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: nomnom
+          DB_PASSWORD: nomnom123
+          DB_NAME: nomnom
+          JWT_SECRET: test-secret-key-for-ci
+          REDIS_ADDR: localhost:6379
+          MINIO_ENDPOINT: localhost:9000
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+          STORAGE_BUCKET: nomnom-images
+          SERVER_PORT: "8080"
+          CORS_ORIGINS: "*"
+
+      - name: Run migration + seed
+        run: |
+          go run -tags=migration ./scripts/migrate.go up
+          go run -tags=seed ./scripts/seed.go
+        working-directory: backend
+        env:
+          APP_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: nomnom
+          DB_PASSWORD: nomnom123
+          DB_NAME: nomnom
+          JWT_SECRET: test-secret-key-for-ci
+          MINIO_ENDPOINT: localhost:9000
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+          STORAGE_BUCKET: nomnom-images
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+        working-directory: admin
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: admin
+        env:
+          BASE_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+
+  flutter:
+    name: Flutter Unit + Widget Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.29"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run unit and widget tests
+        run: flutter test

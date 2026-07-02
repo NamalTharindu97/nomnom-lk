@@ -238,7 +238,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                 color: context.colors.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.06),
+                                  color: Colors.black.withValues(alpha: 0.06),
                                 ),
                               ),
                               padding: const EdgeInsets.all(Spacings.lg),

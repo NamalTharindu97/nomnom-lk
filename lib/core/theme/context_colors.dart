@@ -8,7 +8,9 @@ class _Colors {
   Color get chili => AppColors.chili;
   Color get lime => AppColors.lime;
   Color get ocean => AppColors.ocean;
-  Color get muted => AppColors.muted;
+
+  // Muted (theme-aware)
+  final Color muted;
 
   // Backgrounds
   final Color background;
@@ -19,7 +21,8 @@ class _Colors {
   final Color textSecondary;
 
   const _Colors._dark()
-      : background = AppColors.darkBackground,
+      : muted = AppColors.muted,
+        background = AppColors.darkBackground,
         backgroundAlt = AppColors.darkBackgroundAlt,
         surface = AppColors.darkSurface,
         surfaceAlt = AppColors.darkSurfaceAlt,
@@ -27,7 +30,8 @@ class _Colors {
         textSecondary = AppColors.darkTextSecondary;
 
   const _Colors._light()
-      : background = AppColors.lightBackground,
+      : muted = AppColors.lightMuted,
+        background = AppColors.lightBackground,
         backgroundAlt = AppColors.lightBackgroundAlt,
         surface = AppColors.lightSurface,
         surfaceAlt = AppColors.lightSurfaceAlt,

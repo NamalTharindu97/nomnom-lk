@@ -13,11 +13,11 @@ import (
 )
 
 type OfferService struct {
-	repo       *repository.OfferRepo
-	restRepo   *repository.RestaurantRepo
+	repo       repository.OfferRepoInterface
+	restRepo   repository.RestaurantRepoInterface
 }
 
-func NewOfferService(repo *repository.OfferRepo, restRepo *repository.RestaurantRepo) *OfferService {
+func NewOfferService(repo repository.OfferRepoInterface, restRepo repository.RestaurantRepoInterface) *OfferService {
 	return &OfferService{
 		repo:     repo,
 		restRepo: restRepo,

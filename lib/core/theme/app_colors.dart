@@ -25,6 +25,7 @@ class AppColors {
   static const lightSurfaceAlt = Color(0xFFF5F5F0);
   static const lightTextPrimary = Color(0xFF1C1B19);
   static const lightTextSecondary = Color(0xFF6B6560);
+  static const lightMuted = Color(0xFF6E6960);
 
   // Legacy aliases (used by some hardcoded spots)
   @Deprecated('Use context.colors instead') static const deepCharcoal = darkBackground;

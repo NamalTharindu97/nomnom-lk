@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/offer_provider.dart';
 import '../utils/spacings.dart';

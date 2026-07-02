@@ -173,7 +173,7 @@ class _NotificationTile extends StatelessWidget {
                   Text(
                     notification.body,
                     style: textTheme.bodyMedium?.copyWith(
-                      color: AppColors.muted,
+                      color: context.colors.muted,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -182,7 +182,7 @@ class _NotificationTile extends StatelessWidget {
                   Text(
                     _formatDate(notification.createdAt),
                     style: textTheme.labelSmall?.copyWith(
-                      color: AppColors.muted.withValues(alpha: 0.7),
+                      color: context.colors.muted.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
