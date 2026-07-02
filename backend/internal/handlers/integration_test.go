@@ -15,7 +15,7 @@ func TestIntegration_HealthEndpoint(t *testing.T) {
 	engine, _, err := testutil.Setup()
 	require.NoError(t, err)
 
-	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/health", nil, "")
+	w := testutil.PerformRequest(engine, http.MethodGet, "/health", nil, "")
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
