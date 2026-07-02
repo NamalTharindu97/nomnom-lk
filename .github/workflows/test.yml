@@ -150,11 +150,16 @@ jobs:
           fi
           echo "Done checking"
 
+      - name: Go mod tidy
+        working-directory: backend
+        run: go mod tidy
+
       - name: Run migration
         shell: bash
         working-directory: backend
         run: |
-          go run ./scripts/dbcheck.go 2>&1 | tee /tmp/dbcheck_result.txt || true
+          set -x
+          go run ./scripts/dbcheck.go 2>&1 | tee /tmp/dbcheck_result.txt || echo "dbcheck failed"
 
       - name: Upload dbcheck result
         if: always()
