@@ -137,8 +137,16 @@ jobs:
       - name: Start backend
         run: |
           go mod tidy
-          go run ./cmd/server/main.go &
+          go run ./cmd/server/main.go > /tmp/backend.log 2>&1 &
+          BACKEND_PID=$!
           sleep 5
+          if ! curl -sS http://localhost:8080/health 2>/dev/null; then
+            echo "=== Backend failed to start ==="
+            cat /tmp/backend.log
+            kill $BACKEND_PID 2>/dev/null
+            exit 1
+          fi
+          echo "Backend running (PID: $BACKEND_PID)"
         working-directory: backend
         env:
           ENVIRONMENT: test
@@ -163,8 +171,7 @@ jobs:
 
       - name: Run migration
         run: |
-          echo "=== DB diagnostic ==="
-          go run ./scripts/dbcheck.go 2>&1 || echo "dbcheck failed"
+          go run ./scripts/dbcheck.go 2>&1
           echo "=== Running migration ==="
           go run -tags=migration ./scripts/migrate.go up
         working-directory: backend
