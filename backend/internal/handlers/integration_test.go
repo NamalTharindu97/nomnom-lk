@@ -32,7 +32,7 @@ func TestIntegration_GetOffers_Unauthenticated(t *testing.T) {
 	err = testutil.ParseResponse(w, &resp)
 	require.NoError(t, err)
 
-	data, ok := resp["data"].([]interface{})
+	_, ok := resp["data"].([]interface{})
 	assert.True(t, ok)
 }
 
