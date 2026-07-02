@@ -86,7 +86,7 @@ class _EmptyStateState extends State<EmptyState>
             Text(
               widget.message,
               textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+              style: textTheme.bodyMedium?.copyWith(color: context.colors.muted),
             ),
             if (widget.onRetry != null) ...[
               const SizedBox(height: Spacings.lg),

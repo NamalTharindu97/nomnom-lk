@@ -108,7 +108,7 @@ class OfferCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.bodySmall?.copyWith(
-                              color: AppColors.muted,
+                              color: context.colors.muted,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -116,9 +116,9 @@ class OfferCard extends StatelessWidget {
                         Text(
                           CurrencyFormatter.lkr(offer.originalPrice),
                           style: textTheme.bodySmall?.copyWith(
-                            color: AppColors.muted,
+                            color: context.colors.muted,
                             decoration: TextDecoration.lineThrough,
-                            decorationColor: AppColors.muted,
+                            decorationColor: context.colors.muted,
                           ),
                         ),
                       ],

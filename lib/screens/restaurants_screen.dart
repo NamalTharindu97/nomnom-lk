@@ -167,7 +167,7 @@ class _RestaurantCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+           border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +183,7 @@ class _RestaurantCard extends StatelessWidget {
             Text(
               restaurant.address,
               style: textTheme.bodyMedium?.copyWith(
-                color: AppColors.muted,
+                color: context.colors.muted,
               ),
             ),
             if (restaurant.cuisineTags.isNotEmpty) ...[

@@ -251,7 +251,7 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: textTheme.labelSmall?.copyWith(
-              color: AppColors.muted,
+              color: context.colors.muted,
               fontWeight: FontWeight.w600,
             ),
           ),

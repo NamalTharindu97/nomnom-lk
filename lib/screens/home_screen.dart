@@ -214,10 +214,11 @@ class _HomeHeader extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Discover the best food deals from your favorite local spots.',
-              style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+              style: textTheme.bodyMedium?.copyWith(color: context.colors.muted),
             ),
             const SizedBox(height: 18),
             InkWell(
+              key: const ValueKey('home-search-bar'),
               onTap: onSearchTap,
               borderRadius: BorderRadius.circular(8),
               child: Container(
@@ -225,7 +226,7 @@ class _HomeHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: context.colors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
                 ),
                 child: Row(
                   children: [
@@ -235,7 +236,7 @@ class _HomeHeader extends StatelessWidget {
                       child: Text(
                         'Search kottu, hoppers, restaurants',
                         style: textTheme.bodyMedium?.copyWith(
-                          color: AppColors.muted,
+                          color: context.colors.muted,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -381,7 +382,7 @@ class _TrendingCarousel extends StatelessWidget {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: textTheme.bodySmall?.copyWith(
-                                            color: AppColors.muted,
+                                            color: context.colors.muted,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -389,9 +390,9 @@ class _TrendingCarousel extends StatelessWidget {
                                       Text(
                                         CurrencyFormatter.lkr(offer.originalPrice),
                                         style: textTheme.bodySmall?.copyWith(
-                                          color: AppColors.muted,
+                                          color: context.colors.muted,
                                           decoration: TextDecoration.lineThrough,
-                                          decorationColor: AppColors.muted,
+                                          decorationColor: context.colors.muted,
                                         ),
                                       ),
                                     ],
@@ -488,7 +489,7 @@ class _FilterChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: isSelected
               ? null
-              : Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              : Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
         ),
         child: Text(
           label,

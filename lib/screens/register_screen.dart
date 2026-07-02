@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../utils/spacings.dart';
@@ -189,7 +188,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 color: context.colors.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.06),
+                                  color: Colors.black.withValues(alpha: 0.06),
                                 ),
                               ),
                               padding: const EdgeInsets.all(Spacings.lg),
@@ -342,7 +341,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 Text(
                                   'Already have an account? ',
                                   style: textTheme.bodySmall?.copyWith(
-                                    color: AppColors.muted,
+                                    color: context.colors.muted,
                                   ),
                                 ),
                                 GestureDetector(
@@ -350,7 +349,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   child: Text(
                                     'Sign In',
                                     style: textTheme.bodySmall?.copyWith(
-                                      color: AppColors.curry,
+                                      color: Theme.of(context).colorScheme.primary,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),

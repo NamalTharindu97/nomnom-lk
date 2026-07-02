@@ -197,7 +197,7 @@ class _PricePanel extends StatelessWidget {
                 Text(
                   'Deal price',
                   style: textTheme.labelLarge?.copyWith(
-                    color: AppColors.muted,
+                    color: context.colors.muted,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -218,9 +218,9 @@ class _PricePanel extends StatelessWidget {
               Text(
                 CurrencyFormatter.lkr(offer.originalPrice),
                 style: textTheme.bodyLarge?.copyWith(
-                  color: AppColors.muted,
+                  color: context.colors.muted,
                   decoration: TextDecoration.lineThrough,
-                  decorationColor: AppColors.muted,
+                  decorationColor: context.colors.muted,
                 ),
               ),
               const SizedBox(height: 6),
@@ -271,7 +271,7 @@ class _InfoRow extends StatelessWidget {
                 Text(
                   title,
                   style: textTheme.labelMedium?.copyWith(
-                    color: AppColors.muted,
+                    color: context.colors.muted,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

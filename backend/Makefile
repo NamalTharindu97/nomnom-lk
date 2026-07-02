@@ -12,12 +12,19 @@ build:
 
 test:
 	@echo "Running tests..."
-	go test ./... -v -count=1 -race
+	go test ./... -v -count=1 -race 2>&1 | grep -v 'no test files'
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	go test ./... -count=1 -race -coverprofile=coverage.out
+	go test ./... -count=1 -race -coverprofile=coverage.out 2>&1 | grep -v 'no test files'
 	go tool cover -html=coverage.out -o coverage.html
+
+test-integration:
+	@echo "Running integration tests..."
+	@echo "Ensure Docker services are running: docker compose up -d postgres redis minio"
+	go test -tags=integration ./internal/handlers/... -v -count=1
+
+test-all: test test-integration
 
 lint:
 	@echo "Running linter..."

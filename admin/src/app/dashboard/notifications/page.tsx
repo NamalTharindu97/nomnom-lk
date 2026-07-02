@@ -1,15 +1,16 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { api, ApiError } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PaginationBar } from "@/components/ui/pagination-bar"
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
   Select,
   SelectTrigger,
@@ -17,16 +18,50 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command"
 
 const PER_PAGE = 10
+
+interface OfferOption {
+  id: string
+  title: string
+  restaurant_name: string
+}
+
+interface UserOption {
+  id: string
+  name: string
+  email: string
+  role: string
+}
 
 export default function NotificationsPage() {
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
   const [target, setTarget] = useState("all")
   const [userId, setUserId] = useState("")
+  const [offerId, setOfferId] = useState("")
+  const [open, setOpen] = useState(false)
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const [users, setUsers] = useState<UserOption[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(true)
+
+  const [offers, setOffers] = useState<OfferOption[]>([])
+  const [loadingOffers, setLoadingOffers] = useState(true)
 
   useEffect(() => {
     if (!result) return
@@ -34,10 +69,26 @@ export default function NotificationsPage() {
     return () => clearTimeout(timer)
   }, [result])
 
+  const selectedUser = useMemo(() => users.find((u) => u.id === userId), [users, userId])
+
   const [history, setHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+
+  useEffect(() => {
+    api.get<{ data: UserOption[] }>("/users?per_page=500")
+      .then((res) => setUsers(res.data || []))
+      .catch(() => setUsers([]))
+      .finally(() => setLoadingUsers(false))
+  }, [])
+
+  useEffect(() => {
+    api.get<{ data: OfferOption[] }>("/offers?per_page=200&status=approved")
+      .then((res) => setOffers(res.data || []))
+      .catch(() => setOffers([]))
+      .finally(() => setLoadingOffers(false))
+  }, [])
 
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
@@ -67,10 +118,12 @@ export default function NotificationsPage() {
         body,
         target,
         user_id: target === "user" ? userId : "",
+        offer_id: offerId && offerId !== "none" ? offerId : undefined,
       })
       setResult({ ok: true, message: "Push notification sent successfully!" })
       setTitle("")
       setBody("")
+      setOfferId("")
       loadHistory()
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Failed to send notification"
@@ -130,16 +183,79 @@ export default function NotificationsPage() {
             </div>
             {target === "user" && (
               <div className="grid gap-2">
-                <Label htmlFor="userId">User ID</Label>
-                <Input
-                  id="userId"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="UUID of the user"
-                  required
-                />
+                <Label>User</Label>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between"
+                    >
+                      {selectedUser
+                        ? `${selectedUser.name} (${selectedUser.email})`
+                        : "Select a user..."}
+                      <ChevronsUpDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search by name or email..." />
+                      <CommandList>
+                        <CommandEmpty>No user found.</CommandEmpty>
+                        <CommandGroup>
+                          {users.map((u) => (
+                            <CommandItem
+                              key={u.id}
+                              value={`${u.name} ${u.email}`}
+                              onSelect={() => {
+                                setUserId(u.id)
+                                setOpen(false)
+                              }}
+                            >
+                              <CheckIcon
+                                className={cn(
+                                  "mr-2 size-4",
+                                  userId === u.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <span>
+                                {u.name} ({u.email})
+                              </span>
+                              <span className="ml-auto text-xs text-muted-foreground">
+                                {u.role}
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             )}
+            <div className="grid gap-2">
+              <Label htmlFor="offer">Related Offer (optional)</Label>
+              <Select value={offerId} onValueChange={setOfferId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="None — general notification" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None — general notification</SelectItem>
+                  {loadingOffers ? (
+                    <SelectItem value="__loading" disabled>Loading offers...</SelectItem>
+                  ) : offers.length === 0 ? (
+                    <SelectItem value="__empty" disabled>No offers available</SelectItem>
+                  ) : (
+                    offers.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.restaurant_name} — {o.title}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
             {result && (
               <p className={`text-sm ${result.ok ? "text-green-600" : "text-destructive"}`}>
                 {result.message}

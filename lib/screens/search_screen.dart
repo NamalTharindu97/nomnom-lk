@@ -109,6 +109,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   const SizedBox(height: Spacings.sm + 2),
                   TextField(
+                    key: const ValueKey('search-field'),
                     controller: _controller,
                     focusNode: _focusNode,
                     autofocus: false,
@@ -186,10 +187,10 @@ class _SearchScreenState extends State<SearchScreen> {
                             if (restaurants.isNotEmpty) ...[
                               Padding(
                               padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.xs, Spacings.md, Spacings.xxs),
-                              child: Text(
+                                  child: Text(
                                 'Restaurants',
                                 style: textTheme.titleSmall?.copyWith(
-                                    color: AppColors.muted,
+                                    color: context.colors.muted,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -204,10 +205,10 @@ class _SearchScreenState extends State<SearchScreen> {
                             if (offers.isNotEmpty) ...[
                               Padding(
                               padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.xs, Spacings.md, Spacings.xxs),
-                              child: Text(
+                                  child: Text(
                                 'Offers',
                                 style: textTheme.titleSmall?.copyWith(
-                                    color: AppColors.muted,
+                                    color: context.colors.muted,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -251,7 +252,7 @@ class _SearchIdleState extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.history_rounded, size: 18, color: AppColors.muted),
+              Icon(Icons.history_rounded, size: 18, color: context.colors.muted),
               const SizedBox(width: Spacings.xs),
               Text(
                 'Recent',
@@ -316,7 +317,7 @@ class _SearchRestaurantTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+           border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [
@@ -345,7 +346,7 @@ class _SearchRestaurantTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       restaurant.address,
-                      style: textTheme.bodySmall?.copyWith(color: AppColors.muted),
+                      style: textTheme.bodySmall?.copyWith(color: context.colors.muted),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

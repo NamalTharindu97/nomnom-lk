@@ -18,16 +18,28 @@ test.describe("Push Notifications", () => {
     await notifPage.expectHistoryVisible()
   })
 
-  test("should show user id field when target is specific user", async () => {
+  test("should show user combobox when target is specific user", async () => {
     await notifPage.selectTarget("user")
-    await expect(notifPage.userIdInput).toBeVisible()
+    await expect(notifPage.userComboBox).toBeVisible()
   })
 
-  test("should hide user id field when target is all users", async () => {
+  test("should hide user combobox when target is all users", async () => {
     await notifPage.selectTarget("user")
-    await expect(notifPage.userIdInput).toBeVisible()
+    await expect(notifPage.userComboBox).toBeVisible()
 
     await notifPage.selectTarget("all")
-    await expect(notifPage.userIdInput).not.toBeVisible()
+    await expect(notifPage.userComboBox).not.toBeVisible()
+  })
+
+  test("should search and select a user from combobox", async ({ page }) => {
+    await notifPage.selectTarget("user")
+    await notifPage.userComboBox.click()
+    await notifPage.userSearchInput.fill("admin")
+
+    const adminOption = page.getByRole("option", { name: /admin@nomnom/ })
+    await expect(adminOption).toBeVisible()
+    await adminOption.click()
+
+    await expect(notifPage.userComboBox).toContainText("admin@nomnom")
   })
 })

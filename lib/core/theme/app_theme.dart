@@ -165,7 +165,7 @@ class AppTheme {
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.lightSurface,
         selectedItemColor: const Color(0xFFE38D12),
-        unselectedItemColor: AppColors.muted,
+        unselectedItemColor: AppColors.lightMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
@@ -189,9 +189,9 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightSurfaceAlt,
-        hintStyle: const TextStyle(color: AppColors.muted),
-        prefixIconColor: AppColors.muted,
-        suffixIconColor: AppColors.muted,
+        hintStyle: const TextStyle(color: AppColors.lightMuted),
+        prefixIconColor: AppColors.lightMuted,
+        suffixIconColor: AppColors.lightMuted,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,

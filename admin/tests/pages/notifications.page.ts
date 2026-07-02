@@ -7,7 +7,8 @@ export class NotificationsPage {
   readonly titleInput: Locator
   readonly bodyInput: Locator
   readonly targetSelect: Locator
-  readonly userIdInput: Locator
+  readonly userComboBox: Locator
+  readonly userSearchInput: Locator
   readonly sendButton: Locator
   readonly resultMessage: Locator
   readonly historyTable: Locator
@@ -18,8 +19,9 @@ export class NotificationsPage {
     this.heading = page.getByRole("heading", { name: "Push Notifications" })
     this.titleInput = page.getByLabel("Title")
     this.bodyInput = page.getByLabel("Body")
-    this.targetSelect = page.getByRole("combobox")
-    this.userIdInput = page.getByLabel("User ID")
+    this.targetSelect = page.getByRole("combobox").first()
+    this.userComboBox = page.getByRole("combobox", { name: /Select a user/i })
+    this.userSearchInput = page.getByPlaceholder("Search by name or email...")
     this.sendButton = page.getByRole("button", { name: "Send Push Notification" })
     this.resultMessage = page.getByText(/sent|failed|error/i)
     this.historyTable = page.getByRole("table")
@@ -40,6 +42,12 @@ export class NotificationsPage {
     await this.targetSelect.click()
     const optionLabel = target === "all" ? "All Users" : "Specific User"
     await this.page.getByRole("option", { name: optionLabel }).click()
+  }
+
+  async selectUserByEmail(email: string) {
+    await this.userComboBox.click()
+    await this.userSearchInput.fill(email)
+    await this.page.getByRole("option", { name: new RegExp(email) }).click()
   }
 
   async expectFormVisible() {

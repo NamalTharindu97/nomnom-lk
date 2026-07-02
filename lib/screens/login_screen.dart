@@ -5,7 +5,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../utils/spacings.dart';
@@ -247,6 +246,7 @@ class _LoginScreenState extends State<LoginScreen>
                         child: FadeTransition(
                           opacity: _googleBtnAnim,
                                 child: ElevatedButton.icon(
+                                key: const ValueKey('google-sign-in-btn'),
                                 onPressed: isLoading || _isGoogleLoading ? null : _signInWithGoogle,
                                 icon: isLoading || _isGoogleLoading
                                     ? SizedBox(
@@ -272,12 +272,12 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2),
-                              child: Text(
-                                'or continue with',
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: AppColors.muted,
+                                child: Text(
+                                  'or continue with',
+                                  style: textTheme.titleSmall?.copyWith(
+                                    color: context.colors.muted,
+                                  ),
                                 ),
-                              ),
                             ),
                             Expanded(
                               child: Divider(color: context.colors.surfaceAlt),
@@ -301,6 +301,7 @@ class _LoginScreenState extends State<LoginScreen>
                             firstChild: SizedBox(
                               width: double.infinity,
                               child: OutlinedButton.icon(
+                                key: const ValueKey('continue-email-btn'),
                                 onPressed: () =>
                                     setState(() => _showEmailForm = true),
                                 icon: const Icon(Icons.mail_outline_rounded),
@@ -315,13 +316,14 @@ class _LoginScreenState extends State<LoginScreen>
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color:
-                                        Colors.white.withValues(alpha: 0.06),
+                                        Colors.black.withValues(alpha: 0.06),
                                   ),
                                 ),
                                 padding: const EdgeInsets.all(Spacings.lg),
                                 child: Column(
                                   children: [
                                     TextFormField(
+                                      key: const ValueKey('email-field'),
                                       controller: _emailController,
                                       keyboardType: TextInputType.emailAddress,
                                       textInputAction: TextInputAction.next,
@@ -346,6 +348,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                     const SizedBox(height: 4),
                                     TextFormField(
+                                      key: const ValueKey('password-field'),
                                       controller: _passwordController,
                                       obscureText: _obscurePassword,
                                       textInputAction: TextInputAction.done,
@@ -383,6 +386,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton.icon(
+                                        key: const ValueKey('sign-in-btn'),
                                         onPressed: isLoading || _isGoogleLoading
                                             ? null
                                             : _signInWithEmail,
@@ -407,20 +411,21 @@ class _LoginScreenState extends State<LoginScreen>
                             Text(
                               "Don't have an account? ",
                               style: textTheme.titleSmall?.copyWith(
-                                color: AppColors.muted,
+                                color: context.colors.muted,
                               ),
                             ),
                             GestureDetector(
+                              key: const ValueKey('sign-up-link'),
                               onTap: () => Navigator.of(context).pushNamed(
                                 AppRoutes.register,
                               ),
-                              child: Text(
-                                'Sign Up',
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: AppColors.curry,
-                                  fontWeight: FontWeight.w700,
+                                child: Text(
+                                  'Sign Up',
+                                  style: textTheme.titleSmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
                             ),
                           ],
                         ),
