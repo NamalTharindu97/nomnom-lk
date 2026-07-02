@@ -154,23 +154,11 @@ jobs:
         working-directory: backend
         run: go mod tidy
 
-      - name: Run migration
-        shell: bash
+      - name: Check database connectivity
         working-directory: backend
-        run: |
-          set -x
-          DBCHECK_OUT=$(go run ./scripts/dbcheck.go 2>&1) || true
-          echo "::notice::dbcheck: $DBCHECK_OUT"
-          printf '%s\n' "$DBCHECK_OUT" | tee /tmp/dbcheck_result.txt
+        run: go run ./scripts/dbcheck.go
 
-      - name: Upload dbcheck result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dbcheck-result
-          path: /tmp/dbcheck_result.txt
-
-      - name: Run migration step 2
+      - name: Run migration
         run: go run -tags=migration ./scripts/migrate.go up
         working-directory: backend
         env:
