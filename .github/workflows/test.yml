@@ -42,11 +42,6 @@ jobs:
         ports:
           - 9000:9000
           - 9001:9001
-        options: >-
-          --health-cmd "bash -c 'exec 3<>/dev/tcp/localhost/9000 2>/dev/null'"
-          --health-interval 3s
-          --health-timeout 3s
-          --health-retries 15
 
     steps:
       - uses: actions/checkout@v4
