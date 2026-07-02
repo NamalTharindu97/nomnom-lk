@@ -159,7 +159,9 @@ jobs:
         working-directory: backend
         run: |
           set -x
-          go run ./scripts/dbcheck.go 2>&1 | tee /tmp/dbcheck_result.txt || echo "dbcheck failed"
+          DBCHECK_OUT=$(go run ./scripts/dbcheck.go 2>&1) || true
+          echo "::notice::dbcheck: $DBCHECK_OUT"
+          printf '%s\n' "$DBCHECK_OUT" | tee /tmp/dbcheck_result.txt
 
       - name: Upload dbcheck result
         if: always()
