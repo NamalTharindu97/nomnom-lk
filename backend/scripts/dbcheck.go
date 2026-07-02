@@ -3,19 +3,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net"
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nomnom-lk/backend/internal/config"
-	"github.com/nomnom-lk/backend/internal/database"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "config.Load error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "[dbcheck] config.Load error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -23,35 +23,29 @@ func main() {
 	fmt.Fprintf(os.Stderr, "[dbcheck] DATABASE_PORT=%s\n", cfg.Database.Port)
 	fmt.Fprintf(os.Stderr, "[dbcheck] DATABASE_USER=%s\n", cfg.Database.User)
 	fmt.Fprintf(os.Stderr, "[dbcheck] DATABASE_NAME=%s\n", cfg.Database.Name)
+	fmt.Fprintf(os.Stderr, "[dbcheck] DATABASE_SSLMODE=%s\n", cfg.Database.SSLMode)
 
-	addr := cfg.Database.Host + ":" + cfg.Database.Port
-	fmt.Fprintf(os.Stderr, "[dbcheck] TCP dial to %s...\n", addr)
+	pgURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s&connect_timeout=5",
+		cfg.Database.User, cfg.Database.Password,
+		cfg.Database.Host, cfg.Database.Port,
+		cfg.Database.Name, cfg.Database.SSLMode)
+	fmt.Fprintf(os.Stderr, "[dbcheck] pgURL: %s\n", pgURL)
 
-	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.New(ctx, pgURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[dbcheck] TCP dial error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "[dbcheck] pgxpool.New error: %v\n", err)
 		os.Exit(1)
 	}
-	conn.Close()
-	fmt.Fprintf(os.Stderr, "[dbcheck] TCP connection OK\n")
+	defer pool.Close()
 
-	dsn := cfg.Database.DSN()
-	fmt.Fprintf(os.Stderr, "[dbcheck] DSN: %s\n", dsn)
-
-	fmt.Fprintf(os.Stderr, "[dbcheck] Attempting GORM connection...\n")
-	db := database.NewPostgresDB(&cfg.Database)
-	fmt.Fprintf(os.Stderr, "[dbcheck] GORM connection OK\n")
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "[dbcheck] sql.DB error: %v\n", err)
-		os.Exit(1)
-	}
-
-	err = sqlDB.Ping()
+	err = pool.Ping(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[dbcheck] Ping error: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "[dbcheck] Ping OK\n")
+
+	fmt.Fprintf(os.Stderr, "[dbcheck] Database connection OK\n")
 }
