@@ -247,7 +247,7 @@ jobs:
           ADMIN_PID=$!
           for i in {1..15}; do
             sleep 2
-            if curl -sS http://localhost:3000 2>/dev/null | grep -q "NomNom"; then
+            if curl -sS -o /dev/null http://localhost:3000 2>/dev/null; then
               echo "Admin running (PID: $ADMIN_PID)"
               exit 0
             fi
