@@ -241,6 +241,24 @@ jobs:
           ADMIN_EMAIL: admin@nomnom.lk
           ADMIN_PASSWORD: Admin@123
 
+      - name: Start admin
+        run: |
+          npm run start &
+          ADMIN_PID=$!
+          for i in {1..15}; do
+            sleep 2
+            if curl -sS http://localhost:3000 2>/dev/null | grep -q "NomNom"; then
+              echo "Admin running (PID: $ADMIN_PID)"
+              exit 0
+            fi
+          done
+          echo "Admin failed to start"
+          kill $ADMIN_PID 2>/dev/null
+          exit 1
+        working-directory: admin
+        env:
+          PORT: "3000"
+
       - name: Install Playwright
         run: npx playwright install chromium
         working-directory: admin
