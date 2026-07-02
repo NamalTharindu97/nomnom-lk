@@ -151,16 +151,13 @@ jobs:
           echo "Done checking"
 
       - name: Run migration
+        shell: bash
         run: |
-          echo "::group::dbcheck"
-          go run ./scripts/dbcheck.go 2>&1; EXIT_CODE=$?
-          echo "::endgroup::"
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "dbcheck failed with exit code $EXIT_CODE"
-            exit "$EXIT_CODE"
-          fi
-          echo "=== Running migration ==="
-          go run -tags=migration ./scripts/migrate.go up
+          echo "### DB Check" >> $GITHUB_STEP_SUMMARY
+          go run ./scripts/dbcheck.go 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Migration" >> $GITHUB_STEP_SUMMARY
+          go run -tags=migration ./scripts/migrate.go up 2>&1 | tee -a $GITHUB_STEP_SUMMARY
         working-directory: backend
         env:
           ENVIRONMENT: test
@@ -208,17 +205,18 @@ jobs:
           go build -o /tmp/server ./cmd/server/main.go
           echo "Compilation done, starting server..."
           /tmp/server > /tmp/backend.log 2>&1 &
+          SERVER_PID=$!
           for i in {1..6}; do
             sleep 2
             if curl -sS http://localhost:8080/health 2>/dev/null; then
-              echo "Backend running (PID: $(jobs -p))"
+              echo "Backend running (PID: $SERVER_PID)"
               exit 0
             fi
-            echo "Waiting for backend... attempt $i"
           done
           echo "=== Backend failed to start ==="
+          kill $SERVER_PID 2>/dev/null
+          wait $SERVER_PID 2>/dev/null
           cat /tmp/backend.log
-          exit 1
         working-directory: backend
         env:
           ENVIRONMENT: test
