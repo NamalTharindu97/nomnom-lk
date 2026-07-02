@@ -150,44 +150,6 @@ jobs:
           fi
           echo "Done checking"
 
-      - name: Start backend
-        run: |
-          go build -o /tmp/server ./cmd/server/main.go
-          echo "Compilation done, starting server..."
-          /tmp/server > /tmp/backend.log 2>&1 &
-          for i in {1..6}; do
-            sleep 2
-            if curl -sS http://localhost:8080/health 2>/dev/null; then
-              echo "Backend running (PID: $(jobs -p))"
-              exit 0
-            fi
-            echo "Waiting for backend... attempt $i"
-          done
-          echo "=== Backend failed to start ==="
-          cat /tmp/backend.log
-          exit 1
-        working-directory: backend
-        env:
-          ENVIRONMENT: test
-          DATABASE_HOST: localhost
-          DATABASE_PORT: "5432"
-          DATABASE_USER: nomnom
-          DATABASE_PASSWORD: nomnom123
-          DATABASE_NAME: nomnom
-          DATABASE_SSLMODE: disable
-          REDIS_HOST: localhost
-          REDIS_PORT: "6379"
-          JWT_SECRET: test-secret-key-for-ci
-          AWS_ACCESS_KEY_ID: minioadmin
-          AWS_SECRET_ACCESS_KEY: minioadmin
-          AWS_S3_BUCKET: nomnom-images
-          AWS_S3_ENDPOINT: localhost:9000
-          AWS_S3_FORCE_PATH_STYLE: "true"
-          SERVER_PORT: "8080"
-          CORS_ORIGINS: "*"
-          ADMIN_EMAIL: admin@nomnom.lk
-          ADMIN_PASSWORD: Admin@123
-
       - name: Run migration
         run: |
           go run ./scripts/dbcheck.go 2>&1
@@ -232,6 +194,44 @@ jobs:
           AWS_S3_BUCKET: nomnom-images
           AWS_S3_ENDPOINT: localhost:9000
           AWS_S3_FORCE_PATH_STYLE: "true"
+          ADMIN_EMAIL: admin@nomnom.lk
+          ADMIN_PASSWORD: Admin@123
+
+      - name: Start backend
+        run: |
+          go build -o /tmp/server ./cmd/server/main.go
+          echo "Compilation done, starting server..."
+          /tmp/server > /tmp/backend.log 2>&1 &
+          for i in {1..6}; do
+            sleep 2
+            if curl -sS http://localhost:8080/health 2>/dev/null; then
+              echo "Backend running (PID: $(jobs -p))"
+              exit 0
+            fi
+            echo "Waiting for backend... attempt $i"
+          done
+          echo "=== Backend failed to start ==="
+          cat /tmp/backend.log
+          exit 1
+        working-directory: backend
+        env:
+          ENVIRONMENT: test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: "5432"
+          DATABASE_USER: nomnom
+          DATABASE_PASSWORD: nomnom123
+          DATABASE_NAME: nomnom
+          DATABASE_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          JWT_SECRET: test-secret-key-for-ci
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_S3_BUCKET: nomnom-images
+          AWS_S3_ENDPOINT: localhost:9000
+          AWS_S3_FORCE_PATH_STYLE: "true"
+          SERVER_PORT: "8080"
+          CORS_ORIGINS: "*"
           ADMIN_EMAIL: admin@nomnom.lk
           ADMIN_PASSWORD: Admin@123
 
