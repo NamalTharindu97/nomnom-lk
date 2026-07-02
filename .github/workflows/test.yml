@@ -265,9 +265,6 @@ jobs:
           name: admin-log
           path: /tmp/admin.log
           retention-days: 3
-        working-directory: admin
-        env:
-          PORT: "3000"
 
       - name: Install Playwright
         run: npx playwright install chromium
