@@ -65,16 +65,14 @@ jobs:
         run: go test ./internal/... -v -count=1 -race
         working-directory: backend
 
-      - name: Check services
-        run: |
-          echo "Checking Postgres..."
-          PGPASSWORD=nomnom123 psql -h localhost -U nomnom -d nomnom_test -c 'SELECT 1;' || echo "Postgres check failed"
-          echo "Checking Redis..."
-          redis-cli -h localhost ping || echo "Redis check failed"
-        working-directory: backend
-
       - name: Run integration tests
-        run: go test -tags=integration ./internal/handlers/... -v -count=1 -timeout 120s
+        run: |
+          for i in {1..10}; do
+            PGPASSWORD=nomnom123 psql -h localhost -U nomnom -d nomnom_test -c 'SELECT 1;' 2>/dev/null && break
+            echo "Waiting for Postgres... attempt $i"
+            sleep 3
+          done
+          go test -tags=integration ./internal/handlers/... -v -count=1 -timeout 120s
         working-directory: backend
         env:
           TEST_DB_HOST: localhost
@@ -168,7 +166,13 @@ jobs:
           ADMIN_PASSWORD: Admin@123
 
       - name: Run migration
-        run: go run -tags=migration ./scripts/migrate.go up
+        run: |
+          for i in {1..10}; do
+            PGPASSWORD=nomnom123 psql -h localhost -U nomnom -d nomnom -c 'SELECT 1;' 2>/dev/null && break
+            echo "Waiting for Postgres... attempt $i"
+            sleep 3
+          done
+          go run -tags=migration ./scripts/migrate.go up
         working-directory: backend
         env:
           ENVIRONMENT: test
