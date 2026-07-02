@@ -190,6 +190,7 @@ export default function NotificationsPage() {
                       variant="outline"
                       role="combobox"
                       aria-expanded={open}
+                      data-testid="user-combobox"
                       className="w-full justify-between"
                     >
                       {selectedUser

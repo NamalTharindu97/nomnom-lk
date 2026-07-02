@@ -20,7 +20,7 @@ export class NotificationsPage {
     this.titleInput = page.getByLabel("Title")
     this.bodyInput = page.getByLabel("Body")
     this.targetSelect = page.getByRole("combobox").first()
-    this.userComboBox = page.getByRole("combobox", { name: /Select a user/i })
+    this.userComboBox = page.getByTestId("user-combobox")
     this.userSearchInput = page.getByPlaceholder("Search by name or email...")
     this.sendButton = page.getByRole("button", { name: "Send Push Notification" })
     this.resultMessage = page.getByText(/sent|failed|error/i)
