@@ -423,12 +423,14 @@ func createAdmin(db *gorm.DB, cfg *config.Config) uuid.UUID {
 		log.Fatalf("Failed to hash admin password: %v", err)
 	}
 
+	now := time.Now()
 	admin := models.User{
-		Email:        cfg.Admin.Email,
-		PasswordHash: hashedPassword,
-		Name:         "Admin",
-		Role:         models.RoleAdmin,
-		IsActive:     true,
+		Email:           cfg.Admin.Email,
+		PasswordHash:    hashedPassword,
+		Name:            "Admin",
+		Role:            models.RoleAdmin,
+		IsActive:        true,
+		EmailVerifiedAt: &now,
 	}
 
 	result := db.Where("email = ?", admin.Email).FirstOrCreate(&admin)
@@ -445,12 +447,14 @@ func createRestaurantOwner(db *gorm.DB, cfg *config.Config) uuid.UUID {
 		log.Fatalf("Failed to hash owner password: %v", err)
 	}
 
+	now := time.Now()
 	owner := models.User{
-		Email:        "owner@nomnom.lk",
-		PasswordHash: hashedPassword,
-		Name:         "Test Owner",
-		Role:         models.RoleRestaurantOwner,
-		IsActive:     true,
+		Email:           "owner@nomnom.lk",
+		PasswordHash:    hashedPassword,
+		Name:            "Test Owner",
+		Role:            models.RoleRestaurantOwner,
+		IsActive:        true,
+		EmailVerifiedAt: &now,
 	}
 
 	result := db.Where("email = ?", owner.Email).FirstOrCreate(&owner)
