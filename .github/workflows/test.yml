@@ -139,14 +139,19 @@ jobs:
           go mod tidy
           go run ./cmd/server/main.go > /tmp/backend.log 2>&1 &
           BACKEND_PID=$!
-          sleep 5
-          if ! curl -sS http://localhost:8080/health 2>/dev/null; then
-            echo "=== Backend failed to start ==="
-            cat /tmp/backend.log
-            kill $BACKEND_PID 2>/dev/null
-            exit 1
-          fi
-          echo "Backend running (PID: $BACKEND_PID)"
+          # Give server time to compile and start
+          for i in {1..12}; do
+            sleep 5
+            if curl -sS http://localhost:8080/health 2>/dev/null; then
+              echo "Backend running (PID: $BACKEND_PID)"
+              exit 0
+            fi
+            echo "Waiting for backend... attempt $i"
+          done
+          echo "=== Backend failed to start after 60s ==="
+          cat /tmp/backend.log
+          kill $BACKEND_PID 2>/dev/null
+          exit 1
         working-directory: backend
         env:
           ENVIRONMENT: test
