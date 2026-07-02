@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:nomnom_lk/core/theme/theme_provider.dart';
+import 'package:nomnom_lk/providers/theme_provider.dart';
 import 'package:nomnom_lk/screens/login_screen.dart';
 import 'package:nomnom_lk/services/api_client.dart';
 import 'package:nomnom_lk/providers/auth_provider.dart';

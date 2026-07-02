@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:nomnom_lk/main.dart' as app;
 import 'package:nomnom_lk/screens/login_screen.dart';
-import 'package:nomnom_lk/core/theme/theme_provider.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Login Screen', () {
     testWidgets('renders login form with email and password fields', (tester) async {
-      final themeProvider = ThemeProvider();
-      await themeProvider.load();
       await tester.pumpWidget(
         MaterialApp(
           home: const LoginScreen(),
