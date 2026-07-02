@@ -152,10 +152,11 @@ jobs:
 
       - name: Run migration
         run: |
-          LOGFILE=$(mktemp)
-          go run ./scripts/dbcheck.go > "$LOGFILE" 2>&1; EXIT_CODE=$?
-          cat "$LOGFILE"
+          echo "::group::dbcheck"
+          go run ./scripts/dbcheck.go 2>&1; EXIT_CODE=$?
+          echo "::endgroup::"
           if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "dbcheck failed with exit code $EXIT_CODE"
             exit "$EXIT_CODE"
           fi
           echo "=== Running migration ==="
