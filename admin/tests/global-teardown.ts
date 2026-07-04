@@ -49,6 +49,56 @@ async function globalTeardown(config: FullConfig) {
       }
       if (restaurants.length > 0) console.log(`[teardown] Deleted ${restaurants.length} E2E restaurants`)
     }
+    // Delete E2E coupons
+    const couponRes = await fetch(`${API_BASE}/admin/coupons`, {
+      headers: authHeaders,
+    })
+    if (couponRes.ok) {
+      const { data: coupons } = await couponRes.json()
+      for (const c of coupons) {
+        if (c.code?.startsWith("E2E")) {
+          await fetch(`${API_BASE}/admin/coupons/${c.id}`, {
+            method: "DELETE",
+            headers: authHeaders,
+          })
+        }
+      }
+      if (coupons.length > 0) console.log(`[teardown] Deleted E2E coupons`)
+    }
+
+    // Delete E2E categories
+    const catRes = await fetch(`${API_BASE}/admin/categories`, {
+      headers: authHeaders,
+    })
+    if (catRes.ok) {
+      const { data: categories } = await catRes.json()
+      for (const c of categories) {
+        if (c.name?.startsWith("E2E")) {
+          await fetch(`${API_BASE}/admin/categories/${c.id}`, {
+            method: "DELETE",
+            headers: authHeaders,
+          })
+        }
+      }
+      if (categories.length > 0) console.log(`[teardown] Deleted E2E categories`)
+    }
+
+    // Delete E2E notification templates
+    const tplRes = await fetch(`${API_BASE}/admin/notification-templates`, {
+      headers: authHeaders,
+    })
+    if (tplRes.ok) {
+      const { data: templates } = await tplRes.json()
+      for (const t of templates) {
+        if (t.name?.startsWith("E2E")) {
+          await fetch(`${API_BASE}/admin/notification-templates/${t.id}`, {
+            method: "DELETE",
+            headers: authHeaders,
+          })
+        }
+      }
+      if (templates.length > 0) console.log(`[teardown] Deleted E2E templates`)
+    }
   } catch (err) {
     console.warn("[teardown] Cleanup error:", err)
   }
