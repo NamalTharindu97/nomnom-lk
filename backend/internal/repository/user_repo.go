@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/models"
 	"gorm.io/gorm"
@@ -67,6 +70,51 @@ func (r *UserRepo) BulkDelete(ids []uuid.UUID) error {
 
 func (r *UserRepo) CountAll(count *int64) error {
 	return r.db.Model(&models.User{}).Count(count).Error
+}
+
+func (r *UserRepo) CountByDate(days int) ([]map[string]interface{}, error) {
+	sql := fmt.Sprintf(
+		"SELECT DATE(created_at)::text as date, COUNT(*)::bigint as count FROM users WHERE created_at >= NOW() - INTERVAL '1 day' * %d GROUP BY DATE(created_at) ORDER BY date",
+		days,
+	)
+	rows, err := r.db.Raw(sql).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := make([]map[string]interface{}, 0)
+	for rows.Next() {
+		var dateStr string
+		var count int64
+		if err := rows.Scan(&dateStr, &count); err != nil {
+			return nil, err
+		}
+		results = append(results, map[string]interface{}{
+			"date":  dateStr,
+			"count": count,
+		})
+	}
+
+	filled := make([]map[string]interface{}, 0)
+	for i := days - 1; i >= 0; i-- {
+		t := time.Now().AddDate(0, 0, -i)
+		dateStr := t.Format("2006-01-02")
+		count := int64(0)
+		for _, r := range results {
+			if r["date"] == dateStr {
+				if c, ok := r["count"].(int64); ok {
+					count = c
+				}
+				break
+			}
+		}
+		filled = append(filled, map[string]interface{}{
+			"date":  dateStr,
+			"count": count,
+		})
+	}
+	return filled, nil
 }
 
 func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter string) ([]models.User, int64, error) {

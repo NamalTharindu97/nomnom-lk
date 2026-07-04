@@ -169,3 +169,36 @@ func (r *OfferRepo) IncrementViewCount(id uuid.UUID) error {
 		Where("id = ?", id).
 		UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error
 }
+
+func (r *OfferRepo) TopByFavorites(limit int) ([]map[string]interface{}, error) {
+	var results []struct {
+		OfferID       uuid.UUID `json:"offer_id"`
+		Title         string    `json:"title"`
+		FavoriteCount int64     `json:"favorite_count"`
+	}
+	err := r.db.Model(&models.Favorite{}).
+		Select("favorites.offer_id, offers.title, COUNT(*) as favorite_count").
+		Joins("JOIN offers ON offers.id = favorites.offer_id").
+		Group("favorites.offer_id, offers.title").
+		Order("favorite_count DESC").
+		Limit(limit).
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, len(results))
+	for i, r := range results {
+		out[i] = map[string]interface{}{
+			"offer_id":       r.OfferID,
+			"title":          r.Title,
+			"favorite_count": r.FavoriteCount,
+		}
+	}
+	return out, nil
+}
+
+func (r *OfferRepo) TopByViews(limit int) ([]models.Offer, error) {
+	var offers []models.Offer
+	err := r.db.Where("view_count > 0").Order("view_count DESC").Limit(limit).Find(&offers).Error
+	return offers, err
+}
