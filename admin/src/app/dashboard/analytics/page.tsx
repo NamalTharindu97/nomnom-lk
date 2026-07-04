@@ -39,21 +39,6 @@ interface OfferStats {
   approval_rate: number
 }
 
-const CHART_COLORS = [
-  "oklch(0.65 0.16 70)",
-  "oklch(0.55 0.12 250)",
-  "oklch(0.6 0.15 150)",
-  "oklch(0.6 0.15 340)",
-  "oklch(0.5 0.1 180)",
-]
-
-const tooltipStyle = {
-  borderRadius: 8,
-  border: "1px solid var(--border)",
-  background: "var(--card)",
-  color: "var(--card-foreground)",
-}
-
 export default function AnalyticsPage() {
   const [topRestaurants, setTopRestaurants] = useState<TopRestaurant[]>([])
   const [topByFavorites, setTopByFavorites] = useState<TopOffer[]>([])
@@ -61,6 +46,19 @@ export default function AnalyticsPage() {
   const [userGrowth, setUserGrowth] = useState<GrowthEntry[]>([])
   const [offerStats, setOfferStats] = useState<OfferStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [chartColors, setChartColors] = useState<string[]>([
+    "oklch(0.65 0.16 70)",
+    "oklch(0.55 0.12 250)",
+    "oklch(0.6 0.15 150)",
+    "oklch(0.6 0.15 340)",
+    "oklch(0.5 0.1 180)",
+  ])
+
+  useEffect(() => {
+    const style = getComputedStyle(document.documentElement)
+    const colors = [1, 2, 3, 4, 5].map(i => style.getPropertyValue(`--chart-${i}`).trim())
+    if (colors.some(Boolean)) setChartColors(colors)
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -80,6 +78,13 @@ export default function AnalyticsPage() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  const tooltipStyle = {
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+    color: "var(--card-foreground)",
+  }
 
   const growthChart = userGrowth.map((g) => ({
     name: g.date.slice(5),
@@ -125,7 +130,7 @@ export default function AnalyticsPage() {
                   <CardTitle className="text-xs font-medium text-muted-foreground">Approved</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-green-600">{offerStats?.approved ?? 0}</p>
+                  <p className="text-2xl font-bold text-success">{offerStats?.approved ?? 0}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -168,7 +173,7 @@ export default function AnalyticsPage() {
                         <Tooltip contentStyle={tooltipStyle} />
                         <Bar dataKey="offer_count" name="Offers" radius={[0, 4, 4, 0]}>
                           {topRestaurants.map((_, i) => (
-                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                            <Cell key={i} fill={chartColors[i % chartColors.length]} />
                           ))}
                         </Bar>
                       </BarChart>
@@ -195,7 +200,7 @@ export default function AnalyticsPage() {
                           <Tooltip contentStyle={tooltipStyle} />
                           <Bar dataKey="favorite_count" name="Favorites" radius={[0, 4, 4, 0]}>
                             {topByFavorites.map((_, i) => (
-                              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                              <Cell key={i} fill={chartColors[i % chartColors.length]} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -254,7 +259,7 @@ export default function AnalyticsPage() {
                           <Tooltip contentStyle={tooltipStyle} />
                           <Bar dataKey="view_count" name="Views" radius={[0, 4, 4, 0]}>
                             {topByViews.map((_, i) => (
-                              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                              <Cell key={i} fill={chartColors[i % chartColors.length]} />
                             ))}
                           </Bar>
                         </BarChart>

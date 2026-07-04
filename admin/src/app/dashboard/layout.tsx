@@ -55,7 +55,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />}
+      {open && <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={onClose} />}
       <aside
         className={`fixed top-0 left-0 z-50 flex h-full w-64 flex-col bg-sidebar border-r border-sidebar-border transition-transform duration-200 lg:static lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"

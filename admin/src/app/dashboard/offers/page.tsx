@@ -26,7 +26,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Pencil, Trash2, Search, Tag, Download, CheckCheck } from "lucide-react"
+import { BulkActionBar } from "@/components/bulk-action-bar"
+import { csvExport } from "@/lib/csv-export"
+import { Plus, Pencil, Trash2, Search, Tag, Download } from "lucide-react"
 import OfferDialog from "./_offer-dialog"
 
 interface Offer {
@@ -46,25 +48,6 @@ interface Offer {
 const PER_PAGE = 10
 const STATUSES = ["all", "approved", "pending", "rejected", "expired"]
 
-function csvExport(offers: Offer[]) {
-  const headers = ["title", "restaurant", "original_price", "offer_price", "status", "end_date"]
-  const rows = offers.map((o) => [
-    `"${o.title.replace(/"/g, '""')}"`,
-    `"${o.restaurant?.name?.replace(/"/g, '""') || ""}"`,
-    String(o.original_price),
-    String(o.offer_price),
-    o.status,
-    o.end_date ? new Date(o.end_date).toLocaleDateString() : "",
-  ])
-  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `offers-${new Date().toISOString().split("T")[0]}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([])
@@ -167,7 +150,7 @@ export default function OffersPage() {
             <p className="text-muted-foreground">Manage food offers</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => csvExport(offers)} disabled={offers.length === 0}>
+            <Button variant="outline" onClick={() => csvExport("offers", ["Title", "Restaurant", "Original Price", "Offer Price", "Status", "End Date"], offers.map(o => [o.title, o.restaurant?.name || "", String(o.original_price), String(o.offer_price), o.status, o.end_date ? new Date(o.end_date).toLocaleDateString() : ""]))} disabled={offers.length === 0}>
               <Download className="mr-2 size-4" />
               Export CSV
             </Button>
@@ -205,41 +188,16 @@ export default function OffersPage() {
               </div>
             </div>
             {selected.size > 0 && (
-              <div className="flex items-center gap-2 pt-2 border-t mt-2">
-                <span className="text-sm text-muted-foreground mr-2">
-                  <CheckCheck className="inline size-4 mr-1" />
-                  {selected.size} selected
-                </span>
-                <Button size="sm" variant="default" onClick={() => handleBulk("approve")}>
-                  Approve All
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleBulk("reject")}>
-                  Reject All
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="text-destructive">
-                      <Trash2 className="size-4 mr-1" />
-                      Delete All
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Offers</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete {selected.size} offer(s)? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
-              </div>
+              <BulkActionBar
+                count={selected.size}
+                actions={[
+                  { label: "Approve All", onClick: () => handleBulk("approve") },
+                  { label: "Reject All", variant: "destructive", onClick: () => handleBulk("reject") },
+                ]}
+                deleteAction={handleBulkDelete}
+                deleteLabel="Delete All"
+                onClear={clear}
+              />
             )}
           </CardHeader>
           <CardContent>
@@ -292,7 +250,7 @@ export default function OffersPage() {
                         <span className="line-through text-muted-foreground text-xs">
                           LKR {o.original_price}
                         </span>{" "}
-                        <span className="text-green-600 font-semibold">LKR {o.offer_price}</span>
+                        <span className="text-success font-semibold">LKR {o.offer_price}</span>
                       </TableCell>
                       <TableCell>{statusBadge(o.status)}</TableCell>
                       <TableCell className="text-xs">

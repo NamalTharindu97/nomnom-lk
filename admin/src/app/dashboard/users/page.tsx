@@ -26,7 +26,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Trash2, Search, Users, Plus, Download, CheckCheck } from "lucide-react"
+import { BulkActionBar } from "@/components/bulk-action-bar"
+import { csvExport } from "@/lib/csv-export"
+import { Trash2, Search, Users, Plus, Download } from "lucide-react"
 import UserDialog from "./_user-dialog"
 
 interface User {
@@ -42,24 +44,6 @@ const PER_PAGE = 10
 const ROLES = ["user", "restaurant_owner", "admin"]
 const ROLE_FILTERS = ["all", "user", "restaurant_owner", "admin"]
 
-function csvExport(users: User[]) {
-  const headers = ["name", "email", "role", "is_active", "created_at"]
-  const rows = users.map((u) => [
-    `"${u.name?.replace(/"/g, '""') || ""}"`,
-    `"${u.email?.replace(/"/g, '""') || ""}"`,
-    u.role,
-    String(u.is_active),
-    new Date(u.created_at).toLocaleDateString(),
-  ])
-  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `users-${new Date().toISOString().split("T")[0]}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -152,7 +136,7 @@ export default function UsersPage() {
             <p className="text-muted-foreground">Manage platform users</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => csvExport(users)} disabled={users.length === 0}>
+            <Button variant="outline" onClick={() => csvExport("users", ["Name", "Email", "Role", "Active", "Joined"], users.map(u => [u.name || "", u.email || "", u.role, String(u.is_active), new Date(u.created_at).toLocaleDateString()]))} disabled={users.length === 0}>
               <Download className="mr-2 size-4" />
               Export CSV
             </Button>
@@ -190,41 +174,16 @@ export default function UsersPage() {
               </div>
             </div>
             {selected.size > 0 && (
-              <div className="flex items-center gap-2 pt-2 border-t mt-2">
-                <span className="text-sm text-muted-foreground mr-2">
-                  <CheckCheck className="inline size-4 mr-1" />
-                  {selected.size} selected
-                </span>
-                <Button size="sm" variant="default" onClick={() => handleBulk("activate")}>
-                  Activate
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => handleBulk("deactivate")}>
-                  Deactivate
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="text-destructive">
-                      <Trash2 className="size-4 mr-1" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Users</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete {selected.size} user(s)? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
-              </div>
+              <BulkActionBar
+                count={selected.size}
+                actions={[
+                  { label: "Activate", onClick: () => handleBulk("activate") },
+                  { label: "Deactivate", variant: "secondary", onClick: () => handleBulk("deactivate") },
+                ]}
+                deleteAction={handleBulkDelete}
+                deleteLabel="Delete"
+                onClear={clear}
+              />
             )}
           </CardHeader>
           <CardContent>

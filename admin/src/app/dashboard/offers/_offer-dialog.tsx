@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -331,9 +332,9 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
 
               <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
-                <textarea
+                <Textarea
                   id="description"
-                  className="border-input flex min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                  className="min-h-[80px]"
                   {...register("description")}
                 />
                 {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
@@ -484,9 +485,9 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                       </div>
                       <div className="grid gap-1">
                         <Label htmlFor="description_si">Description</Label>
-                        <textarea
+                        <Textarea
                           id="description_si"
-                          className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                          className="min-h-[60px]"
                           {...register("description_si")}
                         />
                       </div>
@@ -501,9 +502,9 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                       </div>
                       <div className="grid gap-1">
                         <Label htmlFor="description_ta">Description</Label>
-                        <textarea
+                        <Textarea
                           id="description_ta"
-                          className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                          className="min-h-[60px]"
                           {...register("description_ta")}
                         />
                       </div>

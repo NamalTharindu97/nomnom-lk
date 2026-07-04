@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { UtensilsCrossed } from "lucide-react"
+import { UtensilsCrossed, Sun, Moon, Monitor } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useTheme } from "@/contexts/theme-context"
+
+const themeOptions = [
+  { value: "light" as const, icon: Sun, label: "Light" },
+  { value: "dark" as const, icon: Moon, label: "Dark" },
+  { value: "system" as const, icon: Monitor, label: "System" },
+]
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -16,7 +22,7 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -79,6 +85,27 @@ export default function LoginPage() {
           </form>
         </CardContent>
       </Card>
+
+      <div className="absolute bottom-6 flex items-center gap-1 rounded-lg bg-background/50 border border-border p-1 backdrop-blur-sm">
+        {themeOptions.map((opt) => {
+          const Icon = opt.icon
+          const active = resolvedTheme === opt.value
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setTheme(opt.value)}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="size-3.5" />
+              {opt.label}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

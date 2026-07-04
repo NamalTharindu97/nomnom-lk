@@ -47,10 +47,10 @@ export default function AuditLogPage() {
 
   const actionBadge = (action: string) => {
     const colors: Record<string, string> = {
-      create: "text-green-600",
-      update: "text-blue-600",
+      create: "text-success",
+      update: "text-info",
       delete: "text-destructive",
-      approve: "text-green-600",
+      approve: "text-success",
       reject: "text-destructive",
     }
     return <span className={`font-medium ${colors[action] || "text-muted-foreground"}`}>{action}</span>
