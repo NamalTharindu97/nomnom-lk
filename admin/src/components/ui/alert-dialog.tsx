@@ -19,7 +19,7 @@ export function AlertDialogPortal({ children, ...props }: AlertDialogPrimitive.A
 export function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.AlertDialogOverlayProps) {
   return (
     <AlertDialogPrimitive.Overlay
-      className={cn("alert-overlay fixed inset-0 z-50 bg-black/50", className)}
+      className={cn("alert-overlay fixed inset-0 z-50 bg-foreground/20", className)}
       {...props}
     />
   )

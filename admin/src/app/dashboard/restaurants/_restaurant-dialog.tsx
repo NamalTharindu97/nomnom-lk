@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -201,9 +202,9 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
           </div>
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
-            <textarea
+            <Textarea
               id="description"
-              className="border-input flex min-h-[80px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+              className="min-h-[80px]"
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
             />
@@ -255,9 +256,9 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                   </div>
                   <div className="grid gap-1">
                     <Label htmlFor="description_si">Description</Label>
-                    <textarea
+                    <Textarea
                       id="description_si"
-                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                      className="min-h-[60px]"
                       value={form.description_si}
                       onChange={(e) => set("description_si", e.target.value)}
                     />
@@ -273,9 +274,9 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                   </div>
                   <div className="grid gap-1">
                     <Label htmlFor="description_ta">Description</Label>
-                    <textarea
+                    <Textarea
                       id="description_ta"
-                      className="border-input flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs"
+                      className="min-h-[60px]"
                       value={form.description_ta}
                       onChange={(e) => set("description_ta", e.target.value)}
                     />

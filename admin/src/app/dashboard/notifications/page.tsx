@@ -324,7 +324,7 @@ export default function NotificationsPage() {
               <p className="text-xs text-muted-foreground">Leave empty to send immediately</p>
             </div>
             {result && (
-              <p className={`text-sm ${result.ok ? "text-green-600" : "text-destructive"}`}>
+              <p className={`text-sm ${result.ok ? "text-success" : "text-destructive"}`}>
                 {result.message}
               </p>
             )}
@@ -405,7 +405,7 @@ export default function NotificationsPage() {
                   <CardTitle className="text-xs font-medium text-muted-foreground">Sent</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-green-600">{analytics.sent}</p>
+                  <p className="text-2xl font-bold text-success">{analytics.sent}</p>
                 </CardContent>
               </Card>
               <Card>

@@ -15,6 +15,8 @@ import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useBulk } from "@/hooks/use-bulk"
+import { BulkActionBar } from "@/components/bulk-action-bar"
+import { csvExport } from "@/lib/csv-export"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import Link from "next/link"
-import { Plus, Pencil, Trash2, Search, Store, Download, CheckCheck, ExternalLink } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Store, Download, ExternalLink } from "lucide-react"
 import RestaurantDialog from "./_restaurant-dialog"
 
 interface Restaurant {
@@ -42,24 +44,6 @@ interface Restaurant {
 
 const PER_PAGE = 10
 const STATUSES = ["all", "approved", "pending", "rejected"]
-
-function csvExport(restaurants: Restaurant[]) {
-  const headers = ["name", "address", "cuisine_tags", "status"]
-  const rows = restaurants.map((r) => [
-    `"${r.name.replace(/"/g, '""')}"`,
-    `"${r.address?.replace(/"/g, '""') || ""}"`,
-    `"${(r.cuisine_tags || []).join("; ")}"`,
-    r.status,
-  ])
-  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `restaurants-${new Date().toISOString().split("T")[0]}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 export default function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
@@ -154,7 +138,7 @@ export default function RestaurantsPage() {
             <p className="text-muted-foreground">Manage restaurant listings</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => csvExport(restaurants)} disabled={restaurants.length === 0}>
+            <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Address", "Cuisine", "Status"], restaurants.map(r => [r.name, r.address || "", (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
               <Download className="mr-2 size-4" />
               Export CSV
             </Button>
@@ -192,41 +176,16 @@ export default function RestaurantsPage() {
               </div>
             </div>
             {selected.size > 0 && (
-              <div className="flex items-center gap-2 pt-2 border-t mt-2">
-                <span className="text-sm text-muted-foreground mr-2">
-                  <CheckCheck className="inline size-4 mr-1" />
-                  {selected.size} selected
-                </span>
-                <Button size="sm" variant="default" onClick={() => handleBulk("approve")}>
-                  Approve All
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleBulk("reject")}>
-                  Reject All
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="text-destructive">
-                      <Trash2 className="size-4 mr-1" />
-                      Delete All
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Restaurants</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete {selected.size} restaurant(s)? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
-              </div>
+              <BulkActionBar
+                count={selected.size}
+                actions={[
+                  { label: "Approve All", onClick: () => handleBulk("approve") },
+                  { label: "Reject All", variant: "destructive", onClick: () => handleBulk("reject") },
+                ]}
+                deleteAction={handleBulkDelete}
+                deleteLabel="Delete All"
+                onClear={clear}
+              />
             )}
           </CardHeader>
           <CardContent>
