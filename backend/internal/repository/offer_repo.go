@@ -83,6 +83,14 @@ func (r *OfferRepo) Delete(id uuid.UUID) error {
 	return r.db.Delete(&models.Offer{}, id).Error
 }
 
+func (r *OfferRepo) BulkUpdateStatus(ids []uuid.UUID, status models.OfferStatus) error {
+	return r.db.Model(&models.Offer{}).Where("id IN ?", ids).Update("status", status).Error
+}
+
+func (r *OfferRepo) BulkDelete(ids []uuid.UUID) error {
+	return r.db.Delete(&models.Offer{}, "id IN ?", ids).Error
+}
+
 func (r *OfferRepo) UpdateStatus(id uuid.UUID, status models.OfferStatus) error {
 	return r.db.Model(&models.Offer{}).Where("id = ?", id).Update("status", status).Error
 }

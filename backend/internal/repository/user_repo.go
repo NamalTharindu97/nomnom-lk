@@ -53,6 +53,18 @@ func (r *UserRepo) SoftDelete(id uuid.UUID) error {
 	return r.db.Model(&models.User{}).Where("id = ?", id).Update("is_active", false).Error
 }
 
+func (r *UserRepo) BulkSoftDelete(ids []uuid.UUID) error {
+	return r.db.Model(&models.User{}).Where("id IN ?", ids).Update("is_active", false).Error
+}
+
+func (r *UserRepo) BulkActivate(ids []uuid.UUID) error {
+	return r.db.Model(&models.User{}).Where("id IN ?", ids).Update("is_active", true).Error
+}
+
+func (r *UserRepo) BulkDelete(ids []uuid.UUID) error {
+	return r.db.Delete(&models.User{}, "id IN ?", ids).Error
+}
+
 func (r *UserRepo) CountAll(count *int64) error {
 	return r.db.Model(&models.User{}).Count(count).Error
 }

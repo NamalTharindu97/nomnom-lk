@@ -13,6 +13,8 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { EmptyState } from "@/components/empty-state"
 import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useBulk } from "@/hooks/use-bulk"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Pencil, Trash2, Search, Tag } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Tag, Download, CheckCheck } from "lucide-react"
 import OfferDialog from "./_offer-dialog"
 
 interface Offer {
@@ -44,6 +46,26 @@ interface Offer {
 const PER_PAGE = 10
 const STATUSES = ["all", "approved", "pending", "rejected", "expired"]
 
+function csvExport(offers: Offer[]) {
+  const headers = ["title", "restaurant", "original_price", "offer_price", "status", "end_date"]
+  const rows = offers.map((o) => [
+    `"${o.title.replace(/"/g, '""')}"`,
+    `"${o.restaurant?.name?.replace(/"/g, '""') || ""}"`,
+    String(o.original_price),
+    String(o.offer_price),
+    o.status,
+    o.end_date ? new Date(o.end_date).toLocaleDateString() : "",
+  ])
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `offers-${new Date().toISOString().split("T")[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,6 +76,7 @@ export default function OffersPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null)
+  const { selected, toggle, toggleAll, clear } = useBulk()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -97,6 +120,26 @@ export default function OffersPage() {
     } catch {}
   }
 
+  async function handleBulk(action: string) {
+    const ids = Array.from(selected)
+    try {
+      await api.post("/admin/offers/bulk", { action, ids })
+      notify(`${ids.length} offer(s) ${action}d`, "success")
+      clear()
+      load()
+    } catch {}
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selected)
+    try {
+      await api.post("/admin/offers/bulk", { action: "delete", ids })
+      notify(`${ids.length} offer(s) deleted`, "success")
+      clear()
+      load()
+    } catch {}
+  }
+
   const statusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       approved: "default",
@@ -115,10 +158,16 @@ export default function OffersPage() {
             <h1 className="text-2xl font-bold tracking-tight">Offers</h1>
             <p className="text-muted-foreground">Manage food offers</p>
           </div>
-          <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
-            <Plus className="mr-2 size-4" />
-            New Offer
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => csvExport(offers)} disabled={offers.length === 0}>
+              <Download className="mr-2 size-4" />
+              Export CSV
+            </Button>
+            <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
+              <Plus className="mr-2 size-4" />
+              New Offer
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -147,11 +196,54 @@ export default function OffersPage() {
                 </Select>
               </div>
             </div>
+            {selected.size > 0 && (
+              <div className="flex items-center gap-2 pt-2 border-t mt-2">
+                <span className="text-sm text-muted-foreground mr-2">
+                  <CheckCheck className="inline size-4 mr-1" />
+                  {selected.size} selected
+                </span>
+                <Button size="sm" variant="default" onClick={() => handleBulk("approve")}>
+                  Approve All
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => handleBulk("reject")}>
+                  Reject All
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="text-destructive">
+                      <Trash2 className="size-4 mr-1" />
+                      Delete All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Offers</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selected.size} offer(s)? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={!loading && offers.length > 0 && selected.size === offers.length}
+                      onCheckedChange={() => toggleAll(offers.map((o) => o.id))}
+                    />
+                  </TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Restaurant</TableHead>
                   <TableHead>Price</TableHead>
@@ -162,7 +254,7 @@ export default function OffersPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableSkeleton columns={6} />
+                  <TableSkeleton columns={7} />
                 ) : offers.length === 0 ? (
                   <EmptyState
                     icon={<Tag className="size-10 text-muted-foreground/50" />}
@@ -180,6 +272,12 @@ export default function OffersPage() {
                 ) : (
                   offers.map((o) => (
                     <TableRow key={o.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(o.id)}
+                          onCheckedChange={() => toggle(o.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{o.title}</TableCell>
                       <TableCell>{o.restaurant?.name}</TableCell>
                       <TableCell>
