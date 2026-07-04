@@ -15,7 +15,7 @@ func TestIntegration_HealthEndpoint(t *testing.T) {
 	engine, _, err := testutil.Setup()
 	require.NoError(t, err)
 
-	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/health", nil, "")
+	w := testutil.PerformRequest(engine, http.MethodGet, "/health", nil, "")
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -32,7 +32,7 @@ func TestIntegration_GetOffers_Unauthenticated(t *testing.T) {
 	err = testutil.ParseResponse(w, &resp)
 	require.NoError(t, err)
 
-	data, ok := resp["data"].([]interface{})
+	_, ok := resp["data"].([]interface{})
 	assert.True(t, ok)
 }
 

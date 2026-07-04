@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { api, API_BASE } from "@/lib/api"
 import { notify } from "@/components/ui/toast"
-import { Loader2, Upload, X } from "lucide-react"
+import { Loader2, Upload, X, GripVertical } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -51,6 +51,8 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
   const [pendingCropFiles, setPendingCropFiles] = useState<Array<{ dataUrl: string; file: File }>>([])
   const [currentCropIndex, setCurrentCropIndex] = useState(-1)
   const [removedUrls, setRemovedUrls] = useState<string[]>([])
+  const [reorderedUrls, setReorderedUrls] = useState<string[]>([])
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -141,6 +143,8 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
     setPendingCropFiles([])
     setCurrentCropIndex(-1)
     setRemovedUrls([])
+    setReorderedUrls([])
+    setDragIndex(null)
     setUploadingImages(false)
     setSaving(false)
   }
@@ -221,7 +225,8 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
     setSaving(true)
     try {
       const croppedUrls = await uploadCroppedBlobs()
-      const existingUrls = (offer?.image_urls || []).filter((u: string) => !removedUrls.includes(u))
+      const baseExisting = (offer?.image_urls || []).filter((u: string) => !removedUrls.includes(u))
+      const existingUrls = reorderedUrls.length > 0 ? reorderedUrls : baseExisting
       const allUrls = croppedUrls.length > 0 ? croppedUrls : existingUrls
 
       const body: Record<string, any> = {
@@ -252,8 +257,27 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
     : null
 
   const existingVisibleUrls = (offer?.image_urls || []).filter((u: string) => !removedUrls.includes(u))
+  const displayUrls = isEdit && reorderedUrls.length > 0 ? reorderedUrls : existingVisibleUrls
 
-  const hasChanges = croppedResults.length > 0 || removedUrls.length > 0
+  function handleDragStart(index: number) {
+    setDragIndex(index)
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    if (dragIndex === null || dragIndex === index) return
+    const newUrls = [...displayUrls]
+    const [moved] = newUrls.splice(dragIndex, 1)
+    newUrls.splice(index, 0, moved)
+    setReorderedUrls(newUrls)
+    setDragIndex(index)
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null)
+  }
+
+  const hasChanges = croppedResults.length > 0 || removedUrls.length > 0 || reorderedUrls.length > 0
   const isSaving = saving || uploadingImages
 
   return (
@@ -386,23 +410,38 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                   </div>
                 )}
 
-                {existingVisibleUrls.length > 0 && isEdit && (
+                {displayUrls.length > 0 && isEdit && croppedResults.length === 0 && (
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {existingVisibleUrls.map((url: string, i: number) => (
-                      <div key={i} className="relative size-16 group">
+                    {displayUrls.map((url: string, i: number) => (
+                      <div
+                        key={url}
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragOver={(e) => handleDragOver(e, i)}
+                        onDragEnd={handleDragEnd}
+                        className={`relative size-20 group cursor-grab active:cursor-grabbing ${
+                          dragIndex === i ? 'opacity-50 ring-2 ring-primary' : ''
+                        }`}
+                      >
                         <img
                           src={`${imageOrigin}${url}`}
                           alt={`Image ${i + 1}`}
                           className="size-full rounded-md object-cover"
                         />
+                        <div className="absolute top-0 left-0 rounded-tl-md rounded-br-md bg-background/80 p-0.5">
+                          <GripVertical className="size-3 text-muted-foreground" />
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeExistingUrl(url)}
-                          className="absolute -top-1 -right-1 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Remove this image"
                         >
                           <X className="size-3" />
                         </button>
+                        <span className="absolute bottom-0 left-0 right-0 rounded-b-md bg-background/60 text-[10px] text-center text-muted-foreground">
+                          {i + 1}
+                        </span>
                       </div>
                     ))}
                   </div>

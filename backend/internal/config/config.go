@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+
 	"github.com/spf13/viper"
 )
 
@@ -86,7 +88,9 @@ func Load() (*Config, error) {
 	v.SetConfigFile(".env")
 	if err := v.MergeInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, err
+			if !os.IsNotExist(err) {
+				return nil, err
+			}
 		}
 	}
 

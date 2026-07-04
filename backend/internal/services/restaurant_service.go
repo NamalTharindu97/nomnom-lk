@@ -20,7 +20,7 @@ func NewRestaurantService(repo *repository.RestaurantRepo) *RestaurantService {
 	return &RestaurantService{repo: repo}
 }
 
-func (s *RestaurantService) Create(req *request.CreateRestaurantRequest, ownerID *uuid.UUID, isAdmin bool) (*models.Restaurant, error) {
+func (s *RestaurantService) Create(req *request.CreateRestaurantRequest, requesterID *uuid.UUID, isAdmin bool) (*models.Restaurant, error) {
 	restaurant := &models.Restaurant{
 		Name:         req.Name,
 		Description:  strPtr(req.Description),
@@ -32,10 +32,17 @@ func (s *RestaurantService) Create(req *request.CreateRestaurantRequest, ownerID
 		CoverImage:   strPtr(req.CoverImage),
 	}
 
-	if ownerID != nil && !isAdmin {
-		restaurant.OwnerID = ownerID
+	switch {
+	case isAdmin && req.OwnerID != nil:
+		ownerUID, err := uuid.Parse(*req.OwnerID)
+		if err == nil {
+			restaurant.OwnerID = &ownerUID
+		}
+		restaurant.Status = models.RestaurantApproved
+	case requesterID != nil && !isAdmin:
+		restaurant.OwnerID = requesterID
 		restaurant.Status = models.RestaurantPending
-	} else {
+	default:
 		restaurant.Status = models.RestaurantApproved
 	}
 
@@ -100,6 +107,13 @@ func (s *RestaurantService) Update(id uuid.UUID, req *request.UpdateRestaurantRe
 	}
 	if req.CoverImage != nil {
 		restaurant.CoverImage = req.CoverImage
+	}
+
+	if req.OwnerID != nil && isAdmin {
+		ownerUID, err := uuid.Parse(*req.OwnerID)
+		if err == nil {
+			restaurant.OwnerID = &ownerUID
+		}
 	}
 
 	translations := locale.BuildTranslations(

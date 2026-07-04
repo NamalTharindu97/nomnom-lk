@@ -34,6 +34,7 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 		&models.Notification{},
 		&models.DeviceToken{},
 		&models.RefreshToken{},
+		&models.AuditLog{},
 	); err != nil {
 		log.Fatalf("Failed to auto-migrate: %v", err)
 	}
@@ -45,7 +46,15 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 }
 
 func runIndexMigrations(db *gorm.DB) {
-	indexes := []string{
+	statements := []string{
+		// Add search_vector generated column (from schema.sql / 003_create_offers.up.sql)
+		`ALTER TABLE offers ADD COLUMN IF NOT EXISTS search_vector TSVECTOR
+		 GENERATED ALWAYS AS (
+			 to_tsvector('simple',
+				 coalesce(title, '') || ' ' || coalesce(description, '')
+			 )
+		 ) STORED`,
+		`CREATE INDEX IF NOT EXISTS idx_offers_search ON offers USING GIN(search_vector)`,
 		`CREATE INDEX IF NOT EXISTS idx_offers_status_created
 		 ON offers(status, created_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_offers_end_date
@@ -53,9 +62,9 @@ func runIndexMigrations(db *gorm.DB) {
 		`CREATE INDEX IF NOT EXISTS idx_offers_restaurant_id
 		 ON offers(restaurant_id)`,
 	}
-	for _, idx := range indexes {
-		if err := db.Exec(idx).Error; err != nil {
-			log.Printf("[DB] Warning: could not create index: %v", err)
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			log.Printf("[DB] Warning: could not execute migration: %v", err)
 		}
 	}
 	log.Println("[DB] Index migrations complete")

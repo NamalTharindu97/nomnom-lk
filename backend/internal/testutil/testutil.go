@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/config"
 	"github.com/nomnom-lk/backend/internal/database"
 	"github.com/nomnom-lk/backend/internal/router"
@@ -22,11 +22,17 @@ import (
 )
 
 var (
-	initDB     *gorm.DB
-	initRDB    *redis.Client
-	initEngine *gin.Engine
-	initToken  string
-	initOnce   bool
+	initDB       *gorm.DB
+	initRDB      *redis.Client
+	initEngine   *gin.Engine
+	initToken    string
+	initAdminTok string
+	initOnce     bool
+)
+
+const (
+	TestUserID  = "00000000-0000-0000-0000-000000000001"
+	TestAdminID = "00000000-0000-0000-0000-000000000002"
 )
 
 func init() {
@@ -83,6 +89,13 @@ func Setup() (*gin.Engine, string, error) {
 		Addr: cfg.Redis.Addr(),
 	})
 
+	db.Exec(`INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
+		VALUES (?::uuid, 'testuser@test.com', 'Test User', 'user', true, NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING`, TestUserID)
+	db.Exec(`INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
+		VALUES (?::uuid, 'testadmin@test.com', 'Test Admin', 'admin', true, NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING`, TestAdminID)
+
 	engine, _ := router.SetupRouter(cfg, db, rdb, l)
 
 	initDB = db
@@ -100,7 +113,7 @@ func GenerateAdminToken() string {
 
 func generateTestToken() string {
 	claims := jwt.MapClaims{
-		"sub":  uuid.New().String(),
+		"sub":  TestUserID,
 		"role": "user",
 		"exp":  time.Now().Add(24 * time.Hour).Unix(),
 	}
@@ -111,7 +124,7 @@ func generateTestToken() string {
 
 func generateAdminTestToken() string {
 	claims := jwt.MapClaims{
-		"sub":  uuid.New().String(),
+		"sub":  TestAdminID,
 		"role": "admin",
 		"exp":  time.Now().Add(24 * time.Hour).Unix(),
 	}
@@ -150,7 +163,7 @@ func JSONBody(v interface{}) *bytes.Buffer {
 	return bytes.NewBuffer(b)
 }
 
-func PerformRequest(engine *gin.Engine, method, path string, body *bytes.Buffer, token string) *httptest.ResponseRecorder {
+func PerformRequest(engine *gin.Engine, method, path string, body io.Reader, token string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(method, path, body)
 	req.Header.Set("Content-Type", "application/json")

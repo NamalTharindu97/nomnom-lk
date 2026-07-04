@@ -38,3 +38,5 @@ build/
 
 # Playwright MCP
 .playwright-mcp/
+backend/main
+devtools_options.yaml

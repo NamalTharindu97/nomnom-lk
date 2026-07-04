@@ -28,9 +28,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colors = context.colors;
-
     return Scaffold(
       body: SafeArea(
         child: Consumer<AuthProvider>(
@@ -170,9 +167,6 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colors = context.colors;
-
     return Selector<OfferProvider, int>(
       selector: (_, provider) => provider.favoriteOffers.length,
       builder: (context, favoriteCount, child) {
@@ -459,8 +453,6 @@ class _SignOutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final colors = context.colors;
-
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(

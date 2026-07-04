@@ -66,7 +66,8 @@ jobs:
         working-directory: backend
 
       - name: Run integration tests
-        run: go test -tags=integration ./internal/handlers/... -v -count=1
+        run: |
+          go test -tags=integration ./internal/handlers/... -v -count=1 -timeout 120s
         working-directory: backend
         env:
           TEST_DB_HOST: localhost
@@ -100,6 +101,11 @@ jobs:
         image: redis:7-alpine
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       minio:
         image: minio/minio
         command: server /data --console-address ":9001"
@@ -116,11 +122,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
-          cache-dependency-path: admin/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
         working-directory: admin
 
       - name: Build
@@ -133,46 +137,134 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25"
+          cache-dependency-path: backend/go.sum
+
+      - name: Debug Postgres connection
+        run: |
+          echo "Checking Postgres TCP connectivity..."
+          if command -v nc &>/dev/null; then
+            nc -zv localhost 5432 || echo "nc: port 5432 connection failed"
+          fi
+          if command -v ss &>/dev/null; then
+            ss -tln | grep 5432 || echo "ss: no listener on 5432"
+          fi
+          echo "Done checking"
+
+      - name: Go mod tidy
+        working-directory: backend
+        run: go mod tidy
+
+      - name: Check database connectivity
+        working-directory: backend
+        run: go run ./scripts/dbcheck.go
+
+      - name: Run migration
+        run: go run -tags=migration ./scripts/migrate.go up
+        working-directory: backend
+        env:
+          ENVIRONMENT: test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: "5432"
+          DATABASE_USER: nomnom
+          DATABASE_PASSWORD: nomnom123
+          DATABASE_NAME: nomnom
+          DATABASE_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          JWT_SECRET: test-secret-key-for-ci
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_S3_BUCKET: nomnom-images
+          AWS_S3_ENDPOINT: localhost:9000
+          AWS_S3_FORCE_PATH_STYLE: "true"
+          ADMIN_EMAIL: admin@nomnom.lk
+          ADMIN_PASSWORD: Admin@123
+
+      - name: Run seed
+        run: go run -tags=seed ./scripts/seed.go
+        working-directory: backend
+        env:
+          ENVIRONMENT: test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: "5432"
+          DATABASE_USER: nomnom
+          DATABASE_PASSWORD: nomnom123
+          DATABASE_NAME: nomnom
+          DATABASE_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          JWT_SECRET: test-secret-key-for-ci
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_S3_BUCKET: nomnom-images
+          AWS_S3_ENDPOINT: localhost:9000
+          AWS_S3_FORCE_PATH_STYLE: "true"
+          ADMIN_EMAIL: admin@nomnom.lk
+          ADMIN_PASSWORD: Admin@123
 
       - name: Start backend
         run: |
-          go mod tidy
-          go run ./cmd/server/main.go &
-          sleep 5
+          go build -o /tmp/server ./cmd/server/main.go
+          echo "Compilation done, starting server..."
+          /tmp/server > /tmp/backend.log 2>&1 &
+          SERVER_PID=$!
+          for i in {1..6}; do
+            sleep 2
+            if curl -sS http://localhost:8080/health 2>/dev/null; then
+              echo "Backend running (PID: $SERVER_PID)"
+              exit 0
+            fi
+          done
+          echo "=== Backend failed to start ==="
+          kill $SERVER_PID 2>/dev/null
+          wait $SERVER_PID 2>/dev/null
+          cat /tmp/backend.log
         working-directory: backend
         env:
-          APP_ENV: test
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: nomnom
-          DB_PASSWORD: nomnom123
-          DB_NAME: nomnom
+          ENVIRONMENT: test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: "5432"
+          DATABASE_USER: nomnom
+          DATABASE_PASSWORD: nomnom123
+          DATABASE_NAME: nomnom
+          DATABASE_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
           JWT_SECRET: test-secret-key-for-ci
-          REDIS_ADDR: localhost:6379
-          MINIO_ENDPOINT: localhost:9000
-          MINIO_ACCESS_KEY: minioadmin
-          MINIO_SECRET_KEY: minioadmin
-          STORAGE_BUCKET: nomnom-images
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_S3_BUCKET: nomnom-images
+          AWS_S3_ENDPOINT: localhost:9000
+          AWS_S3_FORCE_PATH_STYLE: "true"
           SERVER_PORT: "8080"
           CORS_ORIGINS: "*"
+          ADMIN_EMAIL: admin@nomnom.lk
+          ADMIN_PASSWORD: Admin@123
 
-      - name: Run migration + seed
+      - name: Start admin
         run: |
-          go run -tags=migration ./scripts/migrate.go up
-          go run -tags=seed ./scripts/seed.go
-        working-directory: backend
-        env:
-          APP_ENV: test
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: nomnom
-          DB_PASSWORD: nomnom123
-          DB_NAME: nomnom
-          JWT_SECRET: test-secret-key-for-ci
-          MINIO_ENDPOINT: localhost:9000
-          MINIO_ACCESS_KEY: minioadmin
-          MINIO_SECRET_KEY: minioadmin
-          STORAGE_BUCKET: nomnom-images
+          npm run start > /tmp/admin.log 2>&1 &
+          ADMIN_PID=$!
+          for i in {1..15}; do
+            sleep 2
+            if curl -sS -o /dev/null http://localhost:3000/login 2>/dev/null; then
+              echo "Admin running (PID: $ADMIN_PID)"
+              exit 0
+            fi
+          done
+          echo "Admin failed to start"
+          cat /tmp/admin.log
+          kill $ADMIN_PID 2>/dev/null
+          exit 1
+        working-directory: admin
+
+      - name: Upload admin log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-log
+          path: /tmp/admin.log
+          retention-days: 3
 
       - name: Install Playwright
         run: npx playwright install chromium
@@ -184,6 +276,22 @@ jobs:
         env:
           BASE_URL: http://localhost:3000
           NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: admin/playwright-report/
+          retention-days: 3
+
+      - name: Upload Playwright test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: admin/test-results/
+          retention-days: 3
 
   flutter:
     name: Flutter Unit + Widget Tests

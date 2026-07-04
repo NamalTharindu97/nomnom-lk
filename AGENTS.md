@@ -72,4 +72,4 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
-- **2026-06-30:** Offer detail screen restructured — content-first layout (title → description → image → price → info → favorite). Replaced SliverAppBar with regular AppBar, image now `AspectRatio(1/1)` card with rounded corners. Standardized spacing to `Spacings` constants.
+- **2026-07-04:** P21 (UX Foundation): AlertDialog, Skeleton, TableSkeleton, EmptyState, ErrorBoundary components; search/filter bars; backend user email+role filters. P22 (CRUD Completion): User creation dialog; restaurant owner dropdown; cover image preview; image drag-and-drop reordering; date range selector. P23 (Settings & Audit Log — in progress): AuditLog model/repo/handler; ChangePassword handler; settings page with password form; audit log page with paginated table; sidebar nav updated.
