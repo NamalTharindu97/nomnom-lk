@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/middleware"
+	"github.com/nomnom-lk/backend/internal/models"
+	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
@@ -33,11 +35,16 @@ func (rl *rateLimiter) Allow(key string, interval time.Duration) bool {
 var pushRateLimiter = &rateLimiter{attempts: make(map[string]time.Time)}
 
 type NotificationHandler struct {
-	service *services.NotificationService
+	service        *services.NotificationService
+	scheduledRepo  *repository.ScheduledNotificationRepo
 }
 
 func NewNotificationHandler(service *services.NotificationService) *NotificationHandler {
 	return &NotificationHandler{service: service}
+}
+
+func (h *NotificationHandler) SetScheduledRepo(repo *repository.ScheduledNotificationRepo) {
+	h.scheduledRepo = repo
 }
 
 func (h *NotificationHandler) RegisterDevice(c *gin.Context) {
@@ -156,6 +163,49 @@ func (h *NotificationHandler) SendPush(c *gin.Context) {
 		response.ValidationError(c, []response.ErrorDetail{
 			{Field: "body", Message: err.Error()},
 		})
+		return
+	}
+
+	if req.ScheduleAt != "" {
+		scheduledAt, err := time.Parse(time.RFC3339, req.ScheduleAt)
+		if err != nil {
+			response.ValidationError(c, []response.ErrorDetail{
+				{Field: "schedule_at", Message: "invalid date format, use RFC3339"},
+			})
+			return
+		}
+
+		if h.scheduledRepo == nil {
+			response.InternalError(c, "scheduling not available")
+			return
+		}
+
+		sn := &models.ScheduledNotification{
+			Title:       req.Title,
+			Body:        req.Body,
+			Target:      req.Target,
+			Status:      "pending",
+			ScheduledAt: scheduledAt,
+		}
+
+		if req.Target == "user" && req.UserID != "" {
+			uid, err := uuid.Parse(req.UserID)
+			if err == nil {
+				sn.UserID = &uid
+			}
+		}
+		if req.OfferID != "" {
+			oid, err := uuid.Parse(req.OfferID)
+			if err == nil {
+				sn.OfferID = &oid
+			}
+		}
+
+		if err := h.scheduledRepo.Create(sn); err != nil {
+			response.InternalError(c, "failed to schedule notification")
+			return
+		}
+		response.Success(c, gin.H{"message": "notification scheduled", "id": sn.ID})
 		return
 	}
 

@@ -22,6 +22,7 @@ import {
   ScrollText,
   Settings,
   BarChart3,
+  FileText,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/dashboard/offers", label: "Offers", icon: Tag },
   { href: "/dashboard/users", label: "Users", icon: Users },
   { href: "/dashboard/notifications", label: "Push Notifications", icon: Bell },
+  { href: "/dashboard/notification-templates", label: "Templates", icon: FileText },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
