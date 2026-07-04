@@ -126,3 +126,39 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
 }
+
+@keyframes overlay-show {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlay-hide {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes content-show {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes content-hide {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+}
+
+[data-state="open"] > .alert-overlay {
+  animation: overlay-show 0.15s ease-out;
+}
+
+[data-state="closed"] > .alert-overlay {
+  animation: overlay-hide 0.15s ease-in;
+}
+
+[data-state="open"] > .alert-content {
+  animation: content-show 0.15s ease-out;
+}
+
+[data-state="closed"] > .alert-content {
+  animation: content-hide 0.15s ease-in;
+}

@@ -15,6 +15,7 @@ type CreateRestaurantRequest struct {
 	ContactPhone  string                 `json:"contact_phone,omitempty"`
 	CuisineTags   models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    string                 `json:"cover_image,omitempty"`
+	OwnerID       *string                `json:"owner_id,omitempty"`
 }
 
 type UpdateRestaurantRequest struct {
@@ -30,6 +31,7 @@ type UpdateRestaurantRequest struct {
 	ContactPhone  *string                 `json:"contact_phone,omitempty"`
 	CuisineTags   *models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    *string                 `json:"cover_image,omitempty"`
+	OwnerID       *string                 `json:"owner_id,omitempty"`
 }
 
 type ApproveRejectRequest struct {

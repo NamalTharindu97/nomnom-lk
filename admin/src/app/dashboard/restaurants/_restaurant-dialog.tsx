@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/api"
 import { notify } from "@/components/ui/toast"
 import { Loader2, X } from "lucide-react"
@@ -16,6 +17,7 @@ interface RestaurantForm {
   cuisine_tags: string
   description: string
   phone: string
+  owner_id: string
   name_si: string
   name_ta: string
   description_si: string
@@ -29,10 +31,17 @@ const emptyForm: RestaurantForm = {
   cuisine_tags: "",
   description: "",
   phone: "",
+  owner_id: "",
   name_si: "",
   name_ta: "",
   description_si: "",
   description_ta: "",
+}
+
+interface OwnerOption {
+  id: string
+  name: string
+  email: string
 }
 
 interface RestaurantDialogProps {
@@ -46,9 +55,19 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   const [form, setForm] = useState<RestaurantForm>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [owners, setOwners] = useState<OwnerOption[]>([])
 
   const isEdit = !!restaurant
+
+  useEffect(() => {
+    if (open) {
+      api.get<{ data: OwnerOption[] }>("/users?role=restaurant_owner&per_page=100")
+        .then((res) => setOwners(res.data || []))
+        .catch(() => {})
+    }
+  }, [open])
 
   useEffect(() => {
     if (restaurant) {
@@ -59,14 +78,17 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         cuisine_tags: (restaurant.cuisine_tags || []).join(", "),
         description: restaurant.description || "",
         phone: restaurant.contact_phone || "",
+        owner_id: restaurant.owner_id || "",
         name_si: restaurant.name_si || "",
         name_ta: restaurant.name_ta || "",
         description_si: restaurant.description_si || "",
         description_ta: restaurant.description_ta || "",
       })
+      setCoverPreview(restaurant.cover_image || null)
     } else {
       setForm(emptyForm)
       setCoverFile(null)
+      setCoverPreview(null)
     }
   }, [restaurant])
 
@@ -77,10 +99,18 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   function onFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null
     setCoverFile(file)
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = () => setCoverPreview(reader.result as string)
+      reader.readAsDataURL(file)
+    } else {
+      setCoverPreview(restaurant?.cover_image || null)
+    }
   }
 
   function removeFile() {
     setCoverFile(null)
+    setCoverPreview(null)
   }
 
   async function uploadFile(): Promise<string | null> {
@@ -107,12 +137,13 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
     try {
       const coverImage = await uploadFile()
 
-      const { phone, ...restForm } = form
+      const { phone, owner_id, ...restForm } = form
       const body: Record<string, any> = {
         ...restForm,
         contact_phone: phone || null,
         cuisine_tags: form.cuisine_tags.split(",").map((s) => s.trim()).filter(Boolean),
       }
+      if (owner_id && owner_id !== "__none") body.owner_id = owner_id
 
       if (coverImage) {
         body.cover_image = coverImage
@@ -179,25 +210,35 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
           </div>
 
           <div className="grid gap-2">
+            <Label htmlFor="owner">Owner</Label>
+            <Select value={form.owner_id} onValueChange={(v) => set("owner_id", v)}>
+              <SelectTrigger id="owner">
+                <SelectValue placeholder="No owner (admin-managed)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">No owner</SelectItem>
+                {owners.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name} ({o.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
             <Label>Cover Image</Label>
             <div className="flex items-center gap-2">
               <Input type="file" accept="image/*" onChange={onFileSelect} className="file:text-xs" />
+              {(coverPreview || restaurant?.cover_image) && (
+                <Button type="button" variant="ghost" size="icon" onClick={removeFile} className="shrink-0">
+                  <X className="size-4 text-destructive" />
+                </Button>
+              )}
             </div>
-            {coverFile && (
-              <div className="flex items-center gap-2 mt-1">
-                <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
-                  {coverFile.name}
-                  <button type="button" onClick={removeFile} className="text-destructive hover:opacity-70">
-                    <X className="size-3" />
-                  </button>
-                </span>
-              </div>
-            )}
-            {restaurant?.cover_image && !coverFile && (
-              <div className="flex items-center gap-2 mt-1">
-                <span className="rounded-md bg-muted px-2 py-1 text-xs truncate max-w-60">
-                  {restaurant.cover_image.split("/").pop()}
-                </span>
+            {coverPreview && (
+              <div className="relative mt-1 overflow-hidden rounded-md border">
+                <img src={coverPreview} alt="Cover preview" className="h-32 w-full object-cover" />
               </div>
             )}
           </div>

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PaginationBar } from "@/components/ui/pagination-bar"
+import { ErrorBoundary } from "@/components/error-boundary"
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -134,10 +135,11 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <ErrorBoundary>
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Push Notifications</h1>
-        <p className="text-muted-foreground">Send and view push notifications</p>
+        <p className="text-muted-foreground">Send and manage push notifications</p>
       </div>
 
       <Card>
@@ -318,5 +320,6 @@ export default function NotificationsPage() {
         </CardContent>
       </Card>
     </div>
+    </ErrorBoundary>
   )
 }

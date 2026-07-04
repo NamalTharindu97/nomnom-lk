@@ -57,12 +57,20 @@ func (r *UserRepo) CountAll(count *int64) error {
 	return r.db.Model(&models.User{}).Count(count).Error
 }
 
-func (r *UserRepo) FindAll(page, perPage int) ([]models.User, int64, error) {
+func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter string) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
-	r.db.Model(&models.User{}).Count(&total)
-	err := r.db.Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
+	query := r.db.Model(&models.User{})
+	if emailFilter != "" {
+		query = query.Where("email ILIKE ?", "%"+emailFilter+"%")
+	}
+	if roleFilter != "" {
+		query = query.Where("role = ?", roleFilter)
+	}
+
+	query.Count(&total)
+	err := query.Offset((page-1)*perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}

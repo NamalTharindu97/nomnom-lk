@@ -26,6 +26,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	favoriteRepo := repository.NewFavoriteRepo(db)
 	deviceTokenRepo := repository.NewDeviceTokenRepo(db)
 	notificationRepo := repository.NewNotificationRepo(db)
+	auditLogRepo := repository.NewAuditLogRepo(db)
 
 	// Services
 	sseService := services.NewSSEService()
@@ -54,6 +55,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService, sseService)
 	searchHandler := handlers.NewSearchHandler(searchService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
+	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	r := gin.New()
 
 	r.Use(
@@ -110,12 +112,14 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		usersGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		{
 			usersGroup.GET("/me", userHandler.Me)
+			usersGroup.POST("/me/change-password", userHandler.ChangePassword)
 		}
 
 		adminUsers := usersGroup.Group("")
 		adminUsers.Use(middleware.RequireRole("admin"))
 		{
 			adminUsers.GET("", userHandler.List)
+			adminUsers.POST("", userHandler.Create)
 			adminUsers.PUT("/:id", userHandler.Update)
 			adminUsers.DELETE("/:id", userHandler.Delete)
 		}
@@ -190,6 +194,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.GET("/stats/timeline", adminHandler.StatsTimeline)
 			adminGroup.GET("/notifications", adminHandler.ListNotifications)
 			adminGroup.POST("/notifications/push", notificationHandler.SendPush)
+			adminGroup.GET("/audit-log", auditLogHandler.List)
 		}
 	}
 

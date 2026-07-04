@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { Store, Tag, Users, Bell } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
@@ -24,15 +27,23 @@ interface TimelineData {
   restaurants: TimelineEntry[]
 }
 
+const PRESETS = [
+  { label: "7d", days: 7 },
+  { label: "14d", days: 14 },
+  { label: "30d", days: 30 },
+]
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [timeline, setTimeline] = useState<TimelineData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [days, setDays] = useState(14)
 
   useEffect(() => {
+    setLoading(true)
     Promise.all([
       api.get<{ data: Stats }>("/admin/stats"),
-      api.get<{ data: TimelineData }>("/admin/stats/timeline?days=14"),
+      api.get<{ data: TimelineData }>(`/admin/stats/timeline?days=${days}`),
     ])
       .then(([statsRes, timelineRes]) => {
         setStats(statsRes.data)
@@ -40,7 +51,7 @@ export default function DashboardPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [days])
 
   const cards = [
     { title: "Total Restaurants", value: stats?.total_restaurants ?? 0, icon: Store },
@@ -50,6 +61,7 @@ export default function DashboardPage() {
   ]
 
   return (
+    <ErrorBoundary>
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
@@ -62,11 +74,11 @@ export default function DashboardPage() {
             {[1, 2, 3, 4].map((i) => (
               <Card key={i}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                  <div className="size-4 animate-pulse rounded bg-muted" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="size-4" />
                 </CardHeader>
                 <CardContent>
-                  <div className="h-7 w-16 animate-pulse rounded bg-muted" />
+                  <Skeleton className="h-7 w-16" />
                 </CardContent>
               </Card>
             ))}
@@ -92,13 +104,28 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Activity (Last 14 Days)</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Activity</CardTitle>
+              <div className="flex gap-1">
+                {PRESETS.map((p) => (
+                  <Button
+                    key={p.days}
+                    variant={days === p.days ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setDays(p.days)}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               {loading ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-                  Loading...
+                <div className="flex h-full items-center justify-center">
+                  <Skeleton className="h-full w-full" />
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -159,5 +186,6 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+    </ErrorBoundary>
   )
 }
