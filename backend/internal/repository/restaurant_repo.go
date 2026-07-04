@@ -139,3 +139,31 @@ func (r *RestaurantRepo) FindByOwnerID(ownerID uuid.UUID) ([]models.Restaurant, 
 func (r *RestaurantRepo) FindPending(page, perPage int) ([]models.Restaurant, int64, error) {
 	return r.FindAll(string(models.RestaurantPending), "", page, perPage)
 }
+
+func (r *RestaurantRepo) TopByOfferCount(limit int) ([]map[string]interface{}, error) {
+	var results []struct {
+		RestaurantID uuid.UUID `json:"restaurant_id"`
+		Name         string    `json:"name"`
+		OfferCount   int64     `json:"offer_count"`
+	}
+	err := r.db.Model(&models.Offer{}).
+		Select("offers.restaurant_id, restaurants.name, COUNT(*) as offer_count").
+		Joins("JOIN restaurants ON restaurants.id = offers.restaurant_id").
+		Where("offers.status = ?", "approved").
+		Group("offers.restaurant_id, restaurants.name").
+		Order("offer_count DESC").
+		Limit(limit).
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make([]map[string]interface{}, len(results))
+	for i, r := range results {
+		out[i] = map[string]interface{}{
+			"restaurant_id": r.RestaurantID,
+			"name":          r.Name,
+			"offer_count":   r.OfferCount,
+		}
+	}
+	return out, nil
+}

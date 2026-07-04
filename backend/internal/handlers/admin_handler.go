@@ -181,6 +181,72 @@ func (h *AdminHandler) BulkOffers(c *gin.Context) {
 	response.Success(c, gin.H{"affected": len(req.IDs)})
 }
 
+func (h *AdminHandler) AnalyticsTopRestaurants(c *gin.Context) {
+	top, err := h.restaurantRepo.TopByOfferCount(5)
+	if err != nil {
+		response.InternalError(c, "failed to get top restaurants")
+		return
+	}
+	response.Success(c, gin.H{"data": top})
+}
+
+func (h *AdminHandler) AnalyticsTopOffers(c *gin.Context) {
+	byFavorites, _ := h.offerRepo.TopByFavorites(5)
+	byViews, _ := h.offerRepo.TopByViews(5)
+
+	viewData := make([]gin.H, len(byViews))
+	for i, o := range byViews {
+		viewData[i] = gin.H{
+			"offer_id":   o.ID,
+			"title":      o.Title,
+			"view_count": o.ViewCount,
+		}
+	}
+
+	response.Success(c, gin.H{
+		"by_favorites": byFavorites,
+		"by_views":     viewData,
+	})
+}
+
+func (h *AdminHandler) AnalyticsUserGrowth(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "30")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days < 1 || days > 365 {
+		days = 30
+	}
+
+	growth, err := h.userRepo.CountByDate(days)
+	if err != nil {
+		response.InternalError(c, "failed to get user growth")
+		return
+	}
+	response.Success(c, gin.H{"data": growth})
+}
+
+func (h *AdminHandler) AnalyticsOfferStats(c *gin.Context) {
+	var total, approved, pending, rejected, expired int64
+	h.offerRepo.CountAll(&total)
+	h.offerRepo.CountByStatus("approved", &approved)
+	h.offerRepo.CountByStatus("pending", &pending)
+	h.offerRepo.CountByStatus("rejected", &rejected)
+	h.offerRepo.CountByStatus("expired", &expired)
+
+	approvalRate := float64(0)
+	if total > 0 {
+		approvalRate = float64(approved) / float64(total) * 100
+	}
+
+	response.Success(c, gin.H{
+		"total":         total,
+		"approved":      approved,
+		"pending":       pending,
+		"rejected":      rejected,
+		"expired":       expired,
+		"approval_rate": approvalRate,
+	})
+}
+
 func (h *AdminHandler) BulkUsers(c *gin.Context) {
 	var req BulkActionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
