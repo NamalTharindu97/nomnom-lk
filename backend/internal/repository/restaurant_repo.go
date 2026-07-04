@@ -65,6 +65,14 @@ func (r *RestaurantRepo) Delete(id uuid.UUID) error {
 	return r.db.Delete(&models.Restaurant{}, id).Error
 }
 
+func (r *RestaurantRepo) BulkUpdateStatus(ids []uuid.UUID, status models.RestaurantStatus) error {
+	return r.db.Model(&models.Restaurant{}).Where("id IN ?", ids).Update("status", status).Error
+}
+
+func (r *RestaurantRepo) BulkDelete(ids []uuid.UUID) error {
+	return r.db.Delete(&models.Restaurant{}, "id IN ?", ids).Error
+}
+
 func (r *RestaurantRepo) UpdateStatus(id uuid.UUID, status models.RestaurantStatus) error {
 	return r.db.Model(&models.Restaurant{}).Where("id = ?", id).Update("status", status).Error
 }

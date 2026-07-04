@@ -13,6 +13,8 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { EmptyState } from "@/components/empty-state"
 import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useBulk } from "@/hooks/use-bulk"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Pencil, Trash2, Search, Store } from "lucide-react"
+import Link from "next/link"
+import { Plus, Pencil, Trash2, Search, Store, Download, CheckCheck, ExternalLink } from "lucide-react"
 import RestaurantDialog from "./_restaurant-dialog"
 
 interface Restaurant {
@@ -40,6 +43,24 @@ interface Restaurant {
 const PER_PAGE = 10
 const STATUSES = ["all", "approved", "pending", "rejected"]
 
+function csvExport(restaurants: Restaurant[]) {
+  const headers = ["name", "address", "cuisine_tags", "status"]
+  const rows = restaurants.map((r) => [
+    `"${r.name.replace(/"/g, '""')}"`,
+    `"${r.address?.replace(/"/g, '""') || ""}"`,
+    `"${(r.cuisine_tags || []).join("; ")}"`,
+    r.status,
+  ])
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `restaurants-${new Date().toISOString().split("T")[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +71,7 @@ export default function RestaurantsPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [deleteTarget, setDeleteTarget] = useState<Restaurant | null>(null)
+  const { selected, toggle, toggleAll, clear } = useBulk()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -94,6 +116,26 @@ export default function RestaurantsPage() {
     } catch {}
   }
 
+  async function handleBulk(action: string) {
+    const ids = Array.from(selected)
+    try {
+      await api.post("/admin/restaurants/bulk", { action, ids })
+      notify(`${ids.length} restaurant(s) ${action}d`, "success")
+      clear()
+      load()
+    } catch {}
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selected)
+    try {
+      await api.post("/admin/restaurants/bulk", { action: "delete", ids })
+      notify(`${ids.length} restaurant(s) deleted`, "success")
+      clear()
+      load()
+    } catch {}
+  }
+
   const statusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       approved: "default",
@@ -111,10 +153,16 @@ export default function RestaurantsPage() {
             <h1 className="text-2xl font-bold tracking-tight">Restaurants</h1>
             <p className="text-muted-foreground">Manage restaurant listings</p>
           </div>
-          <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
-            <Plus className="mr-2 size-4" />
-            New Restaurant
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => csvExport(restaurants)} disabled={restaurants.length === 0}>
+              <Download className="mr-2 size-4" />
+              Export CSV
+            </Button>
+            <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
+              <Plus className="mr-2 size-4" />
+              New Restaurant
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -143,11 +191,54 @@ export default function RestaurantsPage() {
                 </Select>
               </div>
             </div>
+            {selected.size > 0 && (
+              <div className="flex items-center gap-2 pt-2 border-t mt-2">
+                <span className="text-sm text-muted-foreground mr-2">
+                  <CheckCheck className="inline size-4 mr-1" />
+                  {selected.size} selected
+                </span>
+                <Button size="sm" variant="default" onClick={() => handleBulk("approve")}>
+                  Approve All
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => handleBulk("reject")}>
+                  Reject All
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="text-destructive">
+                      <Trash2 className="size-4 mr-1" />
+                      Delete All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Restaurants</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selected.size} restaurant(s)? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={!loading && restaurants.length > 0 && selected.size === restaurants.length}
+                      onCheckedChange={() => toggleAll(restaurants.map((r) => r.id))}
+                    />
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Cuisine</TableHead>
                   <TableHead>Status</TableHead>
@@ -156,7 +247,7 @@ export default function RestaurantsPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableSkeleton columns={4} />
+                  <TableSkeleton columns={5} />
                 ) : restaurants.length === 0 ? (
                   <EmptyState
                     icon={<Store className="size-10 text-muted-foreground/50" />}
@@ -175,7 +266,15 @@ export default function RestaurantsPage() {
                   restaurants.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>
-                        <div className="font-medium">{r.name}</div>
+                        <Checkbox
+                          checked={selected.has(r.id)}
+                          onCheckedChange={() => toggle(r.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Link href={`/dashboard/restaurants/${r.id}`} className="font-medium hover:text-primary transition-colors">
+                          {r.name}
+                        </Link>
                         <div className="text-xs text-muted-foreground">{r.slug}</div>
                       </TableCell>
                       <TableCell>

@@ -13,6 +13,8 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { EmptyState } from "@/components/empty-state"
 import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useBulk } from "@/hooks/use-bulk"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Trash2, Search, Users, Plus } from "lucide-react"
+import { Trash2, Search, Users, Plus, Download, CheckCheck } from "lucide-react"
 import UserDialog from "./_user-dialog"
 
 interface User {
@@ -40,6 +42,25 @@ const PER_PAGE = 10
 const ROLES = ["user", "restaurant_owner", "admin"]
 const ROLE_FILTERS = ["all", "user", "restaurant_owner", "admin"]
 
+function csvExport(users: User[]) {
+  const headers = ["name", "email", "role", "is_active", "created_at"]
+  const rows = users.map((u) => [
+    `"${u.name?.replace(/"/g, '""') || ""}"`,
+    `"${u.email?.replace(/"/g, '""') || ""}"`,
+    u.role,
+    String(u.is_active),
+    new Date(u.created_at).toLocaleDateString(),
+  ])
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `users-${new Date().toISOString().split("T")[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,6 +70,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all")
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [showUserDialog, setShowUserDialog] = useState(false)
+  const { selected, toggle, toggleAll, clear } = useBulk()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -92,6 +114,26 @@ export default function UsersPage() {
     } catch {}
   }
 
+  async function handleBulk(action: string) {
+    const ids = Array.from(selected)
+    try {
+      await api.post("/admin/users/bulk", { action, ids })
+      notify(`${ids.length} user(s) ${action}d`, "success")
+      clear()
+      load()
+    } catch {}
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selected)
+    try {
+      await api.post("/admin/users/bulk", { action: "delete", ids })
+      notify(`${ids.length} user(s) deleted`, "success")
+      clear()
+      load()
+    } catch {}
+  }
+
   const roleBadge = (role: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       admin: "default",
@@ -109,10 +151,16 @@ export default function UsersPage() {
             <h1 className="text-2xl font-bold tracking-tight">Users</h1>
             <p className="text-muted-foreground">Manage platform users</p>
           </div>
-          <Button onClick={() => setShowUserDialog(true)}>
-            <Plus className="mr-2 size-4" />
-            New User
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => csvExport(users)} disabled={users.length === 0}>
+              <Download className="mr-2 size-4" />
+              Export CSV
+            </Button>
+            <Button onClick={() => setShowUserDialog(true)}>
+              <Plus className="mr-2 size-4" />
+              New User
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -141,11 +189,54 @@ export default function UsersPage() {
                 </Select>
               </div>
             </div>
+            {selected.size > 0 && (
+              <div className="flex items-center gap-2 pt-2 border-t mt-2">
+                <span className="text-sm text-muted-foreground mr-2">
+                  <CheckCheck className="inline size-4 mr-1" />
+                  {selected.size} selected
+                </span>
+                <Button size="sm" variant="default" onClick={() => handleBulk("activate")}>
+                  Activate
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => handleBulk("deactivate")}>
+                  Deactivate
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="text-destructive">
+                      <Trash2 className="size-4 mr-1" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Users</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selected.size} user(s)? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={!loading && users.length > 0 && selected.size === users.length}
+                      onCheckedChange={() => toggleAll(users.map((u) => u.id))}
+                    />
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
@@ -156,7 +247,7 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableSkeleton columns={6} />
+                  <TableSkeleton columns={7} />
                 ) : users.length === 0 ? (
                   <EmptyState
                     icon={<Users className="size-10 text-muted-foreground/50" />}
@@ -166,6 +257,12 @@ export default function UsersPage() {
                 ) : (
                   users.map((u) => (
                     <TableRow key={u.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(u.id)}
+                          onCheckedChange={() => toggle(u.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell>{u.email}</TableCell>
                       <TableCell>
