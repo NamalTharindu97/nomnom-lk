@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 void main() async {
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
-  final size = const Size(1024, 1024);
 
   // Draw curry-orange background
   final bgPaint = Paint()..color = const Color(0xFFFFB23F);

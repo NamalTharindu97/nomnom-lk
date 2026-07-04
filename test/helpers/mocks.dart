@@ -100,9 +100,7 @@ class MockApiOfferService implements ApiOfferService {
 }
 
 class MockApiFavoritesService implements ApiFavoritesService {
-  final List<String> _favorites;
-
-  MockApiFavoritesService({List<String>? favorites}) : _favorites = favorites ?? [];
+  MockApiFavoritesService();
 
   @override
   Future<List<Offer>> fetchFavorites() async => [];
