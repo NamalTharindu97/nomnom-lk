@@ -110,6 +110,14 @@ export default function OffersPage() {
     } catch {}
   }
 
+  async function expireOffer(id: string) {
+    try {
+      await api.post(`/offers/${id}/expire`)
+      notify("Offer expired", "success")
+      load()
+    } catch {}
+  }
+
   async function handleDelete() {
     if (!deleteTarget) return
     try {
@@ -325,6 +333,11 @@ export default function OffersPage() {
                                 Reject
                               </Button>
                             </>
+                          )}
+                          {o.status === "approved" && (
+                            <Button size="sm" variant="outline" onClick={() => expireOffer(o.id)}>
+                              Expire
+                            </Button>
                           )}
                         </div>
                       </TableCell>

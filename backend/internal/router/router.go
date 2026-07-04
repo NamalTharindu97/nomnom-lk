@@ -30,6 +30,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	auditLogRepo := repository.NewAuditLogRepo(db)
 	templateRepo := repository.NewNotificationTemplateRepo(db)
 	scheduledNotificationRepo := repository.NewScheduledNotificationRepo(db)
+	couponRepo := repository.NewCouponRepo(db)
+	categoryRepo := repository.NewCategoryRepo(db)
 
 	// Services
 	sseService := services.NewSSEService()
@@ -61,6 +63,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	notificationHandler.SetScheduledRepo(scheduledNotificationRepo)
 	templateHandler := handlers.NewTemplateHandler(templateRepo)
+	couponHandler := handlers.NewCouponHandler(couponRepo)
+	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	r := gin.New()
 
@@ -150,6 +154,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			offersGroup.DELETE("/:id", middleware.Auth(cfg.JWT.Secret), offerHandler.Delete)
 			offersGroup.POST("/:id/approve", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Approve)
 			offersGroup.POST("/:id/reject", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Reject)
+			offersGroup.POST("/:id/expire", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Expire)
 		}
 
 		favoritesGroup := v1.Group("/favorites")
@@ -220,6 +225,16 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 				}
 				response.Success(c, gin.H{"data": stats})
 			})
+			adminGroup.GET("/coupons", couponHandler.List)
+			adminGroup.POST("/coupons", couponHandler.Create)
+			adminGroup.PUT("/coupons/:id", couponHandler.Update)
+			adminGroup.DELETE("/coupons/:id", couponHandler.Delete)
+			adminGroup.POST("/coupons/:id/activate", couponHandler.Activate)
+			adminGroup.POST("/coupons/:id/deactivate", couponHandler.Deactivate)
+			adminGroup.GET("/categories", categoryHandler.List)
+			adminGroup.POST("/categories", categoryHandler.Create)
+			adminGroup.PUT("/categories/:id", categoryHandler.Update)
+			adminGroup.DELETE("/categories/:id", categoryHandler.Delete)
 		}
 	}
 

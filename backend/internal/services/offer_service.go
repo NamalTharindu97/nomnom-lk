@@ -42,8 +42,10 @@ func (s *OfferService) Create(req *request.CreateOfferRequest, createdBy uuid.UU
 		OriginalPrice: req.OriginalPrice,
 		OfferPrice:    req.OfferPrice,
 		ImageURLs:     req.ImageURLs,
+		CategoryIDs:   req.CategoryIDs,
 		StartDate:     req.StartDate,
 		EndDate:       req.EndDate,
+		PublishAt:     req.PublishAt,
 		CreatedBy:     &createdBy,
 	}
 
@@ -119,6 +121,12 @@ func (s *OfferService) Update(id uuid.UUID, req *request.UpdateOfferRequest, req
 	if req.EndDate != nil {
 		offer.EndDate = *req.EndDate
 	}
+	if req.CategoryIDs != nil {
+		offer.CategoryIDs = *req.CategoryIDs
+	}
+	if req.PublishAt != nil {
+		offer.PublishAt = req.PublishAt
+	}
 
 	translations := locale.BuildTranslations(
 		derefStr(req.TitleSi), derefStr(req.TitleTa),
@@ -173,6 +181,18 @@ func (s *OfferService) Reject(id uuid.UUID) (*models.Offer, error) {
 
 func (s *OfferService) ListPending(page, perPage int) ([]models.Offer, int64, error) {
 	return s.repo.FindPending(page, perPage)
+}
+
+func (s *OfferService) Expire(id uuid.UUID) (*models.Offer, error) {
+	offer, err := s.repo.FindByID(id)
+	if err != nil {
+		return nil, errors.New("offer not found")
+	}
+	if err := s.repo.UpdateStatus(id, models.OfferExpired); err != nil {
+		return nil, err
+	}
+	offer.Status = models.OfferExpired
+	return offer, nil
 }
 
 func (s *OfferService) IncrementView(id uuid.UUID) error {
