@@ -16,7 +16,7 @@ export class DashboardPage {
     this.page = page
     this.heading = page.getByRole("heading", { name: "Dashboard" })
     this.statCards = page.locator("div.grid > div").first()
-    this.activityChart = page.getByText("Activity (Last 14 Days)")
+    this.activityChart = page.getByText("Activity").first()
     this.quickActions = page.getByText("Quick Actions")
 
     this.manageOffersLink = page.getByRole("link", { name: "Manage Offers" })

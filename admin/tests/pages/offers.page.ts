@@ -44,6 +44,10 @@ export class OffersPage {
     await buttons.nth(1).click()
   }
 
+  async confirmDeleteDialog() {
+    await this.page.getByRole("button", { name: "Delete" }).last().click()
+  }
+
   async expectRowVisible(title: string) {
     const row = await this.getRowByTitle(title)
     await expect(row).toBeVisible()
@@ -115,6 +119,7 @@ export class OfferDialog {
   }
 
   async clickSubmit() {
+    await this.submitButton.scrollIntoViewIfNeeded()
     await this.submitButton.click()
   }
 

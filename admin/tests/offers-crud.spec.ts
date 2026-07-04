@@ -124,6 +124,7 @@ test.describe("Offers CRUD", () => {
     })
 
     await listPage.clickDelete(title)
+    await listPage.confirmDeleteDialog()
     await expect(page.getByText("Offer deleted", { exact: true })).toBeVisible()
     await listPage.expectRowNotVisible(title)
   })

@@ -94,6 +94,7 @@ test.describe("Restaurant CRUD", () => {
     })
 
     await listPage.clickDelete(name)
+    await listPage.confirmDeleteDialog()
     await expect(page.getByText("Restaurant deleted", { exact: true })).toBeVisible()
     await listPage.expectRowNotVisible(name)
   })

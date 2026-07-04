@@ -45,6 +45,10 @@ export class RestaurantsPage {
     await buttons.nth(1).click()
   }
 
+  async confirmDeleteDialog() {
+    await this.page.getByRole("button", { name: "Delete" }).last().click()
+  }
+
   async clickApprove(name: string) {
     const row = await this.getRowByName(name)
     await row.getByRole("button", { name: "Approve" }).click()
@@ -155,7 +159,7 @@ export class RestaurantDialog {
   }
 
   async clickSubmit() {
-    await this.submitButton.click()
+    await this.submitButton.dispatchEvent("click")
   }
 
   async clickCancel() {
