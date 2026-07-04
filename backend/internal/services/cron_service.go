@@ -14,6 +14,7 @@ type CronService struct {
 	db               *gorm.DB
 	notificationSvc  *NotificationService
 	notificationRepo *repository.NotificationRepo
+	scheduledRepo    *repository.ScheduledNotificationRepo
 }
 
 func NewCronService(db *gorm.DB, notificationSvc *NotificationService, notificationRepo *repository.NotificationRepo) *CronService {
@@ -22,6 +23,10 @@ func NewCronService(db *gorm.DB, notificationSvc *NotificationService, notificat
 		notificationSvc:  notificationSvc,
 		notificationRepo: notificationRepo,
 	}
+}
+
+func (s *CronService) SetScheduledRepo(repo *repository.ScheduledNotificationRepo) {
+	s.scheduledRepo = repo
 }
 
 func (s *CronService) MarkExpiredOffers() {
@@ -86,7 +91,41 @@ func (s *CronService) NotifyExpiringSoon() {
 	}
 }
 
+func (s *CronService) ProcessScheduledNotifications() {
+	if s.scheduledRepo == nil {
+		return
+	}
+
+	due, err := s.scheduledRepo.FindDue()
+	if err != nil {
+		fmt.Printf("CRON: failed to find due notifications: %v\n", err)
+		return
+	}
+
+	for _, n := range due {
+		input := SendPushInput{
+			Title: n.Title,
+			Body:  n.Body,
+			Type:  "admin",
+		}
+		if n.UserID != nil {
+			input.UserID = n.UserID
+		}
+		if n.OfferID != nil {
+			input.OfferID = n.OfferID
+		}
+
+		if err := s.notificationSvc.SendPush(input); err != nil {
+			s.scheduledRepo.MarkFailed(n.ID)
+			continue
+		}
+		s.scheduledRepo.MarkSent(n.ID)
+	}
+	fmt.Printf("CRON: processed %d scheduled notifications\n", len(due))
+}
+
 func (s *CronService) RunAll() {
 	s.MarkExpiredOffers()
 	s.NotifyExpiringSoon()
+	s.ProcessScheduledNotifications()
 }

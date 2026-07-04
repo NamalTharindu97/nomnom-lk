@@ -15,6 +15,7 @@ import (
 	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/internal/services"
+	"github.com/nomnom-lk/backend/pkg/response"
 )
 
 func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog.Logger) (*gin.Engine, *services.CronService) {
@@ -27,6 +28,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	deviceTokenRepo := repository.NewDeviceTokenRepo(db)
 	notificationRepo := repository.NewNotificationRepo(db)
 	auditLogRepo := repository.NewAuditLogRepo(db)
+	templateRepo := repository.NewNotificationTemplateRepo(db)
+	scheduledNotificationRepo := repository.NewScheduledNotificationRepo(db)
 
 	// Services
 	sseService := services.NewSSEService()
@@ -38,6 +41,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	searchService := services.NewSearchService(db)
 	notificationService := services.NewNotificationService(notificationRepo, deviceTokenRepo, &cfg.Firebase)
 	cronService := services.NewCronService(db, notificationService, notificationRepo)
+	cronService.SetScheduledRepo(scheduledNotificationRepo)
 
 	uploadService, err := services.NewUploadService(&cfg.AWS)
 	if err != nil {
@@ -55,6 +59,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService, sseService)
 	searchHandler := handlers.NewSearchHandler(searchService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
+	notificationHandler.SetScheduledRepo(scheduledNotificationRepo)
+	templateHandler := handlers.NewTemplateHandler(templateRepo)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	r := gin.New()
 
@@ -202,6 +208,18 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.GET("/analytics/top-offers", adminHandler.AnalyticsTopOffers)
 			adminGroup.GET("/analytics/user-growth", adminHandler.AnalyticsUserGrowth)
 			adminGroup.GET("/analytics/offer-stats", adminHandler.AnalyticsOfferStats)
+			adminGroup.GET("/notification-templates", templateHandler.List)
+			adminGroup.POST("/notification-templates", templateHandler.Create)
+			adminGroup.PUT("/notification-templates/:id", templateHandler.Update)
+			adminGroup.DELETE("/notification-templates/:id", templateHandler.Delete)
+			adminGroup.GET("/notification-analytics", func(c *gin.Context) {
+				stats, err := scheduledNotificationRepo.Stats()
+				if err != nil {
+					response.InternalError(c, "failed to get analytics")
+					return
+				}
+				response.Success(c, gin.H{"data": stats})
+			})
 		}
 	}
 

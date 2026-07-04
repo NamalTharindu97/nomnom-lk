@@ -35,6 +35,8 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 		&models.DeviceToken{},
 		&models.RefreshToken{},
 		&models.AuditLog{},
+		&models.NotificationTemplate{},
+		&models.ScheduledNotification{},
 	); err != nil {
 		log.Fatalf("Failed to auto-migrate: %v", err)
 	}

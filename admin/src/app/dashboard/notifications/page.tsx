@@ -48,6 +48,13 @@ interface UserOption {
   role: string
 }
 
+interface TemplateOption {
+  id: string
+  name: string
+  title: string
+  body: string
+}
+
 export default function NotificationsPage() {
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
@@ -63,6 +70,11 @@ export default function NotificationsPage() {
 
   const [offers, setOffers] = useState<OfferOption[]>([])
   const [loadingOffers, setLoadingOffers] = useState(true)
+
+  const [templates, setTemplates] = useState<TemplateOption[]>([])
+  const [scheduleAt, setScheduleAt] = useState("")
+
+  const [analytics, setAnalytics] = useState<{ total: number; sent: number; pending: number; failed: number } | null>(null)
 
   useEffect(() => {
     if (!result) return
@@ -91,6 +103,18 @@ export default function NotificationsPage() {
       .finally(() => setLoadingOffers(false))
   }, [])
 
+  useEffect(() => {
+    api.get<{ data: TemplateOption[] }>("/admin/notification-templates")
+      .then((res) => setTemplates(res.data || []))
+      .catch(() => setTemplates([]))
+  }, [])
+
+  useEffect(() => {
+    api.get<{ data: { total: number; sent: number; pending: number; failed: number } }>("/admin/notification-analytics")
+      .then((res) => setAnalytics(res.data))
+      .catch(() => setAnalytics(null))
+  }, [history])
+
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     try {
@@ -108,23 +132,37 @@ export default function NotificationsPage() {
 
   useEffect(() => { loadHistory() }, [loadHistory])
 
+  function handleTemplateSelect(value: string) {
+    if (value === "none") return
+    const tpl = templates.find((t) => t.id === value)
+    if (tpl) {
+      setTitle(tpl.title)
+      setBody(tpl.body)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSending(true)
     setResult(null)
 
     try {
-      await api.post("/admin/notifications/push", {
+      const payload: any = {
         title,
         body,
         target,
         user_id: target === "user" ? userId : "",
         offer_id: offerId && offerId !== "none" ? offerId : undefined,
-      })
-      setResult({ ok: true, message: "Push notification sent successfully!" })
+      }
+      if (scheduleAt) {
+        payload.schedule_at = new Date(scheduleAt).toISOString()
+      }
+      await api.post("/admin/notifications/push", payload)
+      setResult({ ok: true, message: scheduleAt ? "Notification scheduled!" : "Push notification sent successfully!" })
       setTitle("")
       setBody("")
       setOfferId("")
+      setScheduleAt("")
       loadHistory()
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Failed to send notification"
@@ -151,6 +189,22 @@ export default function NotificationsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {templates.length > 0 && (
+              <div className="grid gap-2">
+                <Label>Load Template</Label>
+                <Select onValueChange={handleTemplateSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a template (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Don't use a template</SelectItem>
+                    {templates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="title">Title</Label>
               <Input
@@ -259,13 +313,23 @@ export default function NotificationsPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="schedule">Schedule (optional)</Label>
+              <Input
+                id="schedule"
+                type="datetime-local"
+                value={scheduleAt}
+                onChange={(e) => setScheduleAt(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Leave empty to send immediately</p>
+            </div>
             {result && (
               <p className={`text-sm ${result.ok ? "text-green-600" : "text-destructive"}`}>
                 {result.message}
               </p>
             )}
             <Button type="submit" disabled={sending}>
-              {sending ? "Sending..." : "Send Push Notification"}
+              {sending ? "Sending..." : scheduleAt ? "Schedule" : "Send Push Notification"}
             </Button>
           </form>
         </CardContent>
@@ -319,6 +383,51 @@ export default function NotificationsPage() {
           <PaginationBar page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
         </CardContent>
       </Card>
+
+      {analytics && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Analytics</CardTitle>
+            <CardDescription>Scheduled notification delivery stats</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Total</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{analytics.total}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Sent</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-green-600">{analytics.sent}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Pending</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{analytics.pending}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Failed</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-destructive">{analytics.failed}</p>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
     </ErrorBoundary>
   )
