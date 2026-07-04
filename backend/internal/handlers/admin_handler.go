@@ -187,7 +187,7 @@ func (h *AdminHandler) AnalyticsTopRestaurants(c *gin.Context) {
 		response.InternalError(c, "failed to get top restaurants")
 		return
 	}
-	response.Success(c, gin.H{"data": top})
+	response.Success(c, top)
 }
 
 func (h *AdminHandler) AnalyticsTopOffers(c *gin.Context) {
@@ -221,7 +221,7 @@ func (h *AdminHandler) AnalyticsUserGrowth(c *gin.Context) {
 		response.InternalError(c, "failed to get user growth")
 		return
 	}
-	response.Success(c, gin.H{"data": growth})
+	response.Success(c, growth)
 }
 
 func (h *AdminHandler) AnalyticsOfferStats(c *gin.Context) {

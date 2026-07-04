@@ -223,7 +223,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 					response.InternalError(c, "failed to get analytics")
 					return
 				}
-				response.Success(c, gin.H{"data": stats})
+				response.Success(c, stats)
 			})
 			adminGroup.GET("/coupons", couponHandler.List)
 			adminGroup.POST("/coupons", couponHandler.Create)

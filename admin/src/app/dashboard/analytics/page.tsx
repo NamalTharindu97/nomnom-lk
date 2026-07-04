@@ -66,16 +66,16 @@ export default function AnalyticsPage() {
     setLoading(true)
     Promise.all([
       api.get<{ data: TopRestaurant[] }>("/admin/analytics/top-restaurants"),
-      api.get<{ by_favorites: TopOffer[]; by_views: OfferByViews[] }>("/admin/analytics/top-offers"),
+      api.get<{ data: { by_favorites: TopOffer[]; by_views: OfferByViews[] } }>("/admin/analytics/top-offers"),
       api.get<{ data: GrowthEntry[] }>("/admin/analytics/user-growth"),
-      api.get<OfferStats>("/admin/analytics/offer-stats"),
+      api.get<{ data: OfferStats }>("/admin/analytics/offer-stats"),
     ])
       .then(([restaurantsRes, offersRes, growthRes, statsRes]) => {
         setTopRestaurants(restaurantsRes.data || [])
-        setTopByFavorites(offersRes.by_favorites || [])
-        setTopByViews(offersRes.by_views || [])
+        setTopByFavorites(offersRes.data?.by_favorites || [])
+        setTopByViews(offersRes.data?.by_views || [])
         setUserGrowth(growthRes.data || [])
-        setOfferStats(statsRes)
+        setOfferStats(statsRes.data || null)
       })
       .catch(() => {})
       .finally(() => setLoading(false))

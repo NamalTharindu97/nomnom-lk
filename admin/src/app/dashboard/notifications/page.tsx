@@ -111,7 +111,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     api.get<{ data: { total: number; sent: number; pending: number; failed: number } }>("/admin/notification-analytics")
-      .then((res) => setAnalytics(res.data))
+      .then((res) => setAnalytics(res.data || null))
       .catch(() => setAnalytics(null))
   }, [history])
 

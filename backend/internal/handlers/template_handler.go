@@ -31,7 +31,7 @@ func (h *TemplateHandler) List(c *gin.Context) {
 	if templates == nil {
 		templates = []models.NotificationTemplate{}
 	}
-	response.Success(c, gin.H{"data": templates})
+	response.Success(c, templates)
 }
 
 func (h *TemplateHandler) Create(c *gin.Context) {

@@ -30,7 +30,7 @@ type couponRequest struct {
 
 func (h *CouponHandler) List(c *gin.Context) {
 	page, perPage := 1, 20
-	coupons, total, err := h.repo.FindAll(page, perPage)
+	coupons, _, err := h.repo.FindAll(page, perPage)
 	if err != nil {
 		response.InternalError(c, "failed to list coupons")
 		return
@@ -38,7 +38,7 @@ func (h *CouponHandler) List(c *gin.Context) {
 	if coupons == nil {
 		coupons = []models.Coupon{}
 	}
-	response.Success(c, gin.H{"data": coupons, "total": total})
+	response.Success(c, coupons)
 }
 
 func (h *CouponHandler) Create(c *gin.Context) {

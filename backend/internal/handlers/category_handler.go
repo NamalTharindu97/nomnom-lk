@@ -37,7 +37,7 @@ func (h *CategoryHandler) List(c *gin.Context) {
 	if cats == nil {
 		cats = []models.Category{}
 	}
-	response.Success(c, gin.H{"data": cats})
+	response.Success(c, cats)
 }
 
 func (h *CategoryHandler) Create(c *gin.Context) {
