@@ -184,6 +184,25 @@ func (h *OfferHandler) Reject(c *gin.Context) {
 	response.Success(c, gin.H{"id": offer.ID, "status": offer.Status})
 }
 
+func (h *OfferHandler) Expire(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.ValidationError(c, []response.ErrorDetail{
+			{Field: "id", Message: "invalid offer id"},
+		})
+		return
+	}
+
+	offer, err := h.service.Expire(id)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	h.sseService.Emit("offer.expired", gin.H{"id": id})
+	response.Success(c, gin.H{"id": id, "status": offer.Status})
+}
+
 func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 	m := gin.H{
@@ -202,9 +221,11 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 		"discount_percent": int((1 - o.OfferPrice/o.OriginalPrice) * 100),
 		"saving":           o.OriginalPrice - o.OfferPrice,
 		"image_urls":       o.ImageURLs,
+		"category_ids":     o.CategoryIDs,
 		"status":           o.Status,
 		"start_date":       o.StartDate,
 		"end_date":         o.EndDate,
+		"publish_at":       o.PublishAt,
 		"is_favorited":     false,
 	}
 

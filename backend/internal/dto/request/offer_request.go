@@ -17,8 +17,10 @@ type CreateOfferRequest struct {
 	OriginalPrice float64                `json:"original_price" binding:"required,gt=0"`
 	OfferPrice    float64                `json:"offer_price" binding:"required,gt=0"`
 	ImageURLs     models.JSONStringSlice `json:"image_urls,omitempty"`
+	CategoryIDs   models.JSONStringSlice `json:"category_ids,omitempty"`
 	StartDate     *time.Time             `json:"start_date,omitempty"`
 	EndDate       time.Time              `json:"end_date" binding:"required"`
+	PublishAt     *time.Time             `json:"publish_at,omitempty"`
 }
 
 type UpdateOfferRequest struct {
@@ -32,6 +34,8 @@ type UpdateOfferRequest struct {
 	OriginalPrice *float64                `json:"original_price,omitempty"`
 	OfferPrice    *float64                `json:"offer_price,omitempty"`
 	ImageURLs     *models.JSONStringSlice `json:"image_urls,omitempty"`
+	CategoryIDs   *models.JSONStringSlice `json:"category_ids,omitempty"`
 	StartDate     *time.Time              `json:"start_date,omitempty"`
 	EndDate       *time.Time              `json:"end_date,omitempty"`
+	PublishAt     *time.Time              `json:"publish_at,omitempty"`
 }

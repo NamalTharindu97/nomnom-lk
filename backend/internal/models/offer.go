@@ -35,6 +35,8 @@ type Offer struct {
 	RejectionReason  *string          `gorm:"type:text" json:"rejection_reason,omitempty"`
 	CreatedBy        *uuid.UUID       `gorm:"type:uuid" json:"created_by,omitempty"`
 	ViewCount        int64            `gorm:"default:0" json:"view_count"`
+	CategoryIDs      JSONStringSlice  `gorm:"type:jsonb;default:'[]'" json:"category_ids"`
+	PublishAt        *time.Time       `json:"publish_at,omitempty"`
 	CreatedAt        time.Time        `json:"created_at"`
 	UpdatedAt        time.Time        `json:"updated_at"`
 }
