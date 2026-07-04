@@ -72,4 +72,14 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
-- **2026-07-04:** P21 (UX Foundation): AlertDialog, Skeleton, TableSkeleton, EmptyState, ErrorBoundary components; search/filter bars; backend user email+role filters. P22 (CRUD Completion): User creation dialog; restaurant owner dropdown; cover image preview; image drag-and-drop reordering; date range selector. P23 (Settings & Audit Log — in progress): AuditLog model/repo/handler; ChangePassword handler; settings page with password form; audit log page with paginated table; sidebar nav updated.
+- **2026-07-04:** P21-P28 completed and merged to master.
+  - P21 (UX Foundation): AlertDialog, Skeleton, TableSkeleton, EmptyState, ErrorBoundary; search/filter bars; backend user email+role filters.
+  - P22 (CRUD Completion): User creation dialog; restaurant owner dropdown; cover image preview; image drag-and-drop reordering; date range selector.
+  - P23 (Settings & Audit Log): AuditLog model/repo/handler; ChangePassword endpoint; settings page; audit log page.
+  - P24 (Bulk Actions & Export): Checkbox selection; bulk approve/reject/delete; CSV export; restaurant detail page.
+  - P25 (Analytics): Analytics page with top restaurants/offers charts, user growth, offer stats.
+  - P26 (Notification Enhancements): Templates CRUD; template picker; scheduled notifications; notification analytics.
+  - P27 (Advanced Features): Coupons CRUD (activate/deactivate); categories CRUD; force-expire offers; publish_at field.
+  - P28 (Admin Optimization): CSS vars (--success, --info, --chart-1..5); theme-aware overlays & toasts; shared csvExport & BulkActionBar components; raw textarea → Textarea; login theme toggle; 11 Vitest unit tests; 14 new Playwright E2E tests; CI pipeline green (all 43 E2E passing).
+  - `gh` CLI authenticated for CI log access.
+  - All branches P21–P28 preserved on remote.
