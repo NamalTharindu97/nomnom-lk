@@ -65,10 +65,6 @@ func (s *ImpersonationService) StartImpersonation(adminID uuid.UUID, targetUserI
 		return "", nil, errors.New("cannot impersonate an inactive user")
 	}
 
-	if s.isActiveImpersonation(adminID) {
-		return "", nil, errors.New("already impersonating a user")
-	}
-
 	adminToken, err := jwt.GenerateAccessToken(s.jwtCfg.Secret, admin.ID, admin.Email, string(admin.Role), s.jwtCfg.AccessExpiry)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to generate admin token backup: %w", err)

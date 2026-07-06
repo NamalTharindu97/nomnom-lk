@@ -226,8 +226,6 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		adminGroup.Use(middleware.RequireRole("admin"))
 		{
 			adminGroup.POST("/impersonate", impersonationHandler.Start)
-			adminGroup.POST("/impersonate/stop", impersonationHandler.Stop)
-			adminGroup.GET("/impersonate/status", impersonationHandler.Status)
 			adminGroup.GET("/stats", adminHandler.Stats)
 			adminGroup.GET("/stats/timeline", adminHandler.StatsTimeline)
 			adminGroup.GET("/notifications", adminHandler.ListNotifications)
@@ -263,6 +261,14 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.POST("/categories", categoryHandler.Create)
 			adminGroup.PUT("/categories/:id", categoryHandler.Update)
 			adminGroup.DELETE("/categories/:id", categoryHandler.Delete)
+		}
+
+		impersonationGroup := v1.Group("/admin")
+		impersonationGroup.Use(middleware.Auth(cfg.JWT.Secret))
+		impersonationGroup.Use(middleware.RequireActive(userRepo))
+		{
+			impersonationGroup.POST("/impersonate/stop", impersonationHandler.Stop)
+			impersonationGroup.GET("/impersonate/status", impersonationHandler.Status)
 		}
 	}
 

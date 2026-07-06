@@ -71,7 +71,17 @@ func (h *ImpersonationHandler) Start(c *gin.Context) {
 func (h *ImpersonationHandler) Stop(c *gin.Context) {
 	impersonatedBy, exists := middleware.GetImpersonatedBy(c)
 	if !exists {
-		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "not currently impersonating")
+		adminID, ok := middleware.GetUserID(c)
+		if !ok {
+			response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "not currently impersonating")
+			return
+		}
+		resultToken, _, err := h.impersonationService.StopImpersonation(adminID)
+		if err != nil {
+			response.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"access_token": resultToken})
 		return
 	}
 
