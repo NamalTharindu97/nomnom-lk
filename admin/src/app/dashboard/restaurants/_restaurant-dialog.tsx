@@ -175,125 +175,127 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} />
+        <form onSubmit={(e) => { e.preventDefault(); handleSave() }}>
+          <div className="overflow-y-auto max-h-[55vh] space-y-4 px-1 scrollbar-thin">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="slug">Slug</Label>
+                <Input id="slug" value={form.slug} onChange={(e) => set("slug", e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="address">Address</Label>
+                <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+              </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" value={form.slug} onChange={(e) => set("slug", e.target.value)} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} />
+              <Label htmlFor="cuisine_tags">Cuisine Tags (comma-separated)</Label>
+              <Input id="cuisine_tags" value={form.cuisine_tags} onChange={(e) => set("cuisine_tags", e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                className="min-h-[80px]"
+                value={form.description}
+                onChange={(e) => set("description", e.target.value)}
+              />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="cuisine_tags">Cuisine Tags (comma-separated)</Label>
-            <Input id="cuisine_tags" value={form.cuisine_tags} onChange={(e) => set("cuisine_tags", e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              className="min-h-[80px]"
-              value={form.description}
-              onChange={(e) => set("description", e.target.value)}
-            />
-          </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="owner">Owner</Label>
-            <Select value={form.owner_id} onValueChange={(v) => set("owner_id", v)}>
-              <SelectTrigger id="owner">
-                <SelectValue placeholder="No owner (admin-managed)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">No owner</SelectItem>
-                {owners.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.name} ({o.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="owner">Owner</Label>
+              <Select value={form.owner_id} onValueChange={(v) => set("owner_id", v)}>
+                <SelectTrigger id="owner">
+                  <SelectValue placeholder="No owner (admin-managed)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No owner</SelectItem>
+                  {owners.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name} ({o.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="grid gap-2">
-            <Label>Cover Image</Label>
-            <div className="flex items-center gap-2">
-              <Input type="file" accept="image/*" onChange={onFileSelect} className="file:text-xs" />
-              {(coverPreview || restaurant?.cover_image) && (
-                <Button type="button" variant="ghost" size="icon" onClick={removeFile} className="shrink-0">
-                  <X className="size-4 text-destructive" />
-                </Button>
+            <div className="grid gap-2">
+              <Label>Cover Image</Label>
+              <div className="flex items-center gap-2">
+                <Input type="file" accept="image/*" onChange={onFileSelect} className="file:text-xs" />
+                {(coverPreview || restaurant?.cover_image) && (
+                  <Button type="button" variant="ghost" size="icon" onClick={removeFile} className="shrink-0">
+                    <X className="size-4 text-destructive" />
+                  </Button>
+                )}
+              </div>
+              {coverPreview && (
+                <div className="relative mt-1 overflow-hidden rounded-md border">
+                  <img src={coverPreview} alt="Cover preview" className="h-32 w-full object-cover" />
+                </div>
               )}
             </div>
-            {coverPreview && (
-              <div className="relative mt-1 overflow-hidden rounded-md border">
-                <img src={coverPreview} alt="Cover preview" className="h-32 w-full object-cover" />
-              </div>
-            )}
-          </div>
 
-          <div className="border-t pt-4">
-            <h4 className="text-sm font-semibold mb-3">Translations</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h5 className="text-xs font-medium text-muted-foreground mb-2">Sinhala (සිංහල)</h5>
-                <div className="grid gap-2">
-                  <div className="grid gap-1">
-                    <Label htmlFor="name_si">Name</Label>
-                    <Input id="name_si" value={form.name_si} onChange={(e) => set("name_si", e.target.value)} />
-                  </div>
-                  <div className="grid gap-1">
-                    <Label htmlFor="description_si">Description</Label>
-                    <Textarea
-                      id="description_si"
-                      className="min-h-[60px]"
-                      value={form.description_si}
-                      onChange={(e) => set("description_si", e.target.value)}
-                    />
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-3">Translations</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h5 className="text-xs font-medium text-muted-foreground mb-2">Sinhala (සිංහල)</h5>
+                  <div className="grid gap-2">
+                    <div className="grid gap-1">
+                      <Label htmlFor="name_si">Name</Label>
+                      <Input id="name_si" value={form.name_si} onChange={(e) => set("name_si", e.target.value)} />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="description_si">Description</Label>
+                      <Textarea
+                        id="description_si"
+                        className="min-h-[60px]"
+                        value={form.description_si}
+                        onChange={(e) => set("description_si", e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div>
-                <h5 className="text-xs font-medium text-muted-foreground mb-2">Tamil (தமிழ்)</h5>
-                <div className="grid gap-2">
-                  <div className="grid gap-1">
-                    <Label htmlFor="name_ta">Name</Label>
-                    <Input id="name_ta" value={form.name_ta} onChange={(e) => set("name_ta", e.target.value)} />
-                  </div>
-                  <div className="grid gap-1">
-                    <Label htmlFor="description_ta">Description</Label>
-                    <Textarea
-                      id="description_ta"
-                      className="min-h-[60px]"
-                      value={form.description_ta}
-                      onChange={(e) => set("description_ta", e.target.value)}
-                    />
+                <div>
+                  <h5 className="text-xs font-medium text-muted-foreground mb-2">Tamil (தமிழ்)</h5>
+                  <div className="grid gap-2">
+                    <div className="grid gap-1">
+                      <Label htmlFor="name_ta">Name</Label>
+                      <Input id="name_ta" value={form.name_ta} onChange={(e) => set("name_ta", e.target.value)} />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="description_ta">Description</Label>
+                      <Textarea
+                        id="description_ta"
+                        className="min-h-[60px]"
+                        value={form.description_ta}
+                        onChange={(e) => set("description_ta", e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving || uploadingImage}>
-            {(saving || uploadingImage) && <Loader2 className="mr-2 size-4 animate-spin" />}
-            {isEdit ? "Update" : "Create"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving || uploadingImage}>
+              {(saving || uploadingImage) && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {isEdit ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
