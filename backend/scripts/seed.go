@@ -25,6 +25,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type ownerSeed struct {
+	Email string
+	Name  string
+}
+
 type restaurantSeed struct {
 	Name        string
 	NameSi      string
@@ -37,6 +42,7 @@ type restaurantSeed struct {
 	Longitude   float64
 	CuisineTags []string
 	ImageSeed   string
+	OwnerEmail  string
 }
 
 type offerSeed struct {
@@ -96,76 +102,78 @@ func main() {
 	cleanup(db)
 
 	adminID := createAdmin(db, cfg)
-	ownerID := createRestaurantOwner(db, cfg)
+	owners := createOwners(db)
 	fmt.Printf("Created admin: %s\n", adminID)
-	fmt.Printf("Created owner: %s\n", ownerID)
+	for email, id := range owners {
+		fmt.Printf("Created owner: %s -> %s\n", email, id)
+	}
 
 	restaurants := []restaurantSeed{
 		{
 			Name: "Pizza Hut", NameSi: "පිස්සා හට්", NameTa: "பிஸ்ஸா ஹட்",
 			Description: "Delicious pizzas, pasta, and Italian dishes", DescSi: "රසවත් පිස්සා, පැස්ටා, සහ ඉතාලි කෑම", DescTa: "சுவையான பிஸ்ஸா, பாஸ்தா, மற்றும் இத்தாலிய உணவுகள்",
 			Address: "55 Galle Road, Colombo 03", Latitude: 6.9020, Longitude: 79.8612,
-			CuisineTags: []string{"Pizza", "Italian", "Fast Food"}, ImageSeed: "pizza-hut",
+			CuisineTags: []string{"Pizza", "Italian", "Fast Food"}, ImageSeed: "pizza-hut", OwnerEmail: "owner@nomnom.lk",
 		},
 		{
 			Name: "KFC", NameSi: "කේඑෆ්සී", NameTa: "கேஎப்சி",
 			Description: "Fried chicken, burgers, and crispy treats", DescSi: "ෆ්‍රයිඩ් චිකන්, බර්ගර්, සහ හැපෙනසුළු කෑම", DescTa: "வறுத்த கோழி, பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
 			Address: "100 Galle Road, Colombo 04", Latitude: 6.8930, Longitude: 79.8560,
-			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "kfc",
+			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "kfc", OwnerEmail: "kfc@nomnom.lk",
 		},
 		{
 			Name: "Bread Talk", NameSi: "බ්‍රෙඩ් ටෝක්", NameTa: "பிரெட் டாக்",
 			Description: "Freshly baked breads, cakes, and pastries", DescSi: "නැවුම් බේක් කළ පාන්, කේක්, සහ පේස්ට්‍රි", DescTa: "புதிதாக சுடப்பட்ட ரொட்டிகள், கேக்குகள், மற்றும் பேஸ்ட்ரிகள்",
 			Address: "22 Union Place, Colombo 02", Latitude: 6.9180, Longitude: 79.8540,
-			CuisineTags: []string{"Bakery", "Cakes", "Pastries"}, ImageSeed: "bread-talk",
+			CuisineTags: []string{"Bakery", "Cakes", "Pastries"}, ImageSeed: "bread-talk", OwnerEmail: "breadtalk@nomnom.lk",
 		},
 		{
 			Name: "Keells", NameSi: "කීල්ස්", NameTa: "கீல்ஸ்",
 			Description: "Quick bites, burgers, and crispy snacks", DescSi: "ඉක්මන් කෑම, බර්ගර්, සහ හැපෙනසුළු ස්නැක්ස්", DescTa: "விரைவு உணவுகள், பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
 			Address: "77 Havelock Road, Colombo 05", Latitude: 6.8780, Longitude: 79.8680,
-			CuisineTags: []string{"Fast Food", "Burgers", "Snacks"}, ImageSeed: "keells",
+			CuisineTags: []string{"Fast Food", "Burgers", "Snacks"}, ImageSeed: "keells", OwnerEmail: "keells@nomnom.lk",
 		},
 		{
 			Name: "Fab", NameSi: "ෆැබ්", NameTa: "ஃபேப்",
 			Description: "Cakes, pastries, and sweet treats", DescSi: "කේක්, පේස්ට්‍රි, සහ පැණි රස කෑම", DescTa: "கேக்குகள், பேஸ்ட்ரிகள், மற்றும் இனிப்பு தின்பண்டங்கள்",
 			Address: "45 Nawala Road, Nugegoda", Latitude: 6.8720, Longitude: 79.8920,
-			CuisineTags: []string{"Bakery", "Cakes", "Desserts"}, ImageSeed: "fab",
+			CuisineTags: []string{"Bakery", "Cakes", "Desserts"}, ImageSeed: "fab", OwnerEmail: "fab@nomnom.lk",
 		},
 		{
 			Name: "Popeyes", NameSi: "පොප්අයිස්", NameTa: "பாப்ஐஸ்",
 			Description: "Louisiana-style fried chicken and burgers", DescSi: "ලුසියානා විලාසිතාවේ ෆ්‍රයිඩ් චිකන් සහ බර්ගර්", DescTa: "லூசியானா பாணி வறுத்த கோழி மற்றும் பர்கர்கள்",
 			Address: "200 Galle Road, Dehiwala", Latitude: 6.8570, Longitude: 79.8640,
-			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "popeyes",
+			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "popeyes", OwnerEmail: "popeyes@nomnom.lk",
 		},
 		{
 			Name: "Solo Bowl", NameSi: "සොලෝ බෝල්", NameTa: "சோலோ பௌல்",
 			Description: "Rice bowls, noodles, and Asian fusion", DescSi: "බත් බෝල, නූඩ්ල්ස්, සහ ආසියානු ෆියුෂන්", DescTa: "சாதம் பௌல்கள், நூடுல்ஸ், மற்றும் ஆசிய கலப்பு உணவுகள்",
 			Address: "33 Horton Place, Colombo 07", Latitude: 6.9120, Longitude: 79.8710,
-			CuisineTags: []string{"Rice Bowls", "Asian", "Noodles"}, ImageSeed: "solo-bowl",
+			CuisineTags: []string{"Rice Bowls", "Asian", "Noodles"}, ImageSeed: "solo-bowl", OwnerEmail: "solobowl@nomnom.lk",
 		},
 		{
 			Name: "Spar", NameSi: "ස්පාර්", NameTa: "ஸ்பார்",
 			Description: "Desserts, cakes, and sweet delights", DescSi: "අතුරුපස, කේක්, සහ පැණි රස", DescTa: "இனிப்புகள், கேக்குகள், மற்றும் இனிப்பு விருந்துகள்",
 			Address: "15 Station Road, Colombo 10", Latitude: 6.9300, Longitude: 79.8650,
-			CuisineTags: []string{"Desserts", "Cakes", "Sweets"}, ImageSeed: "spar",
+			CuisineTags: []string{"Desserts", "Cakes", "Sweets"}, ImageSeed: "spar", OwnerEmail: "spar@nomnom.lk",
 		},
 		{
 			Name: "Street Burger", NameSi: "ස්ට්‍රීට් බර්ගර්", NameTa: "ஸ்ட்ரீட் பர்கர்",
 			Description: "Gourmet burgers, fries, and American comfort food", DescSi: "ගවර්මෙට් බර්ගර්, ෆ්‍රයිස්, සහ ඇමරිකානු සැනසිලි කෑම", DescTa: "கார்மெட் பர்கர்கள், பொரியல்கள், மற்றும் அமெரிக்க இதமான உணவுகள்",
 			Address: "88 Galle Road, Bambalapitiya", Latitude: 6.8850, Longitude: 79.8600,
-			CuisineTags: []string{"Burgers", "American", "Fast Food"}, ImageSeed: "street-burger",
+			CuisineTags: []string{"Burgers", "American", "Fast Food"}, ImageSeed: "street-burger", OwnerEmail: "streetburger@nomnom.lk",
 		},
 		{
 			Name: "Subway", NameSi: "සබ්වේ", NameTa: "சப்வே",
 			Description: "Fresh submarine sandwiches and salads", DescSi: "නැවුම් සබ්මැරීන් සැන්ඩ්විච් සහ සලාද", DescTa: "புதிய சப்மரைன் சாண்ட்விச்கள் மற்றும் சாலடுகள்",
 			Address: "60 Galle Road, Colombo 03", Latitude: 6.9060, Longitude: 79.8580,
-			CuisineTags: []string{"Sandwiches", "Healthy", "Fast Food"}, ImageSeed: "subway",
+			CuisineTags: []string{"Sandwiches", "Healthy", "Fast Food"}, ImageSeed: "subway", OwnerEmail: "subway@nomnom.lk",
 		},
 		{
 			Name: "Taco Bell", NameSi: "ටැකෝ බෙල්", NameTa: "டாகோ பெல்",
 			Description: "Mexican-inspired tacos, burritos, and quesadillas", DescSi: "මෙක්සිකානු ආභාසයෙන් ටැකෝ, බුරිටෝ, සහ ක්වෙසාඩිලා", DescTa: "மெக்சிகன் பாணி டாகோஸ், புரிட்டோஸ், மற்றும் குவெசடிலாஸ்",
 			Address: "120 Galle Road, Colombo 04", Latitude: 6.8950, Longitude: 79.8550,
-			CuisineTags: []string{"Mexican", "Tacos", "Fast Food"}, ImageSeed: "taco-bell",
+			CuisineTags: []string{"Mexican", "Tacos", "Fast Food"}, ImageSeed: "taco-bell", OwnerEmail: "tacbell@nomnom.lk",
 		},
 	}
 
@@ -253,6 +261,12 @@ func main() {
 			coverImage = uploaded["pizza-hut"]
 		}
 
+		ownerID, ok := owners[r.OwnerEmail]
+		if !ok {
+			fmt.Printf("  ❌ Owner not found for %s (email: %s)\n", r.Name, r.OwnerEmail)
+			continue
+		}
+
 		translations := buildTranslations(r.NameSi, r.NameTa, r.DescSi, r.DescTa, "name", "description")
 
 		rest := models.Restaurant{
@@ -304,6 +318,8 @@ func main() {
 		startDate := now.Add(-time.Duration(o.DaysValid/2) * 24 * time.Hour)
 		endDate := now.Add(time.Duration(o.DaysValid) * 24 * time.Hour)
 
+		ownerID := owners[restaurants[o.RestaurantIdx].OwnerEmail]
+
 		offer := models.Offer{
 			RestaurantID:  rid,
 			Title:         o.Title,
@@ -313,7 +329,7 @@ func main() {
 			ImageURLs:     imageURLs,
 			StartDate:     &startDate,
 			EndDate:       endDate,
-			CreatedBy:     &adminID,
+			CreatedBy:     &ownerID,
 			Status:        models.OfferApproved,
 			Translations:  translations,
 		}
@@ -441,26 +457,44 @@ func createAdmin(db *gorm.DB, cfg *config.Config) uuid.UUID {
 	return admin.ID
 }
 
-func createRestaurantOwner(db *gorm.DB, cfg *config.Config) uuid.UUID {
+func createOwners(db *gorm.DB) map[string]uuid.UUID {
+	ownerSeeds := []ownerSeed{
+		{Email: "owner@nomnom.lk", Name: "Pizza Hut Owner"},
+		{Email: "kfc@nomnom.lk", Name: "KFC Owner"},
+		{Email: "breadtalk@nomnom.lk", Name: "Bread Talk Owner"},
+		{Email: "keells@nomnom.lk", Name: "Keells Owner"},
+		{Email: "fab@nomnom.lk", Name: "Fab Owner"},
+		{Email: "popeyes@nomnom.lk", Name: "Popeyes Owner"},
+		{Email: "solobowl@nomnom.lk", Name: "Solo Bowl Owner"},
+		{Email: "spar@nomnom.lk", Name: "Spar Owner"},
+		{Email: "streetburger@nomnom.lk", Name: "Street Burger Owner"},
+		{Email: "subway@nomnom.lk", Name: "Subway Owner"},
+		{Email: "tacbell@nomnom.lk", Name: "Taco Bell Owner"},
+	}
+
 	hashedPassword, err := hash.HashPassword("Owner@123")
 	if err != nil {
 		log.Fatalf("Failed to hash owner password: %v", err)
 	}
 
 	now := time.Now()
-	owner := models.User{
-		Email:           "owner@nomnom.lk",
-		PasswordHash:    hashedPassword,
-		Name:            "Test Owner",
-		Role:            models.RoleRestaurantOwner,
-		IsActive:        true,
-		EmailVerifiedAt: &now,
+	owners := make(map[string]uuid.UUID, len(ownerSeeds))
+
+	for _, s := range ownerSeeds {
+		owner := models.User{
+			Email:           s.Email,
+			PasswordHash:    hashedPassword,
+			Name:            s.Name,
+			Role:            models.RoleRestaurantOwner,
+			IsActive:        true,
+			EmailVerifiedAt: &now,
+		}
+		result := db.Where("email = ?", owner.Email).FirstOrCreate(&owner)
+		if result.Error != nil {
+			log.Fatalf("Failed to create owner %s: %v", s.Email, result.Error)
+		}
+		owners[s.Email] = owner.ID
 	}
 
-	result := db.Where("email = ?", owner.Email).FirstOrCreate(&owner)
-	if result.Error != nil {
-		log.Fatalf("Failed to create owner user: %v", result.Error)
-	}
-	fmt.Printf("Owner user: %s (%s)\n", owner.Email, owner.ID.String())
-	return owner.ID
+	return owners
 }

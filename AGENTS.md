@@ -1,6 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
+- **Current: Fix owner scoping** — Frontend calls public `/restaurants`/`/offers` instead of scoped `/dashboard/restaurants`/`/dashboard/offers`. Fix endpoint paths + add missing dashboard routes + role-based UI.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Railway + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -40,13 +41,17 @@
 
 ## Critical Context
 - All branches P1–P28 merged to master and preserved on remote.
-- P29 (RBAC) in progress on feature branch — Phase 1 (backend) + Phase 2 (frontend) partially done.
+- P29 (RBAC) complete on `phase/P29-rbac` branch — all 4 phases done. PR #3 open at https://github.com/NamalTharindu97/nomnom-lk/pull/3
+  - Phase 1 (Backend): `RequireDashboardAccess`, `OwnerScoped`, `RequireActive` middleware; `/api/v1/dashboard/*` routes; `FindAllByOwner`/`FindByOwnerID` skip filter when `uuid.Nil`.
+  - Phase 2 (Frontend): `proxy.ts` server-side guard; `RoleGuard` + `AccessDenied`; role-based nav (admin 12 items, owner 5 items); cookie auth sync.
+  - Phase 3 (Owners): `GET /admin/owners` + Owners page at `/dashboard/owners` with stats + suspend/activate.
+  - Phase 4 (Testing): 5 middleware unit tests, 6 integration tests, 5 E2E RBAC tests — all passing (48 total E2E).
 - Backend on `:8080`, admin on `:3000`, Flutter on Android emulator (API 35).
 - Docker services (postgres 16, redis 7, minio) running with seeded data (11 restaurants, 23 offers).
 - Backend FCM via direct HTTP to FCM v1 API using `cloud-platform` OAuth2 scope. No Firebase Admin SDK.
 - **Android google-services plugin** required for Firebase to work on Android.
 - Admin user: `namal@nomnom.lk` / `Namal@123` (role = admin).
-- Owner user: `owner@nomnom.lk` / `Owner@123` (role = restaurant_owner).
+- Owner users: 11 brand-specific owners, one per restaurant. All passwords `Owner@123`. Emails: `owner@nomnom.lk` (Pizza Hut), `kfc@nomnom.lk`, `breadtalk@nomnom.lk`, `keells@nomnom.lk`, `fab@nomnom.lk`, `popeyes@nomnom.lk`, `solobowl@nomnom.lk`, `spar@nomnom.lk`, `streetburger@nomnom.lk`, `subway@nomnom.lk`, `tacbell@nomnom.lk`.
 
 ## Relevant Files
 ### Backend
@@ -111,3 +116,20 @@
   - Dashboard routes tested: admin sees all 11R/23O; owner sees scoped to their `owner_id`.
   - Phase 3 (Owner Management): `FindOwnersWithStats` repo method + `ListOwners` admin handler + `/admin/owners` route + Owners page + sidebar nav.
   - Backend `go build ./...` ✓, Admin `next build` ✓.
+  - Phase 4 (Testing): 5 middleware unit tests, 6 integration tests, 5 E2E RBAC tests — all passing (48 total E2E).
+  - Fixes: `auth.setup.ts` cookie sync; user `Create` handler sets `EmailVerifiedAt`; `FindAll` excludes inactive users; global-teardown cleans up E2E users.
+- **2026-07-06:** Seed data realism update — DONE.
+  - Replaced single `createRestaurantOwner()` with `createOwners()` returning email→UUID map.
+  - 11 brand-specific owners created (one per restaurant), all passwords `Owner@123`.
+  - Each restaurant assigned to its correct owner via `OwnerEmail` field in `restaurantSeed`.
+  - All 23 offers now have `CreatedBy` = restaurant's owner (not admin), enabling owner CRUD.
+  - Verified: admin sees 11R/23O/11 owners; KFC owner sees 1R/3O.
+  - Only `backend/scripts/seed.go` changed. Backend builds with `go build ./...` ✓.
+  - See `plans/seed-data-plan.md`.
+- **2026-07-06:** Owner scoping fix — DONE. Frontend called public `/restaurants`/`/offers` instead of scoped `/dashboard/restaurants`/`/dashboard/offers`.
+  - **Phase 1** (Endpoint updates): 5 frontend files updated to call `/dashboard/*` endpoints:
+    `restaurants/page.tsx`, `offers/page.tsx`, `restaurants/[id]/page.tsx`, `_offer-dialog.tsx`, `_restaurant-dialog.tsx`
+  - **Phase 2** (Role-based UI): `useAuth` added to restaurants + offers pages; approve/reject/expire/bulk/status-filter hidden for owners; page titles changed to "My Restaurants"/"My Offers" for owners, "All Restaurants"/"All Offers" for admins
+  - **Phase 3**: Skipped (approve/reject/expire stay on public routes with `RequireRole("admin")`)
+  - **Verified**: Admin sees 12R/23O (full access); Pizza Hut owner sees 2R/6O (scoped); KFC owner blocked from non-KFC restaurants
+  - Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend tests ✓

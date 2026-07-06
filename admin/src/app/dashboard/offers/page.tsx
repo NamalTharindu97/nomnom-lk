@@ -15,6 +15,7 @@ import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useBulk } from "@/hooks/use-bulk"
+import { useAuth } from "@/hooks/use-auth"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +51,7 @@ const STATUSES = ["all", "approved", "pending", "rejected", "expired"]
 
 
 export default function OffersPage() {
+  const { isAdmin, isOwner } = useAuth()
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -71,7 +73,7 @@ export default function OffersPage() {
       })
       if (search.trim()) params.set("q", search.trim())
       const res = await api.get<{ data: Offer[]; pagination: { total: number } }>(
-        `/offers?${params}`
+        `/dashboard/offers?${params}`
       )
       setOffers(res.data || [])
       setTotal(res.pagination?.total || 0)
@@ -104,7 +106,7 @@ export default function OffersPage() {
   async function handleDelete() {
     if (!deleteTarget) return
     try {
-      await api.delete(`/offers/${deleteTarget.id}`)
+      await api.delete(`/dashboard/offers/${deleteTarget.id}`)
       notify("Offer deleted", "success")
       setDeleteTarget(null)
       load()
@@ -147,13 +149,15 @@ export default function OffersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Offers</h1>
-            <p className="text-muted-foreground">Manage food offers</p>
+            <p className="text-muted-foreground">{isOwner ? "Manage your offers" : "Manage food offers"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => csvExport("offers", ["Title", "Restaurant", "Original Price", "Offer Price", "Status", "End Date"], offers.map(o => [o.title, o.restaurant?.name || "", String(o.original_price), String(o.offer_price), o.status, o.end_date ? new Date(o.end_date).toLocaleDateString() : ""]))} disabled={offers.length === 0}>
-              <Download className="mr-2 size-4" />
-              Export CSV
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => csvExport("offers", ["Title", "Restaurant", "Original Price", "Offer Price", "Status", "End Date"], offers.map(o => [o.title, o.restaurant?.name || "", String(o.original_price), String(o.offer_price), o.status, o.end_date ? new Date(o.end_date).toLocaleDateString() : ""]))} disabled={offers.length === 0}>
+                <Download className="mr-2 size-4" />
+                Export CSV
+              </Button>
+            )}
             <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
               <Plus className="mr-2 size-4" />
               New Offer
@@ -164,7 +168,7 @@ export default function OffersPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <CardTitle>All Offers</CardTitle>
+              <CardTitle>{isOwner ? "My Offers" : "All Offers"}</CardTitle>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -175,19 +179,21 @@ export default function OffersPage() {
                     className="w-48 pl-8"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isAdmin && (
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
-            {selected.size > 0 && (
+            {isAdmin && selected.size > 0 && (
               <BulkActionBar
                 count={selected.size}
                 actions={[
@@ -282,7 +288,7 @@ export default function OffersPage() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                          {o.status === "pending" && (
+                          {isAdmin && o.status === "pending" && (
                             <>
                               <Button size="sm" onClick={() => updateStatus(o.id, "approve")}>
                                 Approve
@@ -292,7 +298,7 @@ export default function OffersPage() {
                               </Button>
                             </>
                           )}
-                          {o.status === "approved" && (
+                          {isAdmin && o.status === "approved" && (
                             <Button size="sm" variant="outline" onClick={() => expireOffer(o.id)}>
                               Expire
                             </Button>

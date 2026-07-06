@@ -151,10 +151,10 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       }
 
       if (isEdit) {
-        await api.put(`/restaurants/${restaurant.id}`, body)
+        await api.put(`/dashboard/restaurants/${restaurant.id}`, body)
         notify("Restaurant updated", "success")
       } else {
-        await api.post("/restaurants", body)
+        await api.post("/dashboard/restaurants", body)
         notify("Restaurant created", "success")
       }
       onSaved()

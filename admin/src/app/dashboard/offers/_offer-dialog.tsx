@@ -86,7 +86,7 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
   })
 
   useEffect(() => {
-    api.get<{ data: RestaurantOption[] }>("/restaurants").then((res) => {
+    api.get<{ data: RestaurantOption[] }>("/dashboard/restaurants").then((res) => {
       setRestaurants(res.data || [])
     }).catch(() => {})
   }, [])
@@ -239,10 +239,10 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
       if (body.end_date) body.end_date = `${body.end_date}T00:00:00Z`
 
       if (isEdit) {
-        await api.put(`/offers/${offer.id}`, body)
+        await api.put(`/dashboard/offers/${offer.id}`, body)
         notify("Offer updated", "success")
       } else {
-        await api.post("/offers", body)
+        await api.post("/dashboard/offers", body)
         notify("Offer created", "success")
       }
       onSaved()

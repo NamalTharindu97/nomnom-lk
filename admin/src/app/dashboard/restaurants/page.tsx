@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useBulk } from "@/hooks/use-bulk"
 import { BulkActionBar } from "@/components/bulk-action-bar"
 import { csvExport } from "@/lib/csv-export"
+import { useAuth } from "@/hooks/use-auth"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import Link from "next/link"
-import { Plus, Pencil, Trash2, Search, Store, Download, ExternalLink } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Store, Download } from "lucide-react"
 import RestaurantDialog from "./_restaurant-dialog"
 
 interface Restaurant {
@@ -46,6 +47,7 @@ const PER_PAGE = 10
 const STATUSES = ["all", "approved", "pending", "rejected"]
 
 export default function RestaurantsPage() {
+  const { isAdmin, isOwner } = useAuth()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -67,7 +69,7 @@ export default function RestaurantsPage() {
       })
       if (search.trim()) params.set("q", search.trim())
       const res = await api.get<{ data: Restaurant[]; pagination: { total: number } }>(
-        `/restaurants?${params}`
+        `/dashboard/restaurants?${params}`
       )
       setRestaurants(res.data || [])
       setTotal(res.pagination?.total || 0)
@@ -93,7 +95,7 @@ export default function RestaurantsPage() {
   async function handleDelete() {
     if (!deleteTarget) return
     try {
-      await api.delete(`/restaurants/${deleteTarget.id}`)
+      await api.delete(`/dashboard/restaurants/${deleteTarget.id}`)
       notify("Restaurant deleted", "success")
       setDeleteTarget(null)
       load()
@@ -135,16 +137,18 @@ export default function RestaurantsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Restaurants</h1>
-            <p className="text-muted-foreground">Manage restaurant listings</p>
+            <p className="text-muted-foreground">{isOwner ? "Manage your restaurants" : "Manage restaurant listings"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Address", "Cuisine", "Status"], restaurants.map(r => [r.name, r.address || "", (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
-              <Download className="mr-2 size-4" />
-              Export CSV
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Address", "Cuisine", "Status"], restaurants.map(r => [r.name, r.address || "", (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
+                <Download className="mr-2 size-4" />
+                Export CSV
+              </Button>
+            )}
             <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
               <Plus className="mr-2 size-4" />
-              New Restaurant
+              {isOwner ? "New Restaurant" : "New Restaurant"}
             </Button>
           </div>
         </div>
@@ -152,7 +156,7 @@ export default function RestaurantsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <CardTitle>All Restaurants</CardTitle>
+              <CardTitle>{isOwner ? "My Restaurants" : "All Restaurants"}</CardTitle>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -163,19 +167,21 @@ export default function RestaurantsPage() {
                     className="w-48 pl-8"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isAdmin && (
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
-            {selected.size > 0 && (
+            {isAdmin && selected.size > 0 && (
               <BulkActionBar
                 count={selected.size}
                 actions={[
@@ -272,7 +278,7 @@ export default function RestaurantsPage() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                          {r.status === "pending" && (
+                          {isAdmin && r.status === "pending" && (
                             <>
                               <Button size="sm" onClick={() => updateStatus(r.id, "approve")}>
                                 Approve
