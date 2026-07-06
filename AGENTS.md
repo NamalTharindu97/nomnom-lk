@@ -18,6 +18,7 @@
 - **Flutter rebuild required:** After every Flutter code change, rebuild and re-run the app.
 - **Air for Go hot reload:** Backend uses `air`; admin uses next dev HMR; Flutter runs in debug mode.
 - **Not yet:** Flutter localization, full offline support.
+- **Preserve existing code structure:** When adding functionality, do NOT restructure existing code. Add new features alongside existing code, not by replacing or rewriting it. For example, fix scroll issues by adding a wrapper div or CSS class — don't restructure the dialog layout or convert divs to forms.
 
 ## Key Decisions
 - **Git workflow:** Feature branches (`phase/N-name`) only — commit, push branch, create PR. Never push directly to `origin/master`.
