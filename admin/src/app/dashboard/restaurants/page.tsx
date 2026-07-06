@@ -185,8 +185,8 @@ export default function RestaurantsPage() {
               <BulkActionBar
                 count={selected.size}
                 actions={[
-                  { label: "Approve All", onClick: () => handleBulk("approve") },
-                  { label: "Reject All", variant: "destructive", onClick: () => handleBulk("reject") },
+                  { label: "Approve All", onClick: () => handleBulk("approve"), confirmMessage: `Approve ${selected.size} selected restaurant(s)?` },
+                  { label: "Reject All", variant: "destructive", onClick: () => handleBulk("reject"), confirmMessage: `Reject ${selected.size} selected restaurant(s)?` },
                 ]}
                 deleteAction={handleBulkDelete}
                 deleteLabel="Delete All"
@@ -280,12 +280,48 @@ export default function RestaurantsPage() {
                           </AlertDialog>
                           {isAdmin && r.status === "pending" && (
                             <>
-                              <Button size="sm" onClick={() => updateStatus(r.id, "approve")}>
-                                Approve
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => updateStatus(r.id, "reject")}>
-                                Reject
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm">
+                                    Approve
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Approve {r.name}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Approve this restaurant? It will be visible to all users.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => updateStatus(r.id, "approve")}>
+                                      Approve
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="destructive">
+                                    Reject
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Reject {r.name}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Reject this restaurant? It will not be listed for users.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => updateStatus(r.id, "reject")}>
+                                      Reject
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </>
                           )}
                         </div>

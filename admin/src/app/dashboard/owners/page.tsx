@@ -157,13 +157,32 @@ function OwnersContent() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                        <Button
-                          variant={owner.is_active ? "outline" : "default"}
-                          size="sm"
-                          onClick={() => toggleActive(owner)}
-                        >
-                          {owner.is_active ? "Suspend" : "Activate"}
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant={owner.is_active ? "outline" : "default"}
+                              size="sm"
+                            >
+                              {owner.is_active ? "Suspend" : "Activate"}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{owner.is_active ? "Suspend" : "Activate"} {owner.name}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {owner.is_active
+                                  ? `Suspend ${owner.name}? They will lose access to the dashboard.`
+                                  : `Activate ${owner.name}? They will regain access to the dashboard.`}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => toggleActive(owner)}>
+                                {owner.is_active ? "Suspend" : "Activate"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>

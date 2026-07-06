@@ -177,8 +177,8 @@ export default function UsersPage() {
               <BulkActionBar
                 count={selected.size}
                 actions={[
-                  { label: "Activate", onClick: () => handleBulk("activate") },
-                  { label: "Deactivate", variant: "secondary", onClick: () => handleBulk("deactivate") },
+                  { label: "Activate", onClick: () => handleBulk("activate"), confirmMessage: `Activate ${selected.size} selected user(s)?` },
+                  { label: "Deactivate", variant: "secondary", onClick: () => handleBulk("deactivate"), confirmMessage: `Deactivate ${selected.size} selected user(s)?` },
                 ]}
                 deleteAction={handleBulkDelete}
                 deleteLabel="Delete"

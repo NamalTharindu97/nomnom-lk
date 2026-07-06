@@ -18,6 +18,7 @@ interface BulkAction {
   label: string
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost"
   onClick: () => void
+  confirmMessage?: string
 }
 
 interface BulkActionBarProps {
@@ -35,11 +36,33 @@ export function BulkActionBar({ count, actions, deleteAction, deleteLabel = "Del
         <CheckCheck className="inline size-4 mr-1" />
         {count} selected
       </span>
-      {actions.map((a, i) => (
-        <Button key={i} size="sm" variant={a.variant || "default"} onClick={a.onClick}>
-          {a.label}
-        </Button>
-      ))}
+      {actions.map((a, i) => {
+        const btn = (
+          <Button key={i} size="sm" variant={a.variant || "default"} onClick={a.onClick}>
+            {a.label}
+          </Button>
+        )
+        if (!a.confirmMessage) return btn
+        return (
+          <AlertDialog key={i}>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant={a.variant || "default"}>
+                {a.label}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{a.label}</AlertDialogTitle>
+                <AlertDialogDescription>{a.confirmMessage}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={a.onClick}>{a.label}</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )
+      })}
       {deleteAction && (
         <AlertDialog>
           <AlertDialogTrigger asChild>

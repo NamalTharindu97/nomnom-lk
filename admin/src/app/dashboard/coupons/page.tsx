@@ -140,7 +140,27 @@ export default function CouponsPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" onClick={() => startEdit(c)}><Pencil className="size-4" /></Button>
-                        <Button size="sm" variant="outline" onClick={() => handleToggle(c)}>{c.is_active ? "Deactivate" : "Activate"}</Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline">{c.is_active ? "Deactivate" : "Activate"}</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{c.is_active ? "Deactivate" : "Activate"} {c.code}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {c.is_active
+                                  ? `Deactivate ${c.code}? Users will not be able to use this coupon.`
+                                  : `Activate ${c.code}? Users will be able to use this coupon.`}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleToggle(c)}>
+                                {c.is_active ? "Deactivate" : "Activate"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                         <AlertDialog>
                           <AlertDialogTrigger asChild><Button size="icon" variant="ghost" onClick={() => setDeleteTarget(c)}><Trash2 className="size-4 text-destructive" /></Button></AlertDialogTrigger>
                           <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Coupon</AlertDialogTitle><AlertDialogDescription>Delete <strong>{c.code}</strong>? This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent>

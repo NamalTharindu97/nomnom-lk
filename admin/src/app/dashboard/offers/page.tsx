@@ -197,8 +197,8 @@ export default function OffersPage() {
               <BulkActionBar
                 count={selected.size}
                 actions={[
-                  { label: "Approve All", onClick: () => handleBulk("approve") },
-                  { label: "Reject All", variant: "destructive", onClick: () => handleBulk("reject") },
+                  { label: "Approve All", onClick: () => handleBulk("approve"), confirmMessage: `Approve ${selected.size} selected offer(s)?` },
+                  { label: "Reject All", variant: "destructive", onClick: () => handleBulk("reject"), confirmMessage: `Reject ${selected.size} selected offer(s)?` },
                 ]}
                 deleteAction={handleBulkDelete}
                 deleteLabel="Delete All"
@@ -290,18 +290,72 @@ export default function OffersPage() {
                           </AlertDialog>
                           {isAdmin && o.status === "pending" && (
                             <>
-                              <Button size="sm" onClick={() => updateStatus(o.id, "approve")}>
-                                Approve
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => updateStatus(o.id, "reject")}>
-                                Reject
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm">
+                                    Approve
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Approve Offer</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Approve <strong>{o.title}</strong>? It will be visible to all users.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => updateStatus(o.id, "approve")}>
+                                      Approve
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="destructive">
+                                    Reject
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Reject Offer</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Reject <strong>{o.title}</strong>? It will not be listed for users.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => updateStatus(o.id, "reject")}>
+                                      Reject
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </>
                           )}
                           {isAdmin && o.status === "approved" && (
-                            <Button size="sm" variant="outline" onClick={() => expireOffer(o.id)}>
-                              Expire
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  Expire
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Expire Offer</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Force expire <strong>{o.title}</strong>? This will immediately end the offer.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => expireOffer(o.id)}>
+                                    Expire
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </TableCell>
