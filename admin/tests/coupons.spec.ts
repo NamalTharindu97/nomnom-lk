@@ -19,10 +19,12 @@ test.describe.serial("Coupons", () => {
 
     const row = page.getByRole("row", { name: new RegExp(couponCode) })
     await row.getByRole("button", { name: "Deactivate" }).click()
+    await page.getByRole("alertdialog").getByRole("button", { name: "Deactivate" }).click()
 
     await expect(row.getByText("Inactive")).toBeVisible()
 
     await row.getByRole("button", { name: "Activate" }).click()
+    await page.getByRole("alertdialog").getByRole("button", { name: "Activate" }).click()
     await expect(row.getByText("Active")).toBeVisible()
   })
 

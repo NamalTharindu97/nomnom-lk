@@ -102,8 +102,10 @@ func (s *DashboardService) CreateRestaurant(req *request.CreateRestaurantRequest
 		ContactPhone: strPtr(req.ContactPhone),
 		CuisineTags:  req.CuisineTags,
 		CoverImage:   strPtr(req.CoverImage),
-		OwnerID:      &ownerID,
 		Status:       models.RestaurantPending,
+	}
+	if ownerID != uuid.Nil {
+		restaurant.OwnerID = &ownerID
 	}
 
 	translations := locale.BuildTranslations(req.NameSi, req.NameTa, req.DescriptionSi, req.DescriptionTa)

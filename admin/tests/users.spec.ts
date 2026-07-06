@@ -14,7 +14,9 @@ test.describe("Users", () => {
     await expect(usersPage.table).toBeVisible()
   })
 
-  test("should show admin user in the list", async () => {
+  test("should show admin user in the list", async ({ page }) => {
+    await page.getByPlaceholder("Search by email...").fill("admin@nomnom.lk")
+    await page.waitForTimeout(500)
     await usersPage.expectUserVisible("admin@nomnom.lk")
     await usersPage.expectRole("admin@nomnom.lk", "admin")
   })

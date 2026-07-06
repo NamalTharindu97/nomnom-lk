@@ -235,6 +235,10 @@ func (h *DashboardHandler) CreateOffer(c *gin.Context) {
 		return
 	}
 
+	if reloaded, err := h.dashboardService.GetOfferByIDForOwner(ownerID, offer.ID); err == nil {
+		offer = reloaded
+	}
+
 	h.sseService.Emit("offer.created", gin.H{"id": offer.ID, "title": offer.Title})
 
 	if userID, ok := middleware.GetUserID(c); ok {
@@ -368,14 +372,17 @@ func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context) gin.H 
 
 func dashboardOfferToMap(o *models.Offer, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
+
+	restaurant := gin.H{"id": o.RestaurantID}
+	if o.Restaurant != nil {
+		restaurant["name"] = o.Restaurant.Name
+		restaurant["slug"] = o.Restaurant.Slug
+		restaurant["address"] = o.Restaurant.Address
+	}
+
 	m := gin.H{
-		"id": o.ID,
-		"restaurant": gin.H{
-			"id":      o.RestaurantID,
-			"name":    o.Restaurant.Name,
-			"slug":    o.Restaurant.Slug,
-			"address": o.Restaurant.Address,
-		},
+		"id":               o.ID,
+		"restaurant":       restaurant,
 		"restaurant_id":    o.RestaurantID,
 		"title":            o.Title,
 		"description":      o.Description,
