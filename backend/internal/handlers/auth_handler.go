@@ -78,7 +78,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	result, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
+		status := http.StatusUnauthorized
+		if err.Error() == "your account has been suspended. contact an administrator" {
+			status = http.StatusForbidden
+		}
+		response.Error(c, status, "UNAUTHORIZED", err.Error())
 		return
 	}
 
@@ -125,7 +129,11 @@ func (h *AuthHandler) FirebaseLogin(c *gin.Context) {
 
 	result, err := h.authService.FirebaseLogin(firebaseUID, email, name)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		status := http.StatusInternalServerError
+		if err.Error() == "your account has been suspended. contact an administrator" {
+			status = http.StatusForbidden
+		}
+		response.Error(c, status, "UNAUTHORIZED", err.Error())
 		return
 	}
 

@@ -80,8 +80,8 @@ class _LoginScreenState extends State<LoginScreen>
           if (msg.contains('invalid email or password')) {
             return 'Invalid email or password.';
           }
-          if (msg.contains('account is deactivated')) {
-            return 'Account has been deactivated. Contact support.';
+          if (msg.contains('suspended')) {
+            return 'Your account has been suspended. Contact an administrator.';
           }
           if (msg.contains('please sign in with Google')) {
             return 'This email uses Google Sign-In.';

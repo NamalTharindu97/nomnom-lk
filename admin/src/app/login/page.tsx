@@ -34,7 +34,12 @@ export default function LoginPage() {
       await login(email, password)
       router.push("/")
     } catch (err: any) {
-      setError(err.message || "Invalid credentials")
+      const msg = err.message || ""
+      if (msg.includes("suspended")) {
+        setError("Your account has been suspended. Contact an administrator.")
+      } else {
+        setError(msg || "Invalid credentials")
+      }
     } finally {
       setLoading(false)
     }

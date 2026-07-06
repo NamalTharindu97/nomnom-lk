@@ -80,7 +80,7 @@ func (s *AuthService) Login(email, password string) (*response.AuthResponse, err
 	}
 
 	if !user.IsActive {
-		return nil, errors.New("account is deactivated")
+		return nil, errors.New("your account has been suspended. contact an administrator")
 	}
 
 	if user.PasswordHash == "" {
@@ -189,7 +189,7 @@ func (s *AuthService) FirebaseLogin(firebaseUID, email, name string) (*response.
 	}
 
 	if !user.IsActive {
-		return nil, errors.New("account is deactivated")
+		return nil, errors.New("your account has been suspended. contact an administrator")
 	}
 
 	return s.generateAuthResponse(user)
