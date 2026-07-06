@@ -130,7 +130,16 @@ func (s *RestaurantService) Update(id uuid.UUID, req *request.UpdateRestaurantRe
 	return restaurant, nil
 }
 
-func (s *RestaurantService) Delete(id uuid.UUID) error {
+func (s *RestaurantService) Delete(id uuid.UUID, requesterID uuid.UUID, isAdmin bool) error {
+	if !isAdmin {
+		restaurant, err := s.repo.FindByID(id)
+		if err != nil {
+			return errors.New("restaurant not found")
+		}
+		if restaurant.OwnerID == nil || *restaurant.OwnerID != requesterID {
+			return errors.New("not authorized to delete this restaurant")
+		}
+	}
 	return s.repo.Delete(id)
 }
 

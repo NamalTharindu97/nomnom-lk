@@ -95,6 +95,54 @@ func (r *OfferRepo) UpdateStatus(id uuid.UUID, status models.OfferStatus) error 
 	return r.db.Model(&models.Offer{}).Where("id = ?", id).Update("status", status).Error
 }
 
+func (r *OfferRepo) FindAllByOwner(ownerID uuid.UUID, status, queryStr string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+	var offers []models.Offer
+	var total int64
+
+	query := r.db.Model(&models.Offer{}).
+		Joins("JOIN restaurants ON restaurants.id = offers.restaurant_id")
+	if ownerID != uuid.Nil {
+		query = query.Where("restaurants.owner_id = ?", ownerID)
+	}
+
+	if status != "" && status != "all" {
+		query = query.Where("offers.status = ?", status)
+	}
+	if queryStr != "" {
+		tsQuery := strings.Join(strings.Fields(queryStr), " & ")
+		prefixQuery := strings.ReplaceAll(tsQuery, " & ", ":* & ") + ":*"
+		query = query.Where("offers.search_vector @@ to_tsquery('simple', ?)", prefixQuery)
+	}
+	query.Count(&total)
+
+	order := "created_at DESC"
+	switch sort {
+	case "newest":
+		order = "created_at DESC"
+	case "price_low":
+		order = "offer_price ASC"
+	case "price_high":
+		order = "offer_price DESC"
+	case "ending_soon":
+		order = "end_date ASC"
+	case "popular":
+		order = "view_count DESC"
+	}
+
+	err := query.
+		Preload("Restaurant", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, name, slug, address, cuisine_tags, cover_image")
+		}).
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Order(order).
+		Find(&offers).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return offers, total, nil
+}
+
 func (r *OfferRepo) FindByRestaurantID(restaurantID uuid.UUID) ([]models.Offer, error) {
 	var offers []models.Offer
 	err := r.db.Where("restaurant_id = ?", restaurantID).Find(&offers).Error

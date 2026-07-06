@@ -126,8 +126,12 @@ func (h *RestaurantHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Delete(id); err != nil {
-		response.InternalError(c, err.Error())
+	userID, _ := middleware.GetUserID(c)
+	role, _ := middleware.GetUserRole(c)
+	isAdmin := role == "admin"
+
+	if err := h.service.Delete(id, userID, isAdmin); err != nil {
+		response.Error(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 		return
 	}
 

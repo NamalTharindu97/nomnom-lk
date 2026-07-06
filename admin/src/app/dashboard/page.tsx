@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
+import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -33,7 +34,7 @@ const PRESETS = [
   { label: "30d", days: 30 },
 ]
 
-export default function DashboardPage() {
+function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [timeline, setTimeline] = useState<TimelineData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,13 +62,7 @@ export default function DashboardPage() {
   ]
 
   return (
-    <ErrorBoundary>
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your platform</p>
-      </div>
-
+    <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {loading ? (
           <>
@@ -185,7 +180,100 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
+  )
+}
+
+function OwnerDashboard() {
+  const [stats, setStats] = useState<{ total_restaurants: number; total_offers: number; pending_restaurants: number; pending_offers: number } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get<{ data: typeof stats }>("/dashboard/stats")
+      .then((res) => setStats(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const cards = [
+    { title: "My Restaurants", value: stats?.total_restaurants ?? 0, icon: Store },
+    { title: "My Offers", value: stats?.total_offers ?? 0, icon: Tag },
+    { title: "Pending Restaurants", value: stats?.pending_restaurants ?? 0, icon: Bell },
+    { title: "Pending Offers", value: stats?.pending_offers ?? 0, icon: Bell },
+  ]
+
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {loading ? (
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="size-4" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-7 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : (
+          cards.map((card) => {
+            const Icon = card.icon
+            return (
+              <Card key={card.title}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                  <Icon className="size-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{card.value}</p>
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <a
+            href="/dashboard/offers"
+            className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-accent"
+          >
+            <Tag className="size-4 text-primary" />
+            <span>My Offers</span>
+          </a>
+          <a
+            href="/dashboard/restaurants"
+            className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-accent"
+          >
+            <Store className="size-4 text-primary" />
+            <span>My Restaurants</span>
+          </a>
+        </CardContent>
+      </Card>
+    </>
+  )
+}
+
+export default function DashboardPage() {
+  const { isOwner } = useAuth()
+
+  return (
+    <ErrorBoundary>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">{isOwner ? "Your business overview" : "Overview of your platform"}</p>
+        </div>
+        {isOwner ? <OwnerDashboard /> : <AdminDashboard />}
+      </div>
     </ErrorBoundary>
   )
 }

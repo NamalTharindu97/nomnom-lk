@@ -55,6 +55,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	firebaseService := services.NewFirebaseService(&cfg.Firebase)
 	authHandler := handlers.NewAuthHandler(authService, firebaseService)
 	userHandler := handlers.NewUserHandler(userRepo)
+	dashboardService := services.NewDashboardService(restaurantRepo, offerRepo)
+	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService)
 	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo)
 	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService)
 	offerHandler := handlers.NewOfferHandler(offerService, sseService)
@@ -197,8 +199,28 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			devicesGroup.DELETE("", notificationHandler.UnregisterDevice)
 		}
 
+		dashboardGroup := v1.Group("/dashboard")
+		dashboardGroup.Use(middleware.Auth(cfg.JWT.Secret))
+		dashboardGroup.Use(middleware.RequireDashboardAccess())
+		dashboardGroup.Use(middleware.RequireActive(userRepo))
+		dashboardGroup.Use(middleware.OwnerScoped())
+		{
+			dashboardGroup.GET("/stats", dashboardHandler.Stats)
+			dashboardGroup.GET("/restaurants", dashboardHandler.ListRestaurants)
+			dashboardGroup.GET("/restaurants/:id", dashboardHandler.GetRestaurant)
+			dashboardGroup.POST("/restaurants", dashboardHandler.CreateRestaurant)
+			dashboardGroup.PUT("/restaurants/:id", dashboardHandler.UpdateRestaurant)
+			dashboardGroup.DELETE("/restaurants/:id", dashboardHandler.DeleteRestaurant)
+			dashboardGroup.GET("/offers", dashboardHandler.ListOffers)
+			dashboardGroup.GET("/offers/:id", dashboardHandler.GetOffer)
+			dashboardGroup.POST("/offers", dashboardHandler.CreateOffer)
+			dashboardGroup.PUT("/offers/:id", dashboardHandler.UpdateOffer)
+			dashboardGroup.DELETE("/offers/:id", dashboardHandler.DeleteOffer)
+		}
+
 		adminGroup := v1.Group("/admin")
 		adminGroup.Use(middleware.Auth(cfg.JWT.Secret))
+		adminGroup.Use(middleware.RequireActive(userRepo))
 		adminGroup.Use(middleware.RequireRole("admin"))
 		{
 			adminGroup.GET("/stats", adminHandler.Stats)

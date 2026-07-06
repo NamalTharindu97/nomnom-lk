@@ -52,7 +52,7 @@ export default function LoginPage() {
             <UtensilsCrossed className="size-6 text-primary-foreground" />
           </div>
           <CardTitle className="text-xl">NomNom LK</CardTitle>
-          <CardDescription>Admin panel sign in</CardDescription>
+          <CardDescription>Sign in to your dashboard</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">

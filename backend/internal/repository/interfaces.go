@@ -9,30 +9,39 @@ type OfferRepoInterface interface {
 	Create(offer *models.Offer) error
 	FindByID(id uuid.UUID) (*models.Offer, error)
 	FindAll(status, query string, page, perPage int, sort string) ([]models.Offer, int64, error)
+	FindAllByOwner(ownerID uuid.UUID, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error)
 	FindPending(page, perPage int) ([]models.Offer, int64, error)
 	FindByRestaurantID(restaurantID uuid.UUID) ([]models.Offer, error)
 	Update(offer *models.Offer) error
 	Delete(id uuid.UUID) error
 	UpdateStatus(id uuid.UUID, status models.OfferStatus) error
+	BulkUpdateStatus(ids []uuid.UUID, status models.OfferStatus) error
+	BulkDelete(ids []uuid.UUID) error
 	CountAll(count *int64) error
 	CountByStatus(status string, count *int64) error
 	CountByDate(days int) ([]map[string]interface{}, error)
 	ExpirePastOffers() error
 	IncrementViewCount(id uuid.UUID) error
+	TopByFavorites(limit int) ([]map[string]interface{}, error)
+	TopByViews(limit int) ([]models.Offer, error)
 }
 
 type RestaurantRepoInterface interface {
 	Create(restaurant *models.Restaurant) error
 	FindByID(id uuid.UUID) (*models.Restaurant, error)
 	FindAll(status, query string, page, perPage int) ([]models.Restaurant, int64, error)
+	FindAllByOwner(ownerID uuid.UUID, status, query string, page, perPage int) ([]models.Restaurant, int64, error)
 	FindPending(page, perPage int) ([]models.Restaurant, int64, error)
 	FindByOwnerID(ownerID uuid.UUID) ([]models.Restaurant, error)
 	Update(restaurant *models.Restaurant) error
 	Delete(id uuid.UUID) error
 	UpdateStatus(id uuid.UUID, status models.RestaurantStatus) error
+	BulkUpdateStatus(ids []uuid.UUID, status models.RestaurantStatus) error
+	BulkDelete(ids []uuid.UUID) error
 	CountAll(count *int64) error
 	CountByStatus(status string, count *int64) error
 	CountByDate(days int) ([]map[string]interface{}, error)
+	TopByOfferCount(limit int) ([]map[string]interface{}, error)
 }
 
 type UserRepoInterface interface {

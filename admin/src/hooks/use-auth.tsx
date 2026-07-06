@@ -17,6 +17,8 @@ interface AuthContext {
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   isLoading: boolean
+  isAdmin: boolean
+  isOwner: boolean
 }
 
 const AuthCtx = createContext<AuthContext | null>(null)
@@ -45,12 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { access_token, user: userData } = res
 
-    if (userData.role !== "admin") {
-      throw new Error("Access restricted to administrators only.")
+    if (userData.role !== "admin" && userData.role !== "restaurant_owner") {
+      throw new Error("Access restricted to administrators and restaurant owners only.")
     }
 
     localStorage.setItem("token", access_token)
     localStorage.setItem("user", JSON.stringify(userData))
+    document.cookie = `token=${access_token}; path=/; max-age=86400; SameSite=Lax`
+    document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=86400; SameSite=Lax`
     setToken(access_token)
     setUser(userData)
   }, [])
@@ -58,13 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
+    document.cookie = "token=; path=/; max-age=0"
+    document.cookie = "user=; path=/; max-age=0"
     setToken(null)
     setUser(null)
     router.push("/login")
   }, [router])
 
+  const isAdmin = user?.role === "admin"
+  const isOwner = user?.role === "restaurant_owner"
+
   return (
-    <AuthCtx.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthCtx.Provider value={{ user, token, login, logout, isLoading, isAdmin, isOwner }}>
       {children}
     </AuthCtx.Provider>
   )

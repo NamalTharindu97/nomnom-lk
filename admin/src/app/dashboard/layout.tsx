@@ -28,7 +28,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
-const navItems = [
+const adminNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/restaurants", label: "Restaurants", icon: Store },
   { href: "/dashboard/offers", label: "Offers", icon: Tag },
@@ -42,6 +42,14 @@ const navItems = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
+const ownerNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/restaurants", label: "My Restaurants", icon: Store },
+  { href: "/dashboard/offers", label: "My Offers", icon: Tag },
+  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+]
+
 const themeOptions = [
   { value: "light" as const, icon: Sun, label: "Light" },
   { value: "dark" as const, icon: Moon, label: "Dark" },
@@ -52,6 +60,8 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
+
+  const navItems = user?.role === "admin" ? adminNavItems : ownerNavItems
 
   return (
     <>
@@ -136,16 +146,31 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   )
 }
 
+const adminOnlyPaths = [
+  "/dashboard/users",
+  "/dashboard/notification-templates",
+  "/dashboard/coupons",
+  "/dashboard/categories",
+  "/dashboard/analytics",
+  "/dashboard/audit-log",
+]
+
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
+  const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login")
+      return
     }
-  }, [user, isLoading, router])
+
+    if (user && user.role !== "admin" && adminOnlyPaths.some((p) => pathname.startsWith(p))) {
+      router.push("/dashboard")
+    }
+  }, [user, isLoading, router, pathname])
 
   if (isLoading || !user) return null
 

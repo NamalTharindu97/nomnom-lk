@@ -130,9 +130,42 @@ func (r *RestaurantRepo) CountByStatus(status string, count *int64) error {
 	return r.db.Model(&models.Restaurant{}).Where("status = ?", status).Count(count).Error
 }
 
+func (r *RestaurantRepo) FindAllByOwner(ownerID uuid.UUID, status, queryStr string, page, perPage int) ([]models.Restaurant, int64, error) {
+	var restaurants []models.Restaurant
+	var total int64
+
+	query := r.db.Model(&models.Restaurant{})
+	if ownerID != uuid.Nil {
+		query = query.Where("owner_id = ?", ownerID)
+	}
+	if status != "" && status != "all" {
+		query = query.Where("status = ?", status)
+	}
+	if queryStr != "" {
+		like := "%" + queryStr + "%"
+		query = query.Where("name ILIKE ? OR COALESCE(description, '') ILIKE ?", like, like)
+	}
+	query.Count(&total)
+
+	err := query.
+		Preload("Owner").
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Order("created_at DESC").
+		Find(&restaurants).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return restaurants, total, nil
+}
+
 func (r *RestaurantRepo) FindByOwnerID(ownerID uuid.UUID) ([]models.Restaurant, error) {
 	var restaurants []models.Restaurant
-	err := r.db.Where("owner_id = ?", ownerID).Find(&restaurants).Error
+	query := r.db
+	if ownerID != uuid.Nil {
+		query = query.Where("owner_id = ?", ownerID)
+	}
+	err := query.Find(&restaurants).Error
 	return restaurants, err
 }
 
