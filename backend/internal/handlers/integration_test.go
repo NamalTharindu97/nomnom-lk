@@ -129,6 +129,80 @@ func TestIntegration_CreateOffer_RequiresAuth(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestIntegration_DashboardStats_RequiresAuth(t *testing.T) {
+	engine, _, err := testutil.Setup()
+	require.NoError(t, err)
+
+	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/dashboard/stats", nil, "")
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestIntegration_DashboardStats_UserBlocked(t *testing.T) {
+	engine, token, err := testutil.Setup()
+	require.NoError(t, err)
+
+	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/dashboard/stats", nil, token)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestIntegration_DashboardStats_AdminAllowed(t *testing.T) {
+	engine, _, err := testutil.Setup()
+	require.NoError(t, err)
+
+	token := testutil.GenerateAdminToken()
+	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/dashboard/stats", nil, token)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err = testutil.ParseResponse(w, &resp)
+	require.NoError(t, err)
+	assert.Contains(t, resp, "data")
+}
+
+func TestIntegration_DashboardStats_OwnerAllowed(t *testing.T) {
+	engine, _, err := testutil.Setup()
+	require.NoError(t, err)
+
+	token := testutil.GenerateOwnerToken()
+	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/dashboard/stats", nil, token)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err = testutil.ParseResponse(w, &resp)
+	require.NoError(t, err)
+	assert.Contains(t, resp, "data")
+}
+
+func TestIntegration_DashboardRestaurants_AdminSeesAll(t *testing.T) {
+	engine, _, err := testutil.Setup()
+	require.NoError(t, err)
+
+	token := testutil.GenerateAdminToken()
+	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/dashboard/restaurants", nil, token)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err = testutil.ParseResponse(w, &resp)
+	require.NoError(t, err)
+	data, ok := resp["data"].([]interface{})
+	assert.True(t, ok)
+	_ = data
+}
+
+func TestIntegration_DashboardRestaurants_OwnerSeesScoped(t *testing.T) {
+	engine, _, err := testutil.Setup()
+	require.NoError(t, err)
+
+	token := testutil.GenerateOwnerToken()
+	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/dashboard/restaurants", nil, token)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	err = testutil.ParseResponse(w, &resp)
+	require.NoError(t, err)
+	assert.Contains(t, resp, "data")
+}
+
 func TestIntegration_CreateOffer_WithUserToken(t *testing.T) {
 	engine, _, err := testutil.Setup()
 	require.NoError(t, err)

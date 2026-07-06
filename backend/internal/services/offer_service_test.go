@@ -101,6 +101,21 @@ func (m *mockOfferRepo) CountByDate(days int) ([]map[string]interface{}, error) 
 func (m *mockOfferRepo) IncrementViewCount(id uuid.UUID) error {
 	return nil
 }
+func (m *mockOfferRepo) FindAllByOwner(ownerID uuid.UUID, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockOfferRepo) BulkUpdateStatus(ids []uuid.UUID, status models.OfferStatus) error {
+	return nil
+}
+func (m *mockOfferRepo) BulkDelete(ids []uuid.UUID) error {
+	return nil
+}
+func (m *mockOfferRepo) TopByFavorites(limit int) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+func (m *mockOfferRepo) TopByViews(limit int) ([]models.Offer, error) {
+	return nil, nil
+}
 
 type mockRestaurantRepo struct {
 	restaurants map[uuid.UUID]*models.Restaurant
@@ -155,6 +170,18 @@ func (m *mockRestaurantRepo) CountByStatus(status string, count *int64) error {
 }
 
 func (m *mockRestaurantRepo) CountByDate(days int) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+func (m *mockRestaurantRepo) FindAllByOwner(ownerID uuid.UUID, status, query string, page, perPage int) ([]models.Restaurant, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockRestaurantRepo) BulkUpdateStatus(ids []uuid.UUID, status models.RestaurantStatus) error {
+	return nil
+}
+func (m *mockRestaurantRepo) BulkDelete(ids []uuid.UUID) error {
+	return nil
+}
+func (m *mockRestaurantRepo) TopByOfferCount(limit int) ([]map[string]interface{}, error) {
 	return nil, nil
 }
 

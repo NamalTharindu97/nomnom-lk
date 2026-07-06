@@ -33,6 +33,7 @@ var (
 const (
 	TestUserID  = "00000000-0000-0000-0000-000000000001"
 	TestAdminID = "00000000-0000-0000-0000-000000000002"
+	TestOwnerID = "00000000-0000-0000-0000-000000000003"
 )
 
 func init() {
@@ -95,6 +96,9 @@ func Setup() (*gin.Engine, string, error) {
 	db.Exec(`INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
 		VALUES (?::uuid, 'testadmin@test.com', 'Test Admin', 'admin', true, NOW(), NOW())
 		ON CONFLICT (id) DO NOTHING`, TestAdminID)
+	db.Exec(`INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
+		VALUES (?::uuid, 'testowner@test.com', 'Test Owner', 'restaurant_owner', true, NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING`, TestOwnerID)
 
 	engine, _ := router.SetupRouter(cfg, db, rdb, l)
 
@@ -109,6 +113,17 @@ func Setup() (*gin.Engine, string, error) {
 
 func GenerateAdminToken() string {
 	return generateAdminTestToken()
+}
+
+func GenerateOwnerToken() string {
+	claims := jwt.MapClaims{
+		"sub":  TestOwnerID,
+		"role": "restaurant_owner",
+		"exp":  time.Now().Add(24 * time.Hour).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	s, _ := token.SignedString([]byte("test-secret-key-for-testing-only"))
+	return s
 }
 
 func generateTestToken() string {

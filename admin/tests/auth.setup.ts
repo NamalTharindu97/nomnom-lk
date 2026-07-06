@@ -13,6 +13,8 @@ setup("authenticate as admin", async ({ page }) => {
     ({ token, userData }) => {
       localStorage.setItem("token", token)
       localStorage.setItem("user", JSON.stringify(userData))
+      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`
+      document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=86400; SameSite=Lax`
     },
     { token: access_token, userData: user }
   )

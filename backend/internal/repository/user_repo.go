@@ -152,7 +152,7 @@ func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter string) ([
 	var users []models.User
 	var total int64
 
-	query := r.db.Model(&models.User{})
+	query := r.db.Model(&models.User{}).Where("is_active = ?", true)
 	if emailFilter != "" {
 		query = query.Where("email ILIKE ?", "%"+emailFilter+"%")
 	}

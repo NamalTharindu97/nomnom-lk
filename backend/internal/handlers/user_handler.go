@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -97,12 +98,14 @@ func (h *UserHandler) Create(c *gin.Context) {
 		return
 	}
 
+	now := time.Now()
 	user := &models.User{
-		Email:        req.Email,
-		Name:         req.Name,
-		PasswordHash: hashedPassword,
-		Role:         role,
-		IsActive:     true,
+		Email:           req.Email,
+		Name:            req.Name,
+		PasswordHash:    hashedPassword,
+		Role:            role,
+		IsActive:        true,
+		EmailVerifiedAt: &now,
 	}
 
 	if err := h.repo.Create(user); err != nil {

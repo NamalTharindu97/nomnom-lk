@@ -83,6 +83,24 @@ async function globalTeardown(config: FullConfig) {
       if (categories.length > 0) console.log(`[teardown] Deleted E2E categories`)
     }
 
+    // Delete E2E users
+    const userRes = await fetch(`${API_BASE}/users?per_page=100`, {
+      headers: authHeaders,
+    })
+    if (userRes.ok) {
+      const { data: users } = await userRes.json()
+      for (const u of users) {
+        if (u.email?.toLowerCase().startsWith("e2e_")) {
+          await fetch(`${API_BASE}/users/${u.id}`, {
+            method: "DELETE",
+            headers: authHeaders,
+          })
+        }
+      }
+      const e2eUsers = users.filter((u: any) => u.email?.toLowerCase().startsWith("e2e_"))
+      if (e2eUsers.length > 0) console.log(`[teardown] Deleted ${e2eUsers.length} E2E users`)
+    }
+
     // Delete E2E notification templates
     const tplRes = await fetch(`${API_BASE}/admin/notification-templates`, {
       headers: authHeaders,
