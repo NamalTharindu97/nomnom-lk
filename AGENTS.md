@@ -100,10 +100,14 @@
   - P28 (Admin Optimization): CSS vars (--success, --info, --chart-1..5); theme-aware overlays & toasts; shared csvExport & BulkActionBar components; raw textarea → Textarea; login theme toggle; 11 Vitest unit tests; 14 new Playwright E2E tests; CI pipeline green (all 43 E2E passing).
   - `gh` CLI authenticated for CI log access.
   - All branches P21–P28 preserved on remote.
-- **2026-07-06:** P29 (RBAC) Phase 1 (backend) + Phase 2 (frontend) in progress.
+- **2026-07-06:** P29 (RBAC) Phase 1 (backend) + Phase 2 (frontend) committed and pushed.
+  - Committed to `phase/P29-rbac` branch (22 files, 1507 insertions).
+  - PR created: https://github.com/NamalTharindu97/nomnom-lk/pull/3
   - Backend: `RequireDashboardAccess`, `RequireActive`, `OwnerScoped` middleware + `DashboardService`/`DashboardHandler` + scoped repo methods + `/dashboard` route group + `restaurant.OwnerID` ownership check in `Delete()`.
   - Frontend: `proxy.ts` server-side guard, `useAuth` cookie sync + `isAdmin`/`isOwner`, `RoleGuard` + `AccessDenied` components, role-based nav + dashboard pages, admin-only path redirect in layout, login page allows owners.
   - `FindAllByOwner`/`FindByOwnerID` skip `owner_id` filter when `uuid.Nil` (admin bypass).
   - `DashboardHandler` uses `GetOwnerScopeID()` instead of `GetUserID()` for proper role scoping.
   - Backend `go build ./...` ✓, Admin `next build` ✓.
   - Dashboard routes tested: admin sees all 11R/23O; owner sees scoped to their `owner_id`.
+  - Phase 3 (Owner Management): `FindOwnersWithStats` repo method + `ListOwners` admin handler + `/admin/owners` route + Owners page + sidebar nav.
+  - Backend `go build ./...` ✓, Admin `next build` ✓.

@@ -25,6 +25,7 @@ import {
   FileText,
   Ticket,
   Folder,
+  UserCheck,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -33,6 +34,7 @@ const adminNavItems = [
   { href: "/dashboard/restaurants", label: "Restaurants", icon: Store },
   { href: "/dashboard/offers", label: "Offers", icon: Tag },
   { href: "/dashboard/users", label: "Users", icon: Users },
+  { href: "/dashboard/owners", label: "Owners", icon: UserCheck },
   { href: "/dashboard/notifications", label: "Push Notifications", icon: Bell },
   { href: "/dashboard/notification-templates", label: "Templates", icon: FileText },
   { href: "/dashboard/coupons", label: "Coupons", icon: Ticket },
@@ -148,6 +150,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 const adminOnlyPaths = [
   "/dashboard/users",
+  "/dashboard/owners",
   "/dashboard/notification-templates",
   "/dashboard/coupons",
   "/dashboard/categories",

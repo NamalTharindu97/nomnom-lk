@@ -230,6 +230,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.GET("/audit-log", auditLogHandler.List)
 			adminGroup.POST("/restaurants/bulk", adminHandler.BulkRestaurants)
 			adminGroup.POST("/offers/bulk", adminHandler.BulkOffers)
+			adminGroup.GET("/owners", adminHandler.ListOwners)
 			adminGroup.POST("/users/bulk", adminHandler.BulkUsers)
 			adminGroup.GET("/analytics/top-restaurants", adminHandler.AnalyticsTopRestaurants)
 			adminGroup.GET("/analytics/top-offers", adminHandler.AnalyticsTopOffers)

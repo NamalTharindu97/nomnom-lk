@@ -68,6 +68,37 @@ func (r *UserRepo) BulkDelete(ids []uuid.UUID) error {
 	return r.db.Delete(&models.User{}, "id IN ?", ids).Error
 }
 
+type OwnerWithStats struct {
+	ID               uuid.UUID `json:"id"`
+	Email            string    `json:"email"`
+	Name             string    `json:"name"`
+	IsActive         bool      `json:"is_active"`
+	RestaurantCount  int64     `json:"restaurant_count"`
+	OfferCount       int64     `json:"offer_count"`
+	CreatedAt        time.Time `json:"created_at"`
+}
+
+func (r *UserRepo) FindOwnersWithStats(page, perPage int) ([]OwnerWithStats, int64, error) {
+	var results []OwnerWithStats
+	var total int64
+
+	r.db.Model(&models.User{}).Where("role = ?", models.RoleRestaurantOwner).Count(&total)
+
+	err := r.db.Raw(`
+		SELECT u.id, u.email, u.name, u.is_active, u.created_at,
+			COALESCE(rc.count, 0) as restaurant_count,
+			COALESCE(oc.count, 0) as offer_count
+		FROM users u
+		LEFT JOIN (SELECT owner_id, COUNT(*) as count FROM restaurants GROUP BY owner_id) rc ON rc.owner_id = u.id
+		LEFT JOIN (SELECT r.owner_id, COUNT(*) as count FROM offers o JOIN restaurants r ON r.id = o.restaurant_id GROUP BY r.owner_id) oc ON oc.owner_id = u.id
+		WHERE u.role = ?
+		ORDER BY u.created_at DESC
+		LIMIT ? OFFSET ?
+	`, models.RoleRestaurantOwner, perPage, (page-1)*perPage).Scan(&results).Error
+
+	return results, total, err
+}
+
 func (r *UserRepo) CountAll(count *int64) error {
 	return r.db.Model(&models.User{}).Count(count).Error
 }

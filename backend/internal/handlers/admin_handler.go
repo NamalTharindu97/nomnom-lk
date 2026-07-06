@@ -181,6 +181,31 @@ func (h *AdminHandler) BulkOffers(c *gin.Context) {
 	response.Success(c, gin.H{"affected": len(req.IDs)})
 }
 
+func (h *AdminHandler) ListOwners(c *gin.Context) {
+	params := pagination.Extract(c)
+
+	owners, total, err := h.userRepo.FindOwnersWithStats(params.Page, params.PerPage)
+	if err != nil {
+		response.InternalError(c, "failed to list owners")
+		return
+	}
+
+	data := make([]gin.H, len(owners))
+	for i, o := range owners {
+		data[i] = gin.H{
+			"id":               o.ID,
+			"email":            o.Email,
+			"name":             o.Name,
+			"is_active":        o.IsActive,
+			"restaurant_count": o.RestaurantCount,
+			"offer_count":      o.OfferCount,
+			"created_at":       o.CreatedAt,
+		}
+	}
+
+	response.SuccessPaginated(c, data, pagination.Meta(params, total))
+}
+
 func (h *AdminHandler) AnalyticsTopRestaurants(c *gin.Context) {
 	top, err := h.restaurantRepo.TopByOfferCount(5)
 	if err != nil {
