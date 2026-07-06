@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,12 +18,14 @@ import (
 type DashboardHandler struct {
 	dashboardService *services.DashboardService
 	sseService       *services.SSEService
+	auditService     *services.AuditService
 }
 
-func NewDashboardHandler(dashboardService *services.DashboardService, sseService *services.SSEService) *DashboardHandler {
+func NewDashboardHandler(dashboardService *services.DashboardService, sseService *services.SSEService, auditService *services.AuditService) *DashboardHandler {
 	return &DashboardHandler{
 		dashboardService: dashboardService,
 		sseService:       sseService,
+		auditService:     auditService,
 	}
 }
 
@@ -94,6 +97,14 @@ func (h *DashboardHandler) CreateRestaurant(c *gin.Context) {
 	}
 
 	h.sseService.Emit("restaurant.created", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "restaurant.create", "restaurant", restaurant.ID.String(),
+			fmt.Sprintf("Created restaurant: %s", restaurant.Name))
+	}
+
 	c.JSON(http.StatusCreated, dashboardRestaurantDetailToMap(restaurant, c))
 }
 
@@ -123,6 +134,14 @@ func (h *DashboardHandler) UpdateRestaurant(c *gin.Context) {
 	}
 
 	h.sseService.Emit("restaurant.updated", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "restaurant.update", "restaurant", restaurant.ID.String(),
+			fmt.Sprintf("Updated restaurant: %s", restaurant.Name))
+	}
+
 	response.Success(c, dashboardRestaurantDetailToMap(restaurant, c))
 }
 
@@ -137,9 +156,22 @@ func (h *DashboardHandler) DeleteRestaurant(c *gin.Context) {
 
 	ownerID, _ := middleware.GetOwnerScopeID(c)
 
+	restaurant, _ := h.dashboardService.GetRestaurantByIDForOwner(ownerID, id)
+	restaurantName := ""
+	if restaurant != nil {
+		restaurantName = restaurant.Name
+	}
+
 	if err := h.dashboardService.DeleteRestaurant(id, ownerID); err != nil {
 		response.Error(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 		return
+	}
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "restaurant.delete", "restaurant", id.String(),
+			fmt.Sprintf("Deleted restaurant: %s", restaurantName))
 	}
 
 	h.sseService.Emit("restaurant.deleted", gin.H{"id": id})
@@ -204,6 +236,14 @@ func (h *DashboardHandler) CreateOffer(c *gin.Context) {
 	}
 
 	h.sseService.Emit("offer.created", gin.H{"id": offer.ID, "title": offer.Title})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "offer.create", "offer", offer.ID.String(),
+			fmt.Sprintf("Created offer: %s", offer.Title))
+	}
+
 	c.JSON(http.StatusCreated, dashboardOfferToMap(offer, c))
 }
 
@@ -233,6 +273,14 @@ func (h *DashboardHandler) UpdateOffer(c *gin.Context) {
 	}
 
 	h.sseService.Emit("offer.updated", gin.H{"id": offer.ID, "title": offer.Title})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "offer.update", "offer", offer.ID.String(),
+			fmt.Sprintf("Updated offer: %s", offer.Title))
+	}
+
 	response.Success(c, dashboardOfferToMap(offer, c))
 }
 
@@ -247,9 +295,22 @@ func (h *DashboardHandler) DeleteOffer(c *gin.Context) {
 
 	ownerID, _ := middleware.GetOwnerScopeID(c)
 
+	offer, _ := h.dashboardService.GetOfferByIDForOwner(ownerID, id)
+	offerTitle := ""
+	if offer != nil {
+		offerTitle = offer.Title
+	}
+
 	if err := h.dashboardService.DeleteOffer(id, ownerID); err != nil {
 		response.Error(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 		return
+	}
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "offer.delete", "offer", id.String(),
+			fmt.Sprintf("Deleted offer: %s", offerTitle))
 	}
 
 	h.sseService.Emit("offer.deleted", gin.H{"id": id})

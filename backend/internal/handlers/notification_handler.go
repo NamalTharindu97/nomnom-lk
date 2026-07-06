@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -37,10 +38,14 @@ var pushRateLimiter = &rateLimiter{attempts: make(map[string]time.Time)}
 type NotificationHandler struct {
 	service        *services.NotificationService
 	scheduledRepo  *repository.ScheduledNotificationRepo
+	auditService   *services.AuditService
 }
 
-func NewNotificationHandler(service *services.NotificationService) *NotificationHandler {
-	return &NotificationHandler{service: service}
+func NewNotificationHandler(service *services.NotificationService, auditService *services.AuditService) *NotificationHandler {
+	return &NotificationHandler{
+		service:      service,
+		auditService: auditService,
+	}
 }
 
 func (h *NotificationHandler) SetScheduledRepo(repo *repository.ScheduledNotificationRepo) {
@@ -205,6 +210,12 @@ func (h *NotificationHandler) SendPush(c *gin.Context) {
 			response.InternalError(c, "failed to schedule notification")
 			return
 		}
+		if userID, ok := middleware.GetUserID(c); ok {
+			userName, _ := middleware.GetUserName(c)
+			userRole, _ := middleware.GetUserRole(c)
+			h.auditService.LogAction(userID, userName, userRole, "notification.push", "notification", sn.ID.String(),
+				fmt.Sprintf("Scheduled push notification: %s (target: %s)", req.Title, req.Target))
+		}
 		response.Success(c, gin.H{"message": "notification scheduled", "id": sn.ID})
 		return
 	}
@@ -232,6 +243,13 @@ func (h *NotificationHandler) SendPush(c *gin.Context) {
 	if err := h.service.SendPush(input); err != nil {
 		response.InternalError(c, "failed to send push notification")
 		return
+	}
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "notification.push", "notification", "",
+			fmt.Sprintf("Sent push notification: %s (target: %s)", req.Title, req.Target))
 	}
 
 	response.Success(c, gin.H{"message": "push notification sent"})

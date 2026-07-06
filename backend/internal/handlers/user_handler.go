@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -9,17 +10,22 @@ import (
 	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
+	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/pkg/hash"
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
 )
 
 type UserHandler struct {
-	repo *repository.UserRepo
+	repo         *repository.UserRepo
+	auditService *services.AuditService
 }
 
-func NewUserHandler(repo *repository.UserRepo) *UserHandler {
-	return &UserHandler{repo: repo}
+func NewUserHandler(repo *repository.UserRepo, auditService *services.AuditService) *UserHandler {
+	return &UserHandler{
+		repo:         repo,
+		auditService: auditService,
+	}
 }
 
 func (h *UserHandler) Me(c *gin.Context) {
@@ -113,6 +119,13 @@ func (h *UserHandler) Create(c *gin.Context) {
 		return
 	}
 
+	if uid, ok := middleware.GetUserID(c); ok {
+		n, _ := middleware.GetUserName(c)
+		r, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(uid, n, r, "user.create", "user", user.ID.String(),
+			fmt.Sprintf("Created user: %s (%s)", user.Email, user.Role))
+	}
+
 	response.Success(c, gin.H{
 		"id":         user.ID,
 		"email":      user.Email,
@@ -159,6 +172,29 @@ func (h *UserHandler) Update(c *gin.Context) {
 	if err := h.repo.Update(user); err != nil {
 		response.InternalError(c, "failed to update user")
 		return
+	}
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		changes := ""
+		if req.Role != nil {
+			changes = fmt.Sprintf("role changed to %s", *req.Role)
+		}
+		if req.IsActive != nil {
+			if changes != "" {
+				changes += "; "
+			}
+			if *req.IsActive {
+				changes += "status: activated"
+			} else {
+				changes += "status: deactivated"
+			}
+		}
+		if changes != "" {
+			h.auditService.LogAction(userID, userName, userRole, "user.update", "user", user.ID.String(),
+				fmt.Sprintf("User %s (%s): %s", user.Name, user.Email, changes))
+		}
 	}
 
 	response.Success(c, gin.H{
@@ -210,6 +246,13 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "user.password_changed", "user", user.ID.String(),
+			fmt.Sprintf("Password changed for user: %s (%s)", user.Name, user.Email))
+	}
+
 	response.Success(c, gin.H{"message": "password updated successfully"})
 }
 
@@ -220,9 +263,22 @@ func (h *UserHandler) Delete(c *gin.Context) {
 		return
 	}
 
+	user, err := h.repo.FindByID(userID)
+	if err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
 	if err := h.repo.SoftDelete(userID); err != nil {
 		response.InternalError(c, "failed to delete user")
 		return
+	}
+
+	if adminID, ok := middleware.GetUserID(c); ok {
+		adminName, _ := middleware.GetUserName(c)
+		adminRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(adminID, adminName, adminRole, "user.delete", "user", userID.String(),
+			fmt.Sprintf("Deleted user: %s (%s)", user.Name, user.Email))
 	}
 
 	response.SuccessNoContent(c)

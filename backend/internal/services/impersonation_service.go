@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -24,20 +23,20 @@ type ImpersonationService struct {
 	userRepo     *repository.UserRepo
 	jwtCfg       *config.JWTConfig
 	rdb          *redis.Client
-	auditLogRepo *repository.AuditLogRepo
+	auditService *AuditService
 }
 
 func NewImpersonationService(
 	userRepo *repository.UserRepo,
 	jwtCfg *config.JWTConfig,
 	rdb *redis.Client,
-	auditLogRepo *repository.AuditLogRepo,
+	auditService *AuditService,
 ) *ImpersonationService {
 	return &ImpersonationService{
 		userRepo:     userRepo,
 		jwtCfg:       jwtCfg,
 		rdb:          rdb,
-		auditLogRepo: auditLogRepo,
+		auditService: auditService,
 	}
 }
 
@@ -65,7 +64,7 @@ func (s *ImpersonationService) StartImpersonation(adminID uuid.UUID, targetUserI
 		return "", nil, errors.New("cannot impersonate an inactive user")
 	}
 
-	adminToken, err := jwt.GenerateAccessToken(s.jwtCfg.Secret, admin.ID, admin.Email, string(admin.Role), s.jwtCfg.AccessExpiry)
+	adminToken, err := jwt.GenerateAccessToken(s.jwtCfg.Secret, admin.ID, admin.Email, admin.Name, string(admin.Role), s.jwtCfg.AccessExpiry)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to generate admin token backup: %w", err)
 	}
@@ -80,6 +79,7 @@ func (s *ImpersonationService) StartImpersonation(adminID uuid.UUID, targetUserI
 		s.jwtCfg.Secret,
 		target.ID,
 		target.Email,
+		target.Name,
 		string(target.Role),
 		s.jwtCfg.AccessExpiry,
 		adminID,
@@ -89,7 +89,7 @@ func (s *ImpersonationService) StartImpersonation(adminID uuid.UUID, targetUserI
 		return "", nil, fmt.Errorf("failed to generate impersonation token: %w", err)
 	}
 
-	s.logAudit(admin.ID, admin.Name, "admin.impersonate.start", "user", target.ID.String(),
+	s.auditService.LogAction(admin.ID, admin.Name, string(admin.Role), "admin.impersonate.start", "user", target.ID.String(),
 		fmt.Sprintf("Admin %s (%s) started impersonating %s (%s)", admin.Name, admin.Email, target.Name, target.Email))
 
 	return impersonationToken, target, nil
@@ -127,7 +127,7 @@ func (s *ImpersonationService) StopImpersonation(adminID uuid.UUID) (string, *mo
 		target = impersonatedUser
 	}
 
-	s.logAudit(admin.ID, admin.Name, "admin.impersonate.stop", "user", adminID.String(),
+	s.auditService.LogAction(admin.ID, admin.Name, string(admin.Role), "admin.impersonate.stop", "user", adminID.String(),
 		fmt.Sprintf("Admin %s (%s) stopped impersonating", admin.Name, admin.Email))
 
 	return adminToken, target, nil
@@ -166,16 +166,4 @@ func (s *ImpersonationService) isActiveImpersonation(adminID uuid.UUID) bool {
 	return err == nil
 }
 
-func (s *ImpersonationService) logAudit(adminID uuid.UUID, adminName, action, entityType, entityID, details string) {
-	detailsBytes, _ := json.Marshal(map[string]string{"description": details})
 
-	log := &models.AuditLog{
-		AdminID:    adminID,
-		AdminName:  adminName,
-		Action:     action,
-		EntityType: entityType,
-		EntityID:   entityID,
-		Details:    string(detailsBytes),
-	}
-	s.auditLogRepo.Create(log)
-}

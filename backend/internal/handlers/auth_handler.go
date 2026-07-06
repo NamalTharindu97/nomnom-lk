@@ -1,24 +1,28 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/dto/request"
-	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/internal/middleware"
+	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/pkg/response"
 )
 
 type AuthHandler struct {
 	authService     *services.AuthService
 	firebaseService *services.FirebaseService
+	auditService    *services.AuditService
 }
 
-func NewAuthHandler(authService *services.AuthService, firebaseService *services.FirebaseService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService, firebaseService *services.FirebaseService, auditService *services.AuditService) *AuthHandler {
 	return &AuthHandler{
 		authService:     authService,
 		firebaseService: firebaseService,
+		auditService:    auditService,
 	}
 }
 
@@ -49,6 +53,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		response.InternalError(c, err.Error())
 		return
 	}
+
+	h.auditService.LogAction(uuid.Nil, req.Email, "", "auth.register", "user", "",
+		fmt.Sprintf("New user registered: %s (%s)", req.Name, req.Email))
 
 	if err := h.authService.SendVerificationCode(req.Email); err != nil {
 		c.JSON(http.StatusCreated, gin.H{"message": "Account created. Verification email could not be sent. Try resending."})
@@ -82,9 +89,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		if err.Error() == "your account has been suspended. contact an administrator" {
 			status = http.StatusForbidden
 		}
+		h.auditService.LogAction(uuid.Nil, req.Email, "", "auth.login.failed", "user", "",
+			fmt.Sprintf("Failed login attempt for: %s", req.Email))
 		response.Error(c, status, "UNAUTHORIZED", err.Error())
 		return
 	}
+
+	h.auditService.LogAction(result.User.ID, result.User.Name, string(result.User.Role), "auth.login", "user", result.User.ID.String(),
+		fmt.Sprintf("User logged in: %s (%s)", result.User.Name, result.User.Email))
 
 	c.JSON(http.StatusOK, result)
 }
@@ -133,9 +145,14 @@ func (h *AuthHandler) FirebaseLogin(c *gin.Context) {
 		if err.Error() == "your account has been suspended. contact an administrator" {
 			status = http.StatusForbidden
 		}
+		h.auditService.LogAction(uuid.Nil, email, "", "auth.firebase.failed", "user", "",
+			fmt.Sprintf("Failed Firebase login attempt for: %s", email))
 		response.Error(c, status, "UNAUTHORIZED", err.Error())
 		return
 	}
+
+	h.auditService.LogAction(result.User.ID, result.User.Name, string(result.User.Role), "auth.firebase", "user", result.User.ID.String(),
+		fmt.Sprintf("User logged in via Firebase: %s (%s)", result.User.Name, result.User.Email))
 
 	c.JSON(http.StatusOK, result)
 }
@@ -235,10 +252,19 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
+	userName, _ := middleware.GetUserName(c)
+	if userName == "" {
+		userName, _ = middleware.GetUserEmail(c)
+	}
+	userRole, _ := middleware.GetUserRole(c)
+
 	if err := h.authService.Logout(userID); err != nil {
 		response.InternalError(c, err.Error())
 		return
 	}
+
+	h.auditService.LogAction(userID, userName, userRole, "auth.logout", "user", userID.String(),
+		fmt.Sprintf("User logged out: %s", userName))
 
 	c.Status(http.StatusNoContent)
 }

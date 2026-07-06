@@ -34,6 +34,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	categoryRepo := repository.NewCategoryRepo(db)
 
 	// Services
+	auditService := services.NewAuditService(auditLogRepo)
 	sseService := services.NewSSEService()
 	emailService := services.NewEmailService(&cfg.SMTP, log)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT, rdb, emailService)
@@ -44,6 +45,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	notificationService := services.NewNotificationService(notificationRepo, deviceTokenRepo, &cfg.Firebase)
 	cronService := services.NewCronService(db, notificationService, notificationRepo)
 	cronService.SetScheduledRepo(scheduledNotificationRepo)
+	cronService.SetAuditLogRepo(auditLogRepo)
 
 	uploadService, err := services.NewUploadService(&cfg.AWS)
 	if err != nil {
@@ -53,22 +55,22 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 	// Handlers
 	firebaseService := services.NewFirebaseService(&cfg.Firebase)
-	authHandler := handlers.NewAuthHandler(authService, firebaseService)
-	userHandler := handlers.NewUserHandler(userRepo)
+	authHandler := handlers.NewAuthHandler(authService, firebaseService, auditService)
+	userHandler := handlers.NewUserHandler(userRepo, auditService)
 	dashboardService := services.NewDashboardService(restaurantRepo, offerRepo)
-	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService)
-	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo)
-	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService)
-	offerHandler := handlers.NewOfferHandler(offerService, sseService)
+	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService, auditService)
+	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo, auditService)
+	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService, auditService)
+	offerHandler := handlers.NewOfferHandler(offerService, sseService, auditService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService, sseService)
 	searchHandler := handlers.NewSearchHandler(searchService)
-	notificationHandler := handlers.NewNotificationHandler(notificationService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService, auditService)
 	notificationHandler.SetScheduledRepo(scheduledNotificationRepo)
 	templateHandler := handlers.NewTemplateHandler(templateRepo)
 	couponHandler := handlers.NewCouponHandler(couponRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
-	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditLogRepo)
+	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditService)
 	impersonationHandler := handlers.NewImpersonationHandler(impersonationService)
 	r := gin.New()
 
@@ -112,7 +114,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			authGroup.POST("/login", authHandler.Login)
 			authGroup.POST("/firebase", authHandler.FirebaseLogin)
 			authGroup.POST("/refresh", authHandler.Refresh)
-			authGroup.POST("/logout", middleware.Auth(cfg.JWT.Secret), authHandler.Logout)
+			authGroup.POST("/logout", middleware.Auth(cfg.JWT.Secret), middleware.AuditTrail(auditService), authHandler.Logout)
 		}
 
 		verificationGroup := v1.Group("/auth")
@@ -131,6 +133,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		adminUsers := usersGroup.Group("")
 		adminUsers.Use(middleware.RequireRole("admin"))
+		adminUsers.Use(middleware.AuditTrail(auditService))
 		{
 			adminUsers.GET("", userHandler.List)
 			adminUsers.POST("", userHandler.Create)
@@ -142,23 +145,33 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		{
 			restaurantsGroup.GET("", restaurantHandler.List)
 			restaurantsGroup.GET("/:id", restaurantHandler.Get)
-			restaurantsGroup.POST("", middleware.Auth(cfg.JWT.Secret), restaurantHandler.Create)
-			restaurantsGroup.PUT("/:id", middleware.Auth(cfg.JWT.Secret), restaurantHandler.Update)
-			restaurantsGroup.DELETE("/:id", middleware.Auth(cfg.JWT.Secret), restaurantHandler.Delete)
-			restaurantsGroup.POST("/:id/approve", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), restaurantHandler.Approve)
-			restaurantsGroup.POST("/:id/reject", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), restaurantHandler.Reject)
+			restaurantsAuth := restaurantsGroup.Group("")
+			restaurantsAuth.Use(middleware.Auth(cfg.JWT.Secret))
+			restaurantsAuth.Use(middleware.AuditTrail(auditService))
+			{
+				restaurantsAuth.POST("", restaurantHandler.Create)
+				restaurantsAuth.PUT("/:id", restaurantHandler.Update)
+				restaurantsAuth.DELETE("/:id", restaurantHandler.Delete)
+				restaurantsAuth.POST("/:id/approve", middleware.RequireRole("admin"), restaurantHandler.Approve)
+				restaurantsAuth.POST("/:id/reject", middleware.RequireRole("admin"), restaurantHandler.Reject)
+			}
 		}
 
 		offersGroup := v1.Group("/offers")
 		{
 			offersGroup.GET("", offerHandler.List)
 			offersGroup.GET("/:id", offerHandler.Get)
-			offersGroup.POST("", middleware.Auth(cfg.JWT.Secret), offerHandler.Create)
-			offersGroup.PUT("/:id", middleware.Auth(cfg.JWT.Secret), offerHandler.Update)
-			offersGroup.DELETE("/:id", middleware.Auth(cfg.JWT.Secret), offerHandler.Delete)
-			offersGroup.POST("/:id/approve", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Approve)
-			offersGroup.POST("/:id/reject", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Reject)
-			offersGroup.POST("/:id/expire", middleware.Auth(cfg.JWT.Secret), middleware.RequireRole("admin"), offerHandler.Expire)
+			offersAuth := offersGroup.Group("")
+			offersAuth.Use(middleware.Auth(cfg.JWT.Secret))
+			offersAuth.Use(middleware.AuditTrail(auditService))
+			{
+				offersAuth.POST("", offerHandler.Create)
+				offersAuth.PUT("/:id", offerHandler.Update)
+				offersAuth.DELETE("/:id", offerHandler.Delete)
+				offersAuth.POST("/:id/approve", middleware.RequireRole("admin"), offerHandler.Approve)
+				offersAuth.POST("/:id/reject", middleware.RequireRole("admin"), offerHandler.Reject)
+				offersAuth.POST("/:id/expire", middleware.RequireRole("admin"), offerHandler.Expire)
+			}
 		}
 
 		favoritesGroup := v1.Group("/favorites")
@@ -176,6 +189,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			uploadHandler = handlers.NewUploadHandler(uploadService)
 			uploadGroup := v1.Group("/upload")
 			uploadGroup.Use(middleware.Auth(cfg.JWT.Secret))
+			uploadGroup.Use(middleware.AuditTrail(auditService))
 			uploadGroup.Use(middleware.RateLimit(rdb, 10, 1*time.Minute, "rl:upload"))
 			{
 				uploadGroup.POST("", uploadHandler.Upload)
@@ -187,6 +201,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		notificationsGroup := v1.Group("/notifications")
 		notificationsGroup.Use(middleware.Auth(cfg.JWT.Secret))
+		notificationsGroup.Use(middleware.AuditTrail(auditService))
 		{
 			notificationsGroup.GET("", notificationHandler.List)
 			notificationsGroup.GET("/unread-count", notificationHandler.UnreadCount)
@@ -196,6 +211,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		devicesGroup := v1.Group("/devices")
 		devicesGroup.Use(middleware.Auth(cfg.JWT.Secret))
+		devicesGroup.Use(middleware.AuditTrail(auditService))
 		{
 			devicesGroup.POST("", notificationHandler.RegisterDevice)
 			devicesGroup.DELETE("", notificationHandler.UnregisterDevice)
@@ -206,6 +222,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		dashboardGroup.Use(middleware.RequireDashboardAccess())
 		dashboardGroup.Use(middleware.RequireActive(userRepo))
 		dashboardGroup.Use(middleware.OwnerScoped())
+		dashboardGroup.Use(middleware.AuditTrail(auditService))
 		{
 			dashboardGroup.GET("/stats", dashboardHandler.Stats)
 			dashboardGroup.GET("/restaurants", dashboardHandler.ListRestaurants)
@@ -224,6 +241,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		adminGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		adminGroup.Use(middleware.RequireActive(userRepo))
 		adminGroup.Use(middleware.RequireRole("admin"))
+		adminGroup.Use(middleware.AuditTrail(auditService))
 		{
 			adminGroup.POST("/impersonate", impersonationHandler.Start)
 			adminGroup.GET("/stats", adminHandler.Stats)
@@ -266,6 +284,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		impersonationGroup := v1.Group("/admin")
 		impersonationGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		impersonationGroup.Use(middleware.RequireActive(userRepo))
+		impersonationGroup.Use(middleware.AuditTrail(auditService))
 		{
 			impersonationGroup.POST("/impersonate/stop", impersonationHandler.Stop)
 			impersonationGroup.GET("/impersonate/status", impersonationHandler.Status)

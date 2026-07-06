@@ -15,6 +15,7 @@ type CronService struct {
 	notificationSvc  *NotificationService
 	notificationRepo *repository.NotificationRepo
 	scheduledRepo    *repository.ScheduledNotificationRepo
+	auditLogRepo     *repository.AuditLogRepo
 }
 
 func NewCronService(db *gorm.DB, notificationSvc *NotificationService, notificationRepo *repository.NotificationRepo) *CronService {
@@ -23,6 +24,10 @@ func NewCronService(db *gorm.DB, notificationSvc *NotificationService, notificat
 		notificationSvc:  notificationSvc,
 		notificationRepo: notificationRepo,
 	}
+}
+
+func (s *CronService) SetAuditLogRepo(repo *repository.AuditLogRepo) {
+	s.auditLogRepo = repo
 }
 
 func (s *CronService) SetScheduledRepo(repo *repository.ScheduledNotificationRepo) {
@@ -124,8 +129,21 @@ func (s *CronService) ProcessScheduledNotifications() {
 	fmt.Printf("CRON: processed %d scheduled notifications\n", len(due))
 }
 
+func (s *CronService) PruneAuditLogs() {
+	if s.auditLogRepo == nil {
+		return
+	}
+	err := s.auditLogRepo.DeleteOlderThan(7)
+	if err != nil {
+		fmt.Printf("CRON: failed to prune audit logs: %v\n", err)
+		return
+	}
+	fmt.Println("CRON: pruned audit logs older than 7 days")
+}
+
 func (s *CronService) RunAll() {
 	s.MarkExpiredOffers()
 	s.NotifyExpiringSoon()
 	s.ProcessScheduledNotifications()
+	s.PruneAuditLogs()
 }

@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
+	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/pkg/pagination"
 	"github.com/nomnom-lk/backend/pkg/response"
 )
@@ -17,10 +20,11 @@ type BulkActionRequest struct {
 }
 
 type AdminHandler struct {
-	restaurantRepo *repository.RestaurantRepo
-	offerRepo      *repository.OfferRepo
-	userRepo       *repository.UserRepo
+	restaurantRepo   *repository.RestaurantRepo
+	offerRepo        *repository.OfferRepo
+	userRepo         *repository.UserRepo
 	notificationRepo *repository.NotificationRepo
+	auditService     *services.AuditService
 }
 
 func NewAdminHandler(
@@ -28,12 +32,14 @@ func NewAdminHandler(
 	offerRepo *repository.OfferRepo,
 	userRepo *repository.UserRepo,
 	notificationRepo *repository.NotificationRepo,
+	auditService *services.AuditService,
 ) *AdminHandler {
 	return &AdminHandler{
-		restaurantRepo:  restaurantRepo,
-		offerRepo:       offerRepo,
-		userRepo:        userRepo,
+		restaurantRepo:   restaurantRepo,
+		offerRepo:        offerRepo,
+		userRepo:         userRepo,
 		notificationRepo: notificationRepo,
+		auditService:     auditService,
 	}
 }
 
@@ -143,6 +149,13 @@ func (h *AdminHandler) BulkRestaurants(c *gin.Context) {
 		return
 	}
 
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "restaurant.bulk", "restaurant", "",
+			fmt.Sprintf("Bulk %s %d restaurant(s)", req.Action, len(req.IDs)))
+	}
+
 	response.Success(c, gin.H{"affected": len(req.IDs)})
 }
 
@@ -176,6 +189,13 @@ func (h *AdminHandler) BulkOffers(c *gin.Context) {
 			{Field: "action", Message: "invalid action; must be approve, reject, or delete"},
 		})
 		return
+	}
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "offer.bulk", "offer", "",
+			fmt.Sprintf("Bulk %s %d offer(s)", req.Action, len(req.IDs)))
 	}
 
 	response.Success(c, gin.H{"affected": len(req.IDs)})
@@ -302,6 +322,13 @@ func (h *AdminHandler) BulkUsers(c *gin.Context) {
 			{Field: "action", Message: "invalid action; must be activate, deactivate, or delete"},
 		})
 		return
+	}
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "user.bulk", "user", "",
+			fmt.Sprintf("Bulk %s %d user(s)", req.Action, len(req.IDs)))
 	}
 
 	response.Success(c, gin.H{"affected": len(req.IDs)})

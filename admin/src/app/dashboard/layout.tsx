@@ -133,7 +133,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
               <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
                 <UserCheck className="size-4 text-primary shrink-0" />
                 <div className="text-xs text-sidebar-foreground min-w-0">
-                  <p className="font-medium text-primary truncate">Impersonating</p>
+                  <p className="font-medium text-primary truncate">Viewing as</p>
                   <p className="truncate text-sidebar-foreground/70">{impersonatedUser.name}</p>
                 </div>
               </div>

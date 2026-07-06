@@ -10,6 +10,7 @@ import (
 type Claims struct {
 	Sub            string `json:"sub"`
 	Email          string `json:"email"`
+	Name           string `json:"name"`
 	Role           string `json:"role"`
 	ImpersonatedBy string `json:"impersonated_by,omitempty"`
 	ImpersonatedAt int64  `json:"impersonated_at,omitempty"`
@@ -22,7 +23,7 @@ type TokenPair struct {
 	ExpiresIn    int    `json:"expires_in"`
 }
 
-func GenerateImpersonationToken(secret string, userID uuid.UUID, email string, role string, expiry string, impersonatedBy uuid.UUID) (string, error) {
+func GenerateImpersonationToken(secret string, userID uuid.UUID, email string, name string, role string, expiry string, impersonatedBy uuid.UUID) (string, error) {
 	duration, err := time.ParseDuration(expiry)
 	if err != nil {
 		duration = 15 * time.Minute
@@ -31,6 +32,7 @@ func GenerateImpersonationToken(secret string, userID uuid.UUID, email string, r
 	claims := Claims{
 		Sub:            userID.String(),
 		Email:          email,
+		Name:           name,
 		Role:           role,
 		ImpersonatedBy: impersonatedBy.String(),
 		ImpersonatedAt: time.Now().Unix(),
@@ -45,7 +47,7 @@ func GenerateImpersonationToken(secret string, userID uuid.UUID, email string, r
 	return token.SignedString([]byte(secret))
 }
 
-func GenerateAccessToken(secret string, userID uuid.UUID, email string, role string, expiry string) (string, error) {
+func GenerateAccessToken(secret string, userID uuid.UUID, email string, name string, role string, expiry string) (string, error) {
 	duration, err := time.ParseDuration(expiry)
 	if err != nil {
 		duration = 15 * time.Minute
@@ -54,6 +56,7 @@ func GenerateAccessToken(secret string, userID uuid.UUID, email string, role str
 	claims := Claims{
 		Sub:   userID.String(),
 		Email: email,
+		Name:  name,
 		Role:  role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),

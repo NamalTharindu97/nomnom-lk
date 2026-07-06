@@ -1,7 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current: Admin impersonation** — Admins can temporarily switch to any restaurant owner account via "Switch" button on Owners page. Impersonation uses JWT with `impersonated_by` claim; original admin token stored in Redis.
+- **Current: Comprehensive audit logging** — Every state-changing action by admins AND owners is audited. Two-tier: middleware auto-log on ALL route groups + semantic logs with entity names on critical handlers. Cross-field search on audit-log page.
+- **Completed: Admin impersonation** — Admins can temporarily switch to any restaurant owner account via "Switch" button on Owners page. Impersonation uses JWT with `impersonated_by` claim; original admin token stored in Redis.
 - **Completed: Fix owner scoping** — Frontend calls `/dashboard/*` endpoints instead of public routes. Role-based UI hides admin-only actions for owners.
 
 ## Constraints & Preferences
@@ -29,6 +30,7 @@
 - **Admin impersonation:** `POST /api/v1/admin/impersonate` generates JWT with `impersonated_by` (admin UUID) + `impersonated_at` claims; original admin token stored in Redis key `impersonation:{adminID}` (2h TTL). `POST /api/v1/admin/impersonate/stop` retrieves original token. Front-end: "Switch" button on Owners page triggers `useAuth.impersonate()`, `ImpersonationBanner` shows "Viewing as" + "Back to Admin", sidebar shows orange left border + impersonation indicator.
 - **App icon generation:** Use exact Material Design SVG path from Google Fonts CDN (`fonts.gstatic.com/s/i/materialiconsround/...`), render with cairosvg at 1024×1024, then run `flutter_launcher_icons`.
 - **Login typography hierarchy (research-based):** Brand name (`headlineMedium` 28px w900) → tagline (`titleMedium` 16px w600 muted) → divider/footer (`titleSmall` 14px w500 muted). Based on DoorDash (28pt → 13pt) and Uber Eats (30pt → 13pt) cascading hierarchy.
+- **Audit logging (two-tier):** Middleware auto-log (`AuditTrail`) on ALL route groups as universal safety net + semantic `AuditService.LogAction()` calls on critical handlers for human-readable entity names. Both tiers log simultaneously — middleware catches everything, semantic adds detail. Non-semantic-passed routes (e.g., read-only, utility) get auto-log-only coverage. `AuthHandler` has no audit middleware (unauthenticated) but has semantic logs for login/register/logout.
 - **SSE for real-time sync:** Chose Server-Sent Events over WebSocket for simpler server→client streaming.
 - **SSE header flush:** Call `c.Writer.WriteHeader(http.StatusOK)` + `c.Writer.Flush()` before `c.Stream()`.
 - **SSE parser no-space colons:** Gin writes `event:eventName` (no space). Flutter parser uses `startsWith('event:')` + `.trim()`.
@@ -97,6 +99,15 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
+- **2026-07-06:** Comprehensive audit logging — universal coverage fix, handler gap fill, cross-field search, frontend debounce.
+  - Phase 4 (Universal coverage fix): `AuditTrail` middleware added to ALL route groups — adminUsers, notificationsGroup, devicesGroup, uploadGroup, impersonationGroup, authGroup (logout).
+  - Phase 4b (DashboardHandler): `AuditService` injected into `DashboardHandler` + 6 semantic log calls (create/update/delete restaurant + offer).
+  - Phase 4c (Handler gaps): Semantic logs added to `RestaurantHandler.Create/Update/Delete`, `OfferHandler.Create/Update/Delete`, `UserHandler.Create`.
+  - Phase 5 (Cross-field search): `FindAllFiltered` searches admin_name, action, entity_type, entity_id, details via OR ILIKE.
+  - Phase 6 (Frontend): Debounced search (300ms), placeholder "Search all logs...", clear filters resets search input.
+  - Phase 7 (Role column): Added `AdminRole` field to `AuditLog` model (auto-migrated); `LogAction` now accepts `userRole` parameter; all 35 callers updated; audit log handler returns `admin_role`; frontend table shows "Role" column with `—` fallback for empty.
+  - Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend unit tests ✓, Integration tests ✓
+  - API verified: `"admin_role": "admin"` in response.
 - **2026-07-04:** P21-P28 completed and merged to master.
   - P21 (UX Foundation): AlertDialog, Skeleton, TableSkeleton, EmptyState, ErrorBoundary; search/filter bars; backend user email+role filters.
   - P22 (CRUD Completion): User creation dialog; restaurant owner dropdown; cover image preview; image drag-and-drop reordering; date range selector.
@@ -140,3 +151,11 @@
   - **Phase 1** (Backend): JWT `impersonated_by`/`impersonated_at` claims; `ImpersonationService` (Start/Stop/Status) with Redis session storage (2h TTL); `ImpersonationHandler` with `POST /admin/impersonate`, `POST /admin/impersonate/stop`, `GET /admin/impersonate/status`; audit logging for start/stop events.
   - **Phase 2** (Frontend): `useAuth` impersonation state + `impersonate()`/`stopImpersonating()` methods; `ImpersonationBanner` component (curry-orange, "Viewing as {name}" + "Back to Admin"); sidebar orange left border + impersonation indicator during impersonation; "Switch" text button with eye icon on Owners page + confirmation dialog.
   - **Verified**: Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend unit tests ✓, Backend integration tests ✓, 6 RBAC E2E tests ✓
+- **2026-07-06:** Audit logging (comprehensive coverage) — DONE.
+  - **Phase 1** (Universal middleware): Added `AuditTrail` middleware to all 9 route groups (adminUsers, restaurantsGroup, offersGroup, authGroup, verificationGroup, notificationsGroup, devicesGroup, uploadGroup, impersonationGroup) — zero gaps.
+  - **Phase 2** (Dashboard semantic logs): Injected `AuditService` into `DashboardHandler` + 6 semantic log calls (create/update/delete restaurant + offer) with entity names.
+  - **Phase 3** (Handler gaps): Added semantic logs to `RestaurantHandler.Create/Update/Delete`, `OfferHandler.Create/Update/Delete`, `UserHandler.Create`, `AuthHandler.Login/Logout/Register/FirebaseLogin` — all existing `AuditService` injections now fully utilized.
+  - **Phase 4** (Cross-field search): Changed `FindAllFiltered` to search across admin_name, action, entity_type, entity_id, and details via OR ILIKE.
+  - **Phase 5** (Frontend): Debounced search (300ms), placeholder "Search all logs...", user role display in audit log table.
+  - Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend unit tests ✓, Integration tests ✓
+  - See `plans/audit-log-plan.md`

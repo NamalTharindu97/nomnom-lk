@@ -12,6 +12,7 @@ import (
 type Claims struct {
 	Sub            string `json:"sub"`
 	Email          string `json:"email"`
+	Name           string `json:"name"`
 	Role           string `json:"role"`
 	ImpersonatedBy string `json:"impersonated_by,omitempty"`
 	ImpersonatedAt int64  `json:"impersonated_at,omitempty"`
@@ -61,6 +62,7 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 
 		c.Set("user_id", claims.Sub)
 		c.Set("user_email", claims.Email)
+		c.Set("user_name", claims.Name)
 		c.Set("user_role", claims.Role)
 		c.Set("impersonated_by", claims.ImpersonatedBy)
 		c.Set("impersonated_at", claims.ImpersonatedAt)
@@ -90,6 +92,14 @@ func GetUserEmail(c *gin.Context) (string, bool) {
 		return "", false
 	}
 	return email.(string), true
+}
+
+func GetUserName(c *gin.Context) (string, bool) {
+	name, exists := c.Get("user_name")
+	if !exists {
+		return "", false
+	}
+	return name.(string), true
 }
 
 func GetUserRole(c *gin.Context) (string, bool) {

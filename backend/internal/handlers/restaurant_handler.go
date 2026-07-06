@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,14 +16,16 @@ import (
 )
 
 type RestaurantHandler struct {
-	service    *services.RestaurantService
-	sseService *services.SSEService
+	service      *services.RestaurantService
+	sseService   *services.SSEService
+	auditService *services.AuditService
 }
 
-func NewRestaurantHandler(service *services.RestaurantService, sseService *services.SSEService) *RestaurantHandler {
+func NewRestaurantHandler(service *services.RestaurantService, sseService *services.SSEService, auditService *services.AuditService) *RestaurantHandler {
 	return &RestaurantHandler{
-		service:    service,
-		sseService: sseService,
+		service:      service,
+		sseService:   sseService,
+		auditService: auditService,
 	}
 }
 
@@ -83,6 +86,14 @@ func (h *RestaurantHandler) Create(c *gin.Context) {
 	}
 
 	h.sseService.Emit("restaurant.created", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+
+	if uid, ok := middleware.GetUserID(c); ok {
+		n, _ := middleware.GetUserName(c)
+		r, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(uid, n, r, "restaurant.create", "restaurant", restaurant.ID.String(),
+			fmt.Sprintf("Created restaurant: %s", restaurant.Name))
+	}
+
 	c.JSON(http.StatusCreated, h.restaurantToMap(restaurant, c))
 }
 
@@ -114,6 +125,14 @@ func (h *RestaurantHandler) Update(c *gin.Context) {
 	}
 
 	h.sseService.Emit("restaurant.updated", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+
+	if uid, ok := middleware.GetUserID(c); ok {
+		n, _ := middleware.GetUserName(c)
+		r, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(uid, n, r, "restaurant.update", "restaurant", restaurant.ID.String(),
+			fmt.Sprintf("Updated restaurant: %s", restaurant.Name))
+	}
+
 	response.Success(c, h.restaurantToMap(restaurant, c))
 }
 
@@ -133,6 +152,13 @@ func (h *RestaurantHandler) Delete(c *gin.Context) {
 	if err := h.service.Delete(id, userID, isAdmin); err != nil {
 		response.Error(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 		return
+	}
+
+	if uid, ok := middleware.GetUserID(c); ok {
+		n, _ := middleware.GetUserName(c)
+		r, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(uid, n, r, "restaurant.delete", "restaurant", id.String(),
+			"Deleted restaurant")
 	}
 
 	h.sseService.Emit("restaurant.deleted", gin.H{"id": id})
@@ -155,6 +181,14 @@ func (h *RestaurantHandler) Approve(c *gin.Context) {
 	}
 
 	h.sseService.Emit("restaurant.approved", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "restaurant.approve", "restaurant", restaurant.ID.String(),
+			fmt.Sprintf("Approved restaurant: %s", restaurant.Name))
+	}
+
 	response.Success(c, h.restaurantToMap(restaurant, c))
 }
 
@@ -174,6 +208,14 @@ func (h *RestaurantHandler) Reject(c *gin.Context) {
 	}
 
 	h.sseService.Emit("restaurant.rejected", gin.H{"id": restaurant.ID, "slug": restaurant.Slug})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "restaurant.reject", "restaurant", restaurant.ID.String(),
+			fmt.Sprintf("Rejected restaurant: %s", restaurant.Name))
+	}
+
 	response.Success(c, h.restaurantToMap(restaurant, c))
 }
 

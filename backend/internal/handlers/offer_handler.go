@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,14 +16,16 @@ import (
 )
 
 type OfferHandler struct {
-	service    *services.OfferService
-	sseService *services.SSEService
+	service      *services.OfferService
+	sseService   *services.SSEService
+	auditService *services.AuditService
 }
 
-func NewOfferHandler(service *services.OfferService, sseService *services.SSEService) *OfferHandler {
+func NewOfferHandler(service *services.OfferService, sseService *services.SSEService, auditService *services.AuditService) *OfferHandler {
 	return &OfferHandler{
-		service:    service,
-		sseService: sseService,
+		service:      service,
+		sseService:   sseService,
+		auditService: auditService,
 	}
 }
 
@@ -90,6 +93,14 @@ func (h *OfferHandler) Create(c *gin.Context) {
 	}
 
 	h.sseService.Emit("offer.created", gin.H{"id": offer.ID, "title": offer.Title})
+
+	if uid, ok := middleware.GetUserID(c); ok {
+		n, _ := middleware.GetUserName(c)
+		r, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(uid, n, r, "offer.create", "offer", offer.ID.String(),
+			fmt.Sprintf("Created offer: %s", offer.Title))
+	}
+
 	c.JSON(http.StatusCreated, h.offerToMap(offer, c))
 }
 
@@ -121,6 +132,14 @@ func (h *OfferHandler) Update(c *gin.Context) {
 	}
 
 	h.sseService.Emit("offer.updated", gin.H{"id": offer.ID, "title": offer.Title})
+
+	if uid, ok := middleware.GetUserID(c); ok {
+		n, _ := middleware.GetUserName(c)
+		r, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(uid, n, r, "offer.update", "offer", offer.ID.String(),
+			fmt.Sprintf("Updated offer: %s", offer.Title))
+	}
+
 	response.Success(c, h.offerToMap(offer, c))
 }
 
@@ -140,6 +159,13 @@ func (h *OfferHandler) Delete(c *gin.Context) {
 	if err := h.service.Delete(id, userID, isAdmin); err != nil {
 		response.Error(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 		return
+	}
+
+	if uid, ok := middleware.GetUserID(c); ok {
+		n, _ := middleware.GetUserName(c)
+		r, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(uid, n, r, "offer.delete", "offer", id.String(),
+			"Deleted offer")
 	}
 
 	h.sseService.Emit("offer.deleted", gin.H{"id": id})
@@ -162,6 +188,14 @@ func (h *OfferHandler) Approve(c *gin.Context) {
 	}
 
 	h.sseService.Emit("offer.approved", gin.H{"id": offer.ID})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "offer.approve", "offer", offer.ID.String(),
+			fmt.Sprintf("Approved offer: %s", offer.Title))
+	}
+
 	response.Success(c, gin.H{"id": offer.ID, "status": offer.Status})
 }
 
@@ -181,6 +215,14 @@ func (h *OfferHandler) Reject(c *gin.Context) {
 	}
 
 	h.sseService.Emit("offer.rejected", gin.H{"id": offer.ID})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "offer.reject", "offer", offer.ID.String(),
+			fmt.Sprintf("Rejected offer: %s", offer.Title))
+	}
+
 	response.Success(c, gin.H{"id": offer.ID, "status": offer.Status})
 }
 
@@ -200,6 +242,14 @@ func (h *OfferHandler) Expire(c *gin.Context) {
 	}
 
 	h.sseService.Emit("offer.expired", gin.H{"id": id})
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "offer.expire", "offer", offer.ID.String(),
+			fmt.Sprintf("Expired offer: %s", offer.Title))
+	}
+
 	response.Success(c, gin.H{"id": id, "status": offer.Status})
 }
 

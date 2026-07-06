@@ -215,7 +215,7 @@ func (s *AuthService) Refresh(refreshTokenStr string) (*response.TokenPairRespon
 
 	s.refreshTokenRepo.DeleteByID(storedToken.ID)
 
-	accessToken, err := jwt.GenerateAccessToken(s.cfg.Secret, user.ID, user.Email, string(user.Role), s.cfg.AccessExpiry)
+	accessToken, err := jwt.GenerateAccessToken(s.cfg.Secret, user.ID, user.Email, user.Name, string(user.Role), s.cfg.AccessExpiry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
@@ -243,7 +243,7 @@ func (s *AuthService) Logout(userID uuid.UUID) error {
 }
 
 func (s *AuthService) generateAuthResponse(user *models.User) (*response.AuthResponse, error) {
-	accessToken, err := jwt.GenerateAccessToken(s.cfg.Secret, user.ID, user.Email, string(user.Role), s.cfg.AccessExpiry)
+	accessToken, err := jwt.GenerateAccessToken(s.cfg.Secret, user.ID, user.Email, user.Name, string(user.Role), s.cfg.AccessExpiry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
