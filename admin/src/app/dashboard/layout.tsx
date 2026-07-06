@@ -7,6 +7,7 @@ import { useTheme } from "@/contexts/theme-context"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { ImpersonationBanner } from "@/components/impersonation-banner"
 import {
   LayoutDashboard,
   Store,
@@ -60,7 +61,7 @@ const themeOptions = [
 
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, logout, isImpersonating, impersonatedUser } = useAuth()
   const { theme, setTheme } = useTheme()
 
   const navItems = user?.role === "admin" ? adminNavItems : ownerNavItems
@@ -71,7 +72,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
       <aside
         className={`fixed top-0 left-0 z-50 flex h-full w-64 flex-col bg-sidebar border-r border-sidebar-border transition-transform duration-200 lg:static lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${isImpersonating ? "border-l-4 border-l-primary" : ""}`}
       >
         <div className="flex h-14 items-center gap-2 px-6 border-b border-sidebar-border">
           <UtensilsCrossed className="size-5 text-sidebar-primary" />
@@ -124,6 +125,21 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             })}
           </div>
         </div>
+
+        {isImpersonating && impersonatedUser && (
+          <>
+            <Separator className="bg-sidebar-border" />
+            <div className="p-3">
+              <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
+                <UserCheck className="size-4 text-primary shrink-0" />
+                <div className="text-xs text-sidebar-foreground min-w-0">
+                  <p className="font-medium text-primary truncate">Impersonating</p>
+                  <p className="truncate text-sidebar-foreground/70">{impersonatedUser.name}</p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         <Separator className="bg-sidebar-border" />
 
@@ -181,18 +197,19 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="size-5" />
-          </Button>
-          <div className="flex-1" />
-        </header>
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="size-5" />
+            </Button>
+            <div className="flex-1" />
+          </header>
+          <ImpersonationBanner />
+          <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
     </div>
   )

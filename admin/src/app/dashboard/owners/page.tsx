@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { api } from "@/lib/api"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +12,18 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { EmptyState } from "@/components/empty-state"
 import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
-import { Store, Tag, UserCheck } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Store, Tag, UserCheck, Eye } from "lucide-react"
 
 interface Owner {
   id: string
@@ -30,6 +42,8 @@ function OwnersContent() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null)
+  const { impersonate } = useAuth()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -54,6 +68,17 @@ function OwnersContent() {
       load()
     } catch {
       notify("Failed to update owner status", "error")
+    }
+  }
+
+  const handleSwitch = async (owner: Owner) => {
+    setImpersonatingId(owner.id)
+    try {
+      await impersonate(owner.id)
+      notify(`Switched to ${owner.name}`, "success")
+    } catch {
+      notify("Failed to switch user", "error")
+      setImpersonatingId(null)
     }
   }
 
@@ -104,13 +129,42 @@ function OwnersContent() {
                     <TableCell className="text-center">{owner.restaurant_count}</TableCell>
                     <TableCell className="text-center">{owner.offer_count}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant={owner.is_active ? "outline" : "default"}
-                        size="sm"
-                        onClick={() => toggleActive(owner)}
-                      >
-                        {owner.is_active ? "Suspend" : "Activate"}
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={impersonatingId === owner.id}
+                            >
+                              <Eye className="size-3.5 mr-1" />
+                              Switch
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Switch to {owner.name}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                You will see their dashboard with their restaurants and offers.
+                                Click &quot;Back to Admin&quot; in the banner to return.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleSwitch(owner)}>
+                                Switch
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <Button
+                          variant={owner.is_active ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => toggleActive(owner)}
+                        >
+                          {owner.is_active ? "Suspend" : "Activate"}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

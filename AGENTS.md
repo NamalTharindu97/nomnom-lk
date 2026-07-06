@@ -1,7 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current: Fix owner scoping** — Frontend calls public `/restaurants`/`/offers` instead of scoped `/dashboard/restaurants`/`/dashboard/offers`. Fix endpoint paths + add missing dashboard routes + role-based UI.
+- **Current: Admin impersonation** — Admins can temporarily switch to any restaurant owner account via "Switch" button on Owners page. Impersonation uses JWT with `impersonated_by` claim; original admin token stored in Redis.
+- **Completed: Fix owner scoping** — Frontend calls `/dashboard/*` endpoints instead of public routes. Role-based UI hides admin-only actions for owners.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Railway + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -24,6 +25,7 @@
 - **Repo scoping convention:** `FindAllByOwner` and `FindByOwnerID` methods skip `owner_id` filter when `ownerID == uuid.Nil`, enabling single-query pattern for both admin (all) and owner (filtered).
 - **Cookie-based auth sync:** `document.cookie` set on login, cleared on logout, enables Next.js 16 proxy.ts server-side route guard for `/dashboard/*`.
 - **Admin-only page redirect:** Dashboard layout redirects restaurant_owner to `/dashboard` if they access admin-only paths (`/dashboard/users`, `/dashboard/analytics`, etc.).
+- **Admin impersonation:** `POST /api/v1/admin/impersonate` generates JWT with `impersonated_by` (admin UUID) + `impersonated_at` claims; original admin token stored in Redis key `impersonation:{adminID}` (2h TTL). `POST /api/v1/admin/impersonate/stop` retrieves original token. Front-end: "Switch" button on Owners page triggers `useAuth.impersonate()`, `ImpersonationBanner` shows "Viewing as" + "Back to Admin", sidebar shows orange left border + impersonation indicator.
 - **App icon generation:** Use exact Material Design SVG path from Google Fonts CDN (`fonts.gstatic.com/s/i/materialiconsround/...`), render with cairosvg at 1024×1024, then run `flutter_launcher_icons`.
 - **Login typography hierarchy (research-based):** Brand name (`headlineMedium` 28px w900) → tagline (`titleMedium` 16px w600 muted) → divider/footer (`titleSmall` 14px w500 muted). Based on DoorDash (28pt → 13pt) and Uber Eats (30pt → 13pt) cascading hierarchy.
 - **SSE for real-time sync:** Chose Server-Sent Events over WebSocket for simpler server→client streaming.
@@ -133,3 +135,7 @@
   - **Phase 3**: Skipped (approve/reject/expire stay on public routes with `RequireRole("admin")`)
   - **Verified**: Admin sees 12R/23O (full access); Pizza Hut owner sees 2R/6O (scoped); KFC owner blocked from non-KFC restaurants
   - Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend tests ✓
+- **2026-07-06:** P30 (Admin Impersonation) — DONE.
+  - **Phase 1** (Backend): JWT `impersonated_by`/`impersonated_at` claims; `ImpersonationService` (Start/Stop/Status) with Redis session storage (2h TTL); `ImpersonationHandler` with `POST /admin/impersonate`, `POST /admin/impersonate/stop`, `GET /admin/impersonate/status`; audit logging for start/stop events.
+  - **Phase 2** (Frontend): `useAuth` impersonation state + `impersonate()`/`stopImpersonating()` methods; `ImpersonationBanner` component (curry-orange, "Viewing as {name}" + "Back to Admin"); sidebar orange left border + impersonation indicator during impersonation; "Switch" text button with eye icon on Owners page + confirmation dialog.
+  - **Verified**: Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend unit tests ✓, Backend integration tests ✓, 6 RBAC E2E tests ✓

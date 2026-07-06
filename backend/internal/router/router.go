@@ -68,6 +68,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	couponHandler := handlers.NewCouponHandler(couponRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
+	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditLogRepo)
+	impersonationHandler := handlers.NewImpersonationHandler(impersonationService)
 	r := gin.New()
 
 	r.Use(
@@ -223,6 +225,9 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		adminGroup.Use(middleware.RequireActive(userRepo))
 		adminGroup.Use(middleware.RequireRole("admin"))
 		{
+			adminGroup.POST("/impersonate", impersonationHandler.Start)
+			adminGroup.POST("/impersonate/stop", impersonationHandler.Stop)
+			adminGroup.GET("/impersonate/status", impersonationHandler.Status)
 			adminGroup.GET("/stats", adminHandler.Stats)
 			adminGroup.GET("/stats/timeline", adminHandler.StatsTimeline)
 			adminGroup.GET("/notifications", adminHandler.ListNotifications)

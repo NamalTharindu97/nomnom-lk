@@ -10,9 +10,11 @@ import (
 )
 
 type Claims struct {
-	Sub   string `json:"sub"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+	Sub            string `json:"sub"`
+	Email          string `json:"email"`
+	Role           string `json:"role"`
+	ImpersonatedBy string `json:"impersonated_by,omitempty"`
+	ImpersonatedAt int64  `json:"impersonated_at,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -60,6 +62,8 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 		c.Set("user_id", claims.Sub)
 		c.Set("user_email", claims.Email)
 		c.Set("user_role", claims.Role)
+		c.Set("impersonated_by", claims.ImpersonatedBy)
+		c.Set("impersonated_at", claims.ImpersonatedAt)
 		c.Next()
 	}
 }
@@ -94,4 +98,22 @@ func GetUserRole(c *gin.Context) (string, bool) {
 		return "", false
 	}
 	return role.(string), true
+}
+
+func GetImpersonatedBy(c *gin.Context) (string, bool) {
+	val, exists := c.Get("impersonated_by")
+	if !exists {
+		return "", false
+	}
+	str, ok := val.(string)
+	return str, ok && str != ""
+}
+
+func IsImpersonating(c *gin.Context) bool {
+	val, exists := c.Get("impersonated_by")
+	if !exists {
+		return false
+	}
+	str, ok := val.(string)
+	return ok && str != ""
 }

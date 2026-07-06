@@ -11,6 +11,13 @@ interface User {
   role: string
 }
 
+interface ImpersonationUser {
+  id: string
+  email: string
+  name: string
+  role: string
+}
+
 interface AuthContext {
   user: User | null
   token: string | null
@@ -19,14 +26,33 @@ interface AuthContext {
   isLoading: boolean
   isAdmin: boolean
   isOwner: boolean
+  isImpersonating: boolean
+  impersonatedBy: string | null
+  impersonatedUser: ImpersonationUser | null
+  impersonate: (userId: string) => Promise<void>
+  stopImpersonating: () => Promise<void>
 }
 
 const AuthCtx = createContext<AuthContext | null>(null)
+
+function decodeToken(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".")
+    if (parts.length !== 3) return null
+    const payload = parts[1]
+    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+    return JSON.parse(decoded)
+  } catch {
+    return null
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [impersonatedUser, setImpersonatedUser] = useState<ImpersonationUser | null>(null)
+  const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -35,6 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedToken && storedUser) {
       setToken(storedToken)
       setUser(JSON.parse(storedUser))
+
+      const claims = decodeToken(storedToken)
+      if (claims?.impersonated_by && typeof claims.impersonated_by === "string" && claims.impersonated_by !== "") {
+        setImpersonatedBy(claims.impersonated_by as string)
+        setImpersonatedUser(JSON.parse(storedUser))
+      }
     }
     setIsLoading(false)
   }, [])
@@ -66,14 +98,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     document.cookie = "user=; path=/; max-age=0"
     setToken(null)
     setUser(null)
+    setImpersonatedBy(null)
+    setImpersonatedUser(null)
     router.push("/login")
   }, [router])
 
-  const isAdmin = user?.role === "admin"
+  const impersonate = useCallback(async (userId: string) => {
+    const res = await api.post<{ access_token: string; user: User; impersonated_by: string }>("/admin/impersonate", {
+      user_id: userId,
+    })
+
+    localStorage.setItem("token", res.access_token)
+    localStorage.setItem("user", JSON.stringify(res.user))
+    document.cookie = `token=${res.access_token}; path=/; max-age=86400; SameSite=Lax`
+    document.cookie = `user=${JSON.stringify(res.user)}; path=/; max-age=86400; SameSite=Lax`
+
+    setToken(res.access_token)
+    setUser(res.user)
+    setImpersonatedBy(res.impersonated_by)
+    setImpersonatedUser(res.user)
+
+    router.refresh()
+  }, [router])
+
+  const stopImpersonating = useCallback(async () => {
+    const res = await api.post<{ access_token: string; user: User }>("/admin/impersonate/stop")
+
+    localStorage.setItem("token", res.access_token)
+    localStorage.setItem("user", JSON.stringify(res.user))
+    document.cookie = `token=${res.access_token}; path=/; max-age=86400; SameSite=Lax`
+    document.cookie = `user=${JSON.stringify(res.user)}; path=/; max-age=86400; SameSite=Lax`
+
+    setToken(res.access_token)
+    setUser(res.user)
+    setImpersonatedBy(null)
+    setImpersonatedUser(null)
+
+    router.refresh()
+  }, [router])
+
+  const isAdmin = user?.role === "admin" && !impersonatedBy
   const isOwner = user?.role === "restaurant_owner"
 
   return (
-    <AuthCtx.Provider value={{ user, token, login, logout, isLoading, isAdmin, isOwner }}>
+    <AuthCtx.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        isLoading,
+        isAdmin,
+        isOwner,
+        isImpersonating: !!impersonatedBy,
+        impersonatedBy,
+        impersonatedUser,
+        impersonate,
+        stopImpersonating,
+      }}
+    >
       {children}
     </AuthCtx.Provider>
   )
