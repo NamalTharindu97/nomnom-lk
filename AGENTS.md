@@ -1,9 +1,11 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current: Comprehensive audit logging** — Every state-changing action by admins AND owners is audited. Two-tier: middleware auto-log on ALL route groups + semantic logs with entity names on critical handlers. Cross-field search on audit-log page.
-- **Completed: Admin impersonation** — Admins can temporarily switch to any restaurant owner account via "Switch" button on Owners page. Impersonation uses JWT with `impersonated_by` claim; original admin token stored in Redis.
-- **Completed: Fix owner scoping** — Frontend calls `/dashboard/*` endpoints instead of public routes. Role-based UI hides admin-only actions for owners.
+- **Current: CI stability** — All 48 Playwright E2E tests passing. All 3 CI jobs (Flutter, Backend, Admin) green.
+- **Completed: Comprehensive audit logging** — Two-tier audit: middleware auto-log on ALL route groups + semantic logs on critical handlers. Cross-field search with debounced frontend, ILIKE partial-match filters, role filter, prune cron (7-day retention), "Switch Account" terminology.
+- **Completed: Admin impersonation** — Switch-to-owner via JWT `impersonated_by` claim; Redis session storage (2h TTL); ImpersonationBanner + sidebar indicator.
+- **Completed: Fix owner scoping** — Frontend `/dashboard/*` endpoints, role-based UI hides admin-only actions for owners.
+- **Completed: CI bugfixes** — Fixed dashboard nil panic (reload offer after Create), FK constraint (skip OwnerID for admin), coupon AlertDialog handling, users page-2 pagination.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Railway + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -31,6 +33,9 @@
 - **App icon generation:** Use exact Material Design SVG path from Google Fonts CDN (`fonts.gstatic.com/s/i/materialiconsround/...`), render with cairosvg at 1024×1024, then run `flutter_launcher_icons`.
 - **Login typography hierarchy (research-based):** Brand name (`headlineMedium` 28px w900) → tagline (`titleMedium` 16px w600 muted) → divider/footer (`titleSmall` 14px w500 muted). Based on DoorDash (28pt → 13pt) and Uber Eats (30pt → 13pt) cascading hierarchy.
 - **Audit logging (two-tier):** Middleware auto-log (`AuditTrail`) on ALL route groups as universal safety net + semantic `AuditService.LogAction()` calls on critical handlers for human-readable entity names. Both tiers log simultaneously — middleware catches everything, semantic adds detail. Non-semantic-passed routes (e.g., read-only, utility) get auto-log-only coverage. `AuthHandler` has no audit middleware (unauthenticated) but has semantic logs for login/register/logout.
+- **Audit log retention:** Logs older than 7 days are automatically pruned every 15 minutes via `CronService.PruneAuditLogs()`.
+- **Audit log action/entity filters use ILIKE** (partial match); role filter uses exact match on `admin_role` column.
+- **User-facing term:** "Switch Account" not "Impersonate" in GUI (sidebar "Viewing as", filter label "Switch Account", owners button "Switch").
 - **SSE for real-time sync:** Chose Server-Sent Events over WebSocket for simpler server→client streaming.
 - **SSE header flush:** Call `c.Writer.WriteHeader(http.StatusOK)` + `c.Writer.Flush()` before `c.Stream()`.
 - **SSE parser no-space colons:** Gin writes `event:eventName` (no space). Flutter parser uses `startsWith('event:')` + `.trim()`.
@@ -51,11 +56,13 @@
   - Phase 2 (Frontend): `proxy.ts` server-side guard; `RoleGuard` + `AccessDenied`; role-based nav (admin 12 items, owner 5 items); cookie auth sync.
   - Phase 3 (Owners): `GET /admin/owners` + Owners page at `/dashboard/owners` with stats + suspend/activate.
   - Phase 4 (Testing): 5 middleware unit tests, 6 integration tests, 5 E2E RBAC tests — all passing (48 total E2E).
+- P30 (Admin Impersonation) complete on `phase/P30-impersonation`, merged to master.
+- P34 (Audit Log Enhancements + CI Fixes) on `phase/P34-audit-log-improvements` — NOT merged to master.
 - Backend on `:8080`, admin on `:3000`, Flutter on Android emulator (API 35).
-- Docker services (postgres 16, redis 7, minio) running with seeded data (11 restaurants, 23 offers).
+- Docker services (postgres 16, redis 7, minio) via `docker compose up -d` in `backend/`. Seeded data: 11 restaurants, 23 offers, 11 owners.
 - Backend FCM via direct HTTP to FCM v1 API using `cloud-platform` OAuth2 scope. No Firebase Admin SDK.
 - **Android google-services plugin** required for Firebase to work on Android.
-- Admin user: `namal@nomnom.lk` / `Namal@123` (role = admin).
+- Admin user: `admin@nomnom.lk` / `Admin@123` (role = admin).
 - Owner users: 11 brand-specific owners, one per restaurant. All passwords `Owner@123`. Emails: `owner@nomnom.lk` (Pizza Hut), `kfc@nomnom.lk`, `breadtalk@nomnom.lk`, `keells@nomnom.lk`, `fab@nomnom.lk`, `popeyes@nomnom.lk`, `solobowl@nomnom.lk`, `spar@nomnom.lk`, `streetburger@nomnom.lk`, `subway@nomnom.lk`, `tacbell@nomnom.lk`.
 
 ## Relevant Files
@@ -82,12 +89,15 @@
 - `admin/src/proxy.ts` — server-side route protection (NEW)
 - `admin/src/components/role-guard.tsx` — role-based page guard (NEW)
 - `admin/src/components/access-denied.tsx` — access denied page (NEW)
-- `admin/src/hooks/use-auth.tsx` — owner login allowed, isAdmin/isOwner, cookie sync (MODIFIED)
+- `admin/src/hooks/use-auth.tsx` — owner login allowed, isAdmin/isOwner, cookie sync, impersonation (MODIFIED)
+- `admin/src/components/impersonation-banner.tsx` — Switch Account banner (NEW)
 - `admin/src/components/ui/` — toast, pagination-bar
-- `admin/src/app/dashboard/` — page.tsx, restaurants/, offers/, users/, notifications/
-- `admin/src/app/dashboard/offers/_offer-dialog.tsx` — Zod + react-hook-form
-- `admin/src/app/dashboard/restaurants/_restaurant-dialog.tsx` — cover image upload + translation fields
-- `admin/tests/` — Playwright E2E tests (restaurant CRUD)
+- `admin/src/app/dashboard/` — page.tsx, restaurants/, offers/, users/, notifications/, audit-log/, coupons/
+- `admin/src/app/dashboard/offers/_offer-dialog.tsx` — Zod + react-hook-form + image crop (API_BASE `/dashboard/*` endpoints)
+- `admin/src/app/dashboard/restaurants/_restaurant-dialog.tsx` — cover image upload + translation fields (API_BASE `/dashboard/*` endpoints)
+- `admin/src/app/dashboard/audit-log/page.tsx` — debounced cross-field search, 17 action options, role filter, horizontal scroll
+- `admin/tests/` — 48 Playwright E2E tests (CRUD, RBAC, audit-log, coupons, categories, etc.)
+- `admin/tests/pages/` — Page Object Model helpers (users, offers, restaurants, coupons, login)
 
 ### Flutter
 - `lib/services/` — api_client (cache interceptor), api_offer_service, api_restaurant_service, api_notification_service, sse_service, fcm_messaging_service
@@ -99,15 +109,22 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
+- **2026-07-06:** P34 (Audit Log Enhancements + CI Fixes) — on `phase/P34-audit-log-improvements`.
+  - **Audit logging enhancements**: `AdminRole` field on `AuditLog` model; `LogAction` accepts `userRole`; all 35 callers updated. Action/entity filters use ILIKE partial match; new `role` filter. Frontend: 17 categorized action options, Role/Admin/Owner filter dropdowns, table horizontal scroll, details wrap, 6-column skeleton.
+  - **"Switch Account" terminology**: Sidebar "Viewing as", filter label "Switch Account", owners button "Switch".
+  - **Audit log prune cron**: `DeleteOlderThan(7 days)` in repo; `PruneAuditLogs()` runs every 15 min via `CronService.RunAll()`.
+  - **CI fixes (8 test failures → all 48 passing)**:
+    - `dashboard_handler.go`: Reload offer after `Create` to preload `Restaurant` association (matched public handler pattern); nil-safe restaurant object in `dashboardOfferToMap`.
+    - `dashboard_service.go`: Skip `OwnerID: &ownerID` when `ownerID == uuid.Nil` (admin) to avoid FK constraint `fk_restaurants_owner`.
+    - `coupons.spec.ts`: Click confirm button inside `AlertDialog` (`role="alertdialog"`) after Deactivate/Activate trigger.
+    - `users.spec.ts`: Search for `admin@nomnom.lk` before asserting — admin on page 2 with 12 active users at `per_page=10`.
+  - Backend `go build ./...` ✓, Backend unit tests ✓, All 48 Playwright E2E tests ✓, CI all-green ✓
 - **2026-07-06:** Comprehensive audit logging — universal coverage fix, handler gap fill, cross-field search, frontend debounce.
-  - Phase 4 (Universal coverage fix): `AuditTrail` middleware added to ALL route groups — adminUsers, notificationsGroup, devicesGroup, uploadGroup, impersonationGroup, authGroup (logout).
-  - Phase 4b (DashboardHandler): `AuditService` injected into `DashboardHandler` + 6 semantic log calls (create/update/delete restaurant + offer).
-  - Phase 4c (Handler gaps): Semantic logs added to `RestaurantHandler.Create/Update/Delete`, `OfferHandler.Create/Update/Delete`, `UserHandler.Create`.
-  - Phase 5 (Cross-field search): `FindAllFiltered` searches admin_name, action, entity_type, entity_id, details via OR ILIKE.
-  - Phase 6 (Frontend): Debounced search (300ms), placeholder "Search all logs...", clear filters resets search input.
-  - Phase 7 (Role column): Added `AdminRole` field to `AuditLog` model (auto-migrated); `LogAction` now accepts `userRole` parameter; all 35 callers updated; audit log handler returns `admin_role`; frontend table shows "Role" column with `—` fallback for empty.
-  - Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend unit tests ✓, Integration tests ✓
-  - API verified: `"admin_role": "admin"` in response.
+  - Phase 4 (Universal coverage fix): `AuditTrail` middleware added to ALL route groups.
+  - Phase 4b (DashboardHandler): `AuditService` injected + 6 semantic log calls.
+  - Phase 4c (Handler gaps): Semantic logs added to all state-changing handlers + auth handlers.
+  - Phase 5 (Cross-field search): `FindAllFiltered` searches across 5 fields via OR ILIKE.
+  - Phase 6 (Frontend): Debounced search (300ms), clear filters resets input.
 - **2026-07-04:** P21-P28 completed and merged to master.
   - P21 (UX Foundation): AlertDialog, Skeleton, TableSkeleton, EmptyState, ErrorBoundary; search/filter bars; backend user email+role filters.
   - P22 (CRUD Completion): User creation dialog; restaurant owner dropdown; cover image preview; image drag-and-drop reordering; date range selector.
