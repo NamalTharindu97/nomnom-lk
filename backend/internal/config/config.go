@@ -95,6 +95,12 @@ func Load() (*Config, error) {
 	}
 
 	v.SetDefault("SERVER_PORT", "8080")
+	// Fallback to PORT env var (Render, Heroku, cloud convention)
+	if _, serverSet := os.LookupEnv("SERVER_PORT"); !serverSet {
+		if port, portSet := os.LookupEnv("PORT"); portSet {
+			v.Set("SERVER_PORT", port)
+		}
+	}
 	v.SetDefault("SERVER_HOST", "0.0.0.0")
 	v.SetDefault("ENVIRONMENT", "development")
 
