@@ -1,11 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current: CI stability** — All 48 Playwright E2E tests passing. All 3 CI jobs (Flutter, Backend, Admin) green.
-- **Completed: Comprehensive audit logging** — Two-tier audit: middleware auto-log on ALL route groups + semantic logs on critical handlers. Cross-field search with debounced frontend, ILIKE partial-match filters, role filter, prune cron (7-day retention), "Switch Account" terminology.
-- **Completed: Admin impersonation** — Switch-to-owner via JWT `impersonated_by` claim; Redis session storage (2h TTL); ImpersonationBanner + sidebar indicator.
-- **Completed: Fix owner scoping** — Frontend `/dashboard/*` endpoints, role-based UI hides admin-only actions for owners.
-- **Completed: CI bugfixes** — Fixed dashboard nil panic (reload offer after Create), FK constraint (skip OwnerID for admin), coupon AlertDialog handling, users page-2 pagination.
+- **Current: Render deployment** — Render Blueprint (4 free services) + Cloudflare R2 + Docker Hub images. Dockerfiles Render-compatible (PORT fallback, admin proxies via rewrites). Ready to connect repo to Render Dashboard and deploy.
+- **Completed: All prior milestones** — 48 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -184,6 +181,10 @@
   - Docker infra (postgres, redis, minio) ✓, Backend running ✓, Admin running ✓, Flutter running ✓
   - All 48 Playwright E2E tests ✓
   - See `plans/devops-plan.md` for full Render deployment guide
+- **2026-07-09:** Docker Render-compatibility fixes — DONE.
+  - `admin/Dockerfile`: Default `NEXT_PUBLIC_API_URL` changed to `/api/v1` (was `http://localhost:8080/api/v1`) for rewrite-based proxy. CMD now reads `PORT` env var via `next start -p ${PORT:-3000}`.
+  - `backend/internal/config/config.go`: Added `PORT` env var fallback for cloud port convention (Render/Heroku). Only activates when `SERVER_PORT` is not explicitly set.
+  - Both `go build ./...` ✓, `next build` ✓. See commit `9f599b3`.
 - **2026-07-06:** Audit logging (comprehensive coverage) — DONE.
   - **Phase 1** (Universal middleware): Added `AuditTrail` middleware to all 9 route groups (adminUsers, restaurantsGroup, offersGroup, authGroup, verificationGroup, notificationsGroup, devicesGroup, uploadGroup, impersonationGroup) — zero gaps.
   - **Phase 2** (Dashboard semantic logs): Injected `AuditService` into `DashboardHandler` + 6 semantic log calls (create/update/delete restaurant + offer) with entity names.
