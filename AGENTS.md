@@ -8,7 +8,7 @@
 - **Completed: CI bugfixes** — Fixed dashboard nil panic (reload offer after Create), FK constraint (skip OwnerID for admin), coupon AlertDialog handling, users page-2 pagination.
 
 ## Constraints & Preferences
-- **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Railway + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
+- **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
 - **Build order & sign-off:** Phase-by-phase via feature branches (`phase/N-name`), merge to master after approval, branches preserved on remote.
 - **Architecture:** Standard struct-based DI; roles (user, restaurant_owner, admin); approval workflow; localization via JSONB translations (`Translations` type alias `map[string]map[string]string` stored in JSONB column).
 - **Docker for infra only:** Postgres 16, Redis 7, MinIO via `docker compose up -d` in `backend/`. Backend runs natively with `make run`.
@@ -168,6 +168,22 @@
   - **Phase 1** (Backend): JWT `impersonated_by`/`impersonated_at` claims; `ImpersonationService` (Start/Stop/Status) with Redis session storage (2h TTL); `ImpersonationHandler` with `POST /admin/impersonate`, `POST /admin/impersonate/stop`, `GET /admin/impersonate/status`; audit logging for start/stop events.
   - **Phase 2** (Frontend): `useAuth` impersonation state + `impersonate()`/`stopImpersonating()` methods; `ImpersonationBanner` component (curry-orange, "Viewing as {name}" + "Back to Admin"); sidebar orange left border + impersonation indicator during impersonation; "Switch" text button with eye icon on Owners page + confirmation dialog.
   - **Verified**: Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend unit tests ✓, Backend integration tests ✓, 6 RBAC E2E tests ✓
+- **2026-07-09:** Render.com deployment plan + CI pipeline fix — DONE.
+  - **Deployment target changed:** Railway → Render.com (Free plan)
+  - **Storage changed:** Cloudflare R2 (S3-compatible, 10GB free) replaces MinIO on Render (MinIO stays for local dev)
+  - **Key changes:**
+    - `admin/next.config.ts` — Added `async rewrites()` to proxy `/api/v1/*` to backend via `API_PROXY_TARGET` env var (solves `NEXT_PUBLIC_API_URL` build-time baking)
+    - `backend/docker-compose.yml` — Reverted to infra-only (postgres, redis, minio only)
+    - `backend/docker-compose.deploy.yml` — Created for full-stack deploy testing with prebuilt Hub images
+    - `backend/docker-compose.prod.yml` — Deleted (replaced by deploy.yml + render.yaml)
+    - `backend/Makefile` — Restored original targets + added `infra`, `deploy-*`, `docker-*` helpers
+    - `render.yaml` — Created Render Blueprint with 4 free services (backend, admin, postgres, redis)
+    - `.github/workflows/test.yml` — Added `build-args: NEXT_PUBLIC_API_URL=/api/v1` to admin Docker build
+  - **Docs updated:** `ARCHITECTURE.md`, `plans/devops-plan.md`, `backend/README.md`, `AGENTS.md`
+  - Backend `go build ./...` ✓, Admin `next build` ✓
+  - Docker infra (postgres, redis, minio) ✓, Backend running ✓, Admin running ✓, Flutter running ✓
+  - All 48 Playwright E2E tests ✓
+  - See `plans/devops-plan.md` for full Render deployment guide
 - **2026-07-06:** Audit logging (comprehensive coverage) — DONE.
   - **Phase 1** (Universal middleware): Added `AuditTrail` middleware to all 9 route groups (adminUsers, restaurantsGroup, offersGroup, authGroup, verificationGroup, notificationsGroup, devicesGroup, uploadGroup, impersonationGroup) — zero gaps.
   - **Phase 2** (Dashboard semantic logs): Injected `AuditService` into `DashboardHandler` + 6 semantic log calls (create/update/delete restaurant + offer) with entity names.

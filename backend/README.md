@@ -10,7 +10,7 @@ Go REST API for the Sri Lanka-focused food offers discovery app.
 - **Database:** PostgreSQL 16
 - **Cache:** Redis 7
 - **Auth:** Firebase Auth + JWT
-- **Storage:** S3-compatible (MinIO for dev)
+- **Storage:** S3-compatible (MinIO for dev, Cloudflare R2 for production)
 - **Push:** Firebase Cloud Messaging
 - **Docs:** Swagger/OpenAPI
 
@@ -108,18 +108,58 @@ Full documentation: `http://localhost:8080/swagger/index.html`
 4. Include `Authorization: Bearer <access_token>` in subsequent requests
 5. Auto-refresh: `POST /api/v1/auth/refresh` with refresh_token
 
-## Deployment (Railway)
+## Deployment (Render.com)
+
+This project deploys to Render.com using prebuilt Docker images from Docker Hub.
+CI automatically builds & pushes images on master push.
+
+### Services on Render
+
+| Service | Type | Plan |
+|---------|------|------|
+| `nomnom-backend` | Web Service (prebuilt image) | Free |
+| `nomnom-admin` | Web Service (prebuilt image) | Free |
+| `nomnom-db` | Managed PostgreSQL | Free (30-day expiry) |
+| `nomnom-redis` | Managed Redis KV | Free (in-memory only) |
+
+### External Storage (Cloudflare R2)
+
+Image uploads use Cloudflare R2 (S3-compatible, 10GB free tier).
+Set these env vars on the backend service:
+
+- `AWS_S3_ENDPOINT` — your R2 bucket endpoint URL
+- `AWS_ACCESS_KEY_ID` — R2 API token ID
+- `AWS_SECRET_ACCESS_KEY` — R2 API token secret
+- `AWS_REGION=auto`
+- `AWS_S3_BUCKET=nomnom-images`
+
+### First-time Deploy
 
 ```bash
-# Build and push Docker image
-make docker
+# 1. Push to master (CI builds & pushes Docker images)
+git push origin master
 
-# Set environment variables in Railway dashboard:
-# - DATABASE_URL, REDIS_URL, JWT_SECRET
-# - FIREBASE_CREDENTIALS_JSON
-# - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET
+# 2. Connect repo in Render Dashboard → New → Blueprint
+#    Select render.yaml from the repo
 
-# Railway auto-deploys from your GitHub repo or Docker image
+# 3. Set sync:false env vars in Render Dashboard:
+#    - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+#    - AWS_S3_ENDPOINT, ADMIN_PASSWORD
+#    - JWT_SECRET (optional — auto-generated)
+#    - FIREBASE_CREDENTIALS_PATH secret file
+```
+
+### Local Deploy Test
+
+```bash
+# Pull and run prebuilt Docker images
+make deploy-up
+
+# Tail logs
+make deploy-logs
+
+# Stop
+make deploy-down
 ```
 
 ## Testing

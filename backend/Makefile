@@ -1,73 +1,74 @@
-.PHONY: run build test lint migrate seed swagger docker clean
+.PHONY: run build test seed migrate swagger lint clean infra infra-down deploy-up deploy-down deploy-logs
 
-APP_NAME = nomnom-api
+# ── Local Development ──────────────────────────────────────────
 
 run:
-	@echo "Starting server..."
-	go run ./cmd/server/main.go
+	@echo "Starting backend with Air (hot reload)..."
+	air
 
 build:
-	@echo "Building binary..."
-	go build -ldflags="-s -w" -o bin/$(APP_NAME) ./cmd/server/main.go
+	go build -o tmp/nomnom-api ./cmd/server
 
 test:
-	@echo "Running tests..."
-	go test ./... -v -count=1 -race 2>&1 | grep -v 'no test files'
-
-test-coverage:
-	@echo "Running tests with coverage..."
-	go test ./... -count=1 -race -coverprofile=coverage.out 2>&1 | grep -v 'no test files'
-	go tool cover -html=coverage.out -o coverage.html
+	go test ./internal/... -v -count=1
 
 test-integration:
-	@echo "Running integration tests..."
-	@echo "Ensure Docker services are running: docker compose up -d postgres redis minio"
-	go test -tags=integration ./internal/handlers/... -v -count=1
-
-test-all: test test-integration
-
-lint:
-	@echo "Running linter..."
-	golangci-lint run ./...
-
-migrate-up:
-	@echo "Running migrations up..."
-	go run -tags=migration ./scripts/migrate.go up
-
-migrate-down:
-	@echo "Running migrations down..."
-	go run -tags=migration ./scripts/migrate.go down
+	go test -tags=integration ./internal/handlers/... -v -count=1 -timeout 120s
 
 seed:
-	@echo "Seeding database..."
 	go run -tags=seed ./scripts/seed.go
 
+migrate:
+	go run -tags=migration ./scripts/migrate.go up
+
 swagger:
-	@echo "Generating Swagger docs..."
-	swag init -g cmd/server/main.go -o docs/swagger
+	swag init -g ./cmd/server/main.go -o ./docs/swagger
 
-docker:
-	@echo "Building Docker image..."
-	docker build -t $(APP_NAME) .
+lint:
+	golangci-lint run ./...
 
-docker-run:
-	@echo "Starting Docker Compose..."
-	docker compose up -d --build
+# ── Docker Infrastructure ──────────────────────────────────────
 
-docker-stop:
-	@echo "Stopping Docker Compose..."
+infra:
+	docker compose up -d
+
+infra-down:
 	docker compose down
 
-docker-logs:
+infra-logs:
 	docker compose logs -f
 
-clean:
-	@echo "Cleaning..."
-	rm -rf bin/ coverage.out coverage.html
+infra-clean:
+	docker compose down -v
+	docker system prune -f
 
-tidy:
-	@echo "Tidying modules..."
-	go mod tidy
-	go mod verify
+# ── Full-Stack Deploy (pre-built Docker Hub images) ────────────
 
-all: tidy build test
+deploy-pull:
+	docker compose -f docker-compose.deploy.yml pull
+
+deploy-up: deploy-pull
+	docker compose -f docker-compose.deploy.yml up -d
+
+deploy-down:
+	docker compose -f docker-compose.deploy.yml down
+
+deploy-logs:
+	docker compose -f docker-compose.deploy.yml logs -f
+
+deploy-rebuild:
+	docker compose -f docker-compose.deploy.yml up -d --build
+
+# ── Docker Image Build ─────────────────────────────────────────
+
+docker-backend:
+	docker build -t namal97/nomnom-backend:latest -t namal97/nomnom-backend:local ./backend
+
+docker-admin:
+	docker build \
+		--build-arg NEXT_PUBLIC_API_URL=/api/v1 \
+		-t namal97/nomnom-admin:latest \
+		-t namal97/nomnom-admin:local \
+		./admin
+
+docker-all: docker-backend docker-admin

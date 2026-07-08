@@ -16,9 +16,9 @@
             ┌───────────────────┼───────────────────┐
             │                   │                   │
      ┌──────┴──────┐    ┌──────┴──────┐    ┌───────┴──────┐
-     │ PostgreSQL  │    │   Redis     │    │     S3       │
-     │  (Primary   │    │  (Cache,    │    │  (Images)    │
-     │   Data)     │    │   Rate Lim) │    │              │
+      │ PostgreSQL  │    │   Redis     │    │   MinIO /   │
+      │  (Primary   │    │  (Cache,    │    │  Cloud R2   │
+      │   Data)     │    │   Rate Lim) │    │  (Images)   │
      └─────────────┘    └─────────────┘    └──────────────┘
 ```
 
@@ -132,7 +132,7 @@ Push notifications via Firebase Cloud Messaging:
   "uptime": 12345,
   "database": "connected",
   "redis": "connected",
-  "s3": "connected"
+   "storage": "connected"
 }
 ```
 

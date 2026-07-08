@@ -359,6 +359,8 @@ jobs:
         with:
           context: admin
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api/v1
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.meta.outputs.sha_short }}
