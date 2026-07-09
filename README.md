@@ -1,28 +1,53 @@
 # NomNom LK
 
-NomNom LK is a dark-first Flutter mobile app for Sri Lankan food offers.
+[![CI](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/test.yml)
 
-The current implementation is frontend-only and powered by mock data. It includes mock authentication, persistent favorites, offer search, offer details, and a bottom-navigation shell ready for a future REST API service layer.
+NomNom LK is a full-stack Sri Lankan food offers discovery platform. Users browse, search, and save deals from restaurants across Sri Lanka. Restaurant owners manage their own offers; admins oversee the platform.
 
-## Features
+## Tech Stack
 
-- Dark-first Material 3 UI
-- Mock Google login and guest mode
-- Email login interface for future backend integration
-- Home feed with Sri Lankan-style food offers
-- Search by food or restaurant name
-- Persistent favorites with `SharedPreferences`
-- Offer details screen
-- Clean separation of models, services, providers, screens, widgets, and theme utilities
+| Layer | Stack |
+|-------|-------|
+| **Frontend** | Flutter + Dio + Provider + firebase_messaging |
+| **Admin** | Next.js 16 + Tailwind v4 + shadcn/ui + react-hook-form + Zod |
+| **Backend** | Go + Gin + GORM + PostgreSQL 16 + Redis 7 |
+| **Auth** | Firebase Auth + JWT |
+| **Storage** | MinIO (dev) / Cloudflare R2 (prod) |
+| **MCP/SSE** | Real-time offer sync via Server-Sent Events |
+| **Infra** | Docker + Render Blueprint |
 
-## Run
+## Architecture
 
-This workspace does not currently include generated Android/iOS platform folders because the Flutter SDK is not available in the local environment.
+- `backend/` — Go API server (Gin + GORM), `make run` with Air hot reload
+- `admin/` — Next.js dashboard for admins & restaurant owners
+- `lib/` — Flutter mobile app (Android + iOS)
+- `plans/` — Detailed phase plans for feature work
 
-Once Flutter is installed, generate the mobile platform folders and run the app:
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for full architecture documentation.
+
+## Quick Start
 
 ```bash
-flutter create . --project-name nomnom_lk --org com.nomnomlk --platforms android,ios
-flutter pub get
+# Infrastructure (PostgreSQL 16, Redis 7, MinIO)
+cd backend && docker compose up -d
+
+# Backend (hot reload)
+cd backend && make run
+
+# Admin dashboard
+cd admin && npm run dev
+
+# Flutter app
 flutter run
 ```
+
+Default admin login: `admin@nomnom.lk` / `Admin@123`
+
+## CI/CD
+
+GitHub Actions runs on every push/PR:
+- Backend: `go build`, `go test -coverprofile`, `golangci-lint`, `govulncheck`
+- Admin: `next build`, `npm run lint`, `tsc --noEmit`, `npm audit`
+- E2E: 48 Playwright tests against admin dashboard
+- Security: Gitleaks secret scan, Trivy container scan
+- Coverage: Codecov upload (Go + Vitest)

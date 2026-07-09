@@ -75,8 +75,8 @@ func main() {
 
 	fmt.Println("🌱 Seeding database...")
 
-	mc, err := minio.New(cfg.AWS.S3Endpoint, &minio.Options{
-		Creds:        credentials.NewStaticV4(cfg.AWS.AccessKeyID, cfg.AWS.SecretAccessKey, ""),
+	mc, err := minio.New(cfg.R2.Endpoint, &minio.Options{
+		Creds:        credentials.NewStaticV4(cfg.R2.AccessKeyID, cfg.R2.SecretAccessKey, ""),
 		Secure:       false,
 		BucketLookup: minio.BucketLookupAuto,
 	})
@@ -85,7 +85,7 @@ func main() {
 	}
 
 	env := "dev"
-	bucket := cfg.AWS.S3Bucket
+	bucket := cfg.R2.Bucket
 
 	ctx := context.Background()
 

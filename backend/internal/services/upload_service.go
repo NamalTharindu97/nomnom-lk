@@ -28,8 +28,8 @@ type UploadService struct {
 	prefix string
 }
 
-func NewUploadService(cfg *config.AWSConfig) (*UploadService, error) {
-	client, err := minio.New(cfg.S3Endpoint, &minio.Options{
+func NewUploadService(cfg *config.R2Config) (*UploadService, error) {
+	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:        credentials.NewStaticV4(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
 		Secure:       false,
 		Region:       cfg.Region,
@@ -40,13 +40,13 @@ func NewUploadService(cfg *config.AWSConfig) (*UploadService, error) {
 	}
 
 	ctx := context.Background()
-	exists, err := client.BucketExists(ctx, cfg.S3Bucket)
+	exists, err := client.BucketExists(ctx, cfg.Bucket)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check bucket: %w", err)
 	}
 
 	if !exists {
-		if err := client.MakeBucket(ctx, cfg.S3Bucket, minio.MakeBucketOptions{
+		if err := client.MakeBucket(ctx, cfg.Bucket, minio.MakeBucketOptions{
 			Region: cfg.Region,
 		}); err != nil {
 			return nil, fmt.Errorf("failed to create bucket: %w", err)
@@ -58,7 +58,7 @@ func NewUploadService(cfg *config.AWSConfig) (*UploadService, error) {
 
 	return &UploadService{
 		client: client,
-		bucket: cfg.S3Bucket,
+		bucket: cfg.Bucket,
 		prefix: prefix,
 	}, nil
 }

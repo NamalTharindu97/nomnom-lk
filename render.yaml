@@ -27,17 +27,17 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: AWS_ACCESS_KEY_ID
+      - key: R2_ACCESS_KEY_ID
         sync: false
-      - key: AWS_SECRET_ACCESS_KEY
+      - key: R2_SECRET_ACCESS_KEY
         sync: false
-      - key: AWS_REGION
+      - key: R2_REGION
         value: auto
-      - key: AWS_S3_BUCKET
+      - key: R2_BUCKET
         value: nomnom-images
-      - key: AWS_S3_ENDPOINT
+      - key: R2_ENDPOINT
         sync: false
-      - key: AWS_S3_FORCE_PATH_STYLE
+      - key: R2_FORCE_PATH_STYLE
         value: "true"
       - key: CORS_ORIGINS
         fromService:

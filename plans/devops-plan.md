@@ -24,7 +24,7 @@
 ## Environment Variables
 - `.env` is gitignored
 - Viper v1.19.0 does not strip inline `# comments` from `.env` values — parsed as part of the value string
-- `AWS_S3_ENDPOINT=localhost:9000` (no scheme, no trailing comment)
+- `R2_ENDPOINT=localhost:9000` (no scheme, no trailing comment)
 
 ## iOS Physical Device Testing
 - Flutter 3.29.3 debug mode crashes on iOS 26.5+ physical devices (known JIT issue)
@@ -129,8 +129,8 @@ git push origin master
 #    Select render.yaml from repo root
 
 # 3. Set sync:false env vars in Render Dashboard:
-#    - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-#    - AWS_S3_ENDPOINT (https://<account>.r2.cloudflarestorage.com)
+#    - R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+#    - R2_ENDPOINT (https://<account>.r2.cloudflarestorage.com)
 #    - ADMIN_PASSWORD
 #    - Upload firebase-credentials.json as secret file
 ```
