@@ -185,7 +185,7 @@ func (h *DashboardHandler) ListOffers(c *gin.Context) {
 	query := c.Query("q")
 	params := pagination.Extract(c)
 
-	offers, total, err := h.dashboardService.ListOffers(ownerID, status, query, params.Page, params.PerPage, sort)
+	offers, total, err := h.dashboardService.ListOffers(c.Request.Context(), ownerID, status, query, params.Page, params.PerPage, sort)
 	if err != nil {
 		response.InternalError(c, "failed to list offers")
 		return

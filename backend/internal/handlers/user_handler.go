@@ -205,6 +205,58 @@ func (h *UserHandler) Update(c *gin.Context) {
 	})
 }
 
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	var req struct {
+		Name  *string `json:"name"`
+		Phone *string `json:"phone"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
+		return
+	}
+
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
+	user, err := h.repo.FindByID(userID)
+	if err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
+	if req.Name != nil {
+		user.Name = *req.Name
+	}
+	if req.Phone != nil {
+		user.Phone = req.Phone
+	}
+
+	if err := h.repo.Update(user); err != nil {
+		response.InternalError(c, "failed to update profile")
+		return
+	}
+
+	if userID, ok := middleware.GetUserID(c); ok {
+		userName, _ := middleware.GetUserName(c)
+		userRole, _ := middleware.GetUserRole(c)
+		h.auditService.LogAction(userID, userName, userRole, "user.profile_updated", "user", user.ID.String(),
+			fmt.Sprintf("Profile updated for user: %s (%s)", user.Name, user.Email))
+	}
+
+	response.Success(c, gin.H{
+		"id":         user.ID,
+		"email":      user.Email,
+		"name":       user.Name,
+		"avatar_url": user.AvatarURL,
+		"phone":      user.Phone,
+		"role":       user.Role,
+		"created_at": user.CreatedAt,
+	})
+}
+
 func (h *UserHandler) ChangePassword(c *gin.Context) {
 	var req struct {
 		CurrentPassword string `json:"current_password" binding:"required"`

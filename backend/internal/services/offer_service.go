@@ -1,26 +1,32 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/locale"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type OfferService struct {
 	repo       repository.OfferRepoInterface
 	restRepo   repository.RestaurantRepoInterface
+	rdb        *redis.Client
 }
 
-func NewOfferService(repo repository.OfferRepoInterface, restRepo repository.RestaurantRepoInterface) *OfferService {
+func NewOfferService(repo repository.OfferRepoInterface, restRepo repository.RestaurantRepoInterface, rdb *redis.Client) *OfferService {
 	return &OfferService{
 		repo:     repo,
 		restRepo: restRepo,
+		rdb:      rdb,
 	}
 }
 
@@ -49,7 +55,9 @@ func (s *OfferService) Create(req *request.CreateOfferRequest, createdBy uuid.UU
 		CreatedBy:     &createdBy,
 	}
 
-	if isAdmin {
+	if req.PublishAt != nil && req.PublishAt.After(time.Now()) {
+		offer.Status = models.OfferPending
+	} else if isAdmin {
 		offer.Status = models.OfferApproved
 	} else {
 		offer.Status = models.OfferPending
@@ -67,6 +75,7 @@ func (s *OfferService) Create(req *request.CreateOfferRequest, createdBy uuid.UU
 	if err := s.repo.Create(offer); err != nil {
 		return nil, fmt.Errorf("failed to create offer: %w", err)
 	}
+	s.bumpOfferCacheVersion(context.Background())
 	return offer, nil
 }
 
@@ -81,8 +90,40 @@ func (s *OfferService) GetByID(id uuid.UUID) (*models.Offer, error) {
 	return offer, nil
 }
 
-func (s *OfferService) List(status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
-	return s.repo.FindAll(status, query, page, perPage, sort)
+func (s *OfferService) List(ctx context.Context, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+	if s.rdb == nil {
+		return s.repo.FindAll(status, query, page, perPage, sort)
+	}
+
+	version := s.rdb.Get(ctx, "offers:cache_version").Val()
+	cacheKey := fmt.Sprintf("offers:list:%s:%s:%d:%d:v%s", status, query, page, perPage, version)
+
+	if cached, err := s.rdb.Get(ctx, cacheKey).Result(); err == nil {
+		var result struct {
+			Offers []models.Offer `json:"offers"`
+			Total  int64          `json:"total"`
+		}
+		if err := json.Unmarshal([]byte(cached), &result); err == nil {
+			return result.Offers, result.Total, nil
+		}
+	}
+
+	offers, total, err := s.repo.FindAll(status, query, page, perPage, sort)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if data, err := json.Marshal(map[string]any{"offers": offers, "total": total}); err == nil {
+		s.rdb.Set(ctx, cacheKey, string(data), 30*time.Second)
+	}
+
+	return offers, total, nil
+}
+
+func (s *OfferService) bumpOfferCacheVersion(ctx context.Context) {
+	if s.rdb != nil {
+		s.rdb.Incr(ctx, "offers:cache_version")
+	}
 }
 
 func (s *OfferService) Update(id uuid.UUID, req *request.UpdateOfferRequest, requesterID uuid.UUID, isAdmin bool) (*models.Offer, error) {
@@ -126,6 +167,9 @@ func (s *OfferService) Update(id uuid.UUID, req *request.UpdateOfferRequest, req
 	}
 	if req.PublishAt != nil {
 		offer.PublishAt = req.PublishAt
+		if req.PublishAt.After(time.Now()) {
+			offer.Status = models.OfferPending
+		}
 	}
 
 	translations := locale.BuildTranslations(
@@ -139,6 +183,7 @@ func (s *OfferService) Update(id uuid.UUID, req *request.UpdateOfferRequest, req
 	if err := s.repo.Update(offer); err != nil {
 		return nil, fmt.Errorf("failed to update offer: %w", err)
 	}
+	s.bumpOfferCacheVersion(context.Background())
 	return offer, nil
 }
 
@@ -152,7 +197,11 @@ func (s *OfferService) Delete(id uuid.UUID, requesterID uuid.UUID, isAdmin bool)
 		return errors.New("not authorized to delete this offer")
 	}
 
-	return s.repo.Delete(id)
+	err = s.repo.Delete(id)
+	if err == nil {
+		s.bumpOfferCacheVersion(context.Background())
+	}
+	return err
 }
 
 func (s *OfferService) Approve(id uuid.UUID) (*models.Offer, error) {
@@ -164,6 +213,7 @@ func (s *OfferService) Approve(id uuid.UUID) (*models.Offer, error) {
 		return nil, err
 	}
 	offer.Status = models.OfferApproved
+	s.bumpOfferCacheVersion(context.Background())
 	return offer, nil
 }
 
@@ -176,6 +226,7 @@ func (s *OfferService) Reject(id uuid.UUID) (*models.Offer, error) {
 		return nil, err
 	}
 	offer.Status = models.OfferRejected
+	s.bumpOfferCacheVersion(context.Background())
 	return offer, nil
 }
 
@@ -192,6 +243,7 @@ func (s *OfferService) Expire(id uuid.UUID) (*models.Offer, error) {
 		return nil, err
 	}
 	offer.Status = models.OfferExpired
+	s.bumpOfferCacheVersion(context.Background())
 	return offer, nil
 }
 

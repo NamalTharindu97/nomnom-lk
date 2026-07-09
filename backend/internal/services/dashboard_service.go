@@ -1,25 +1,32 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/locale"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type DashboardService struct {
 	restaurantRepo *repository.RestaurantRepo
 	offerRepo      *repository.OfferRepo
+	rdb            *redis.Client
 }
 
-func NewDashboardService(restaurantRepo *repository.RestaurantRepo, offerRepo *repository.OfferRepo) *DashboardService {
+func NewDashboardService(restaurantRepo *repository.RestaurantRepo, offerRepo *repository.OfferRepo, rdb *redis.Client) *DashboardService {
 	return &DashboardService{
 		restaurantRepo: restaurantRepo,
 		offerRepo:      offerRepo,
+		rdb:            rdb,
 	}
 }
 
@@ -27,8 +34,41 @@ func (s *DashboardService) ListRestaurants(ownerID uuid.UUID, status, query stri
 	return s.restaurantRepo.FindAllByOwner(ownerID, status, query, page, perPage)
 }
 
-func (s *DashboardService) ListOffers(ownerID uuid.UUID, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
-	return s.offerRepo.FindAllByOwner(ownerID, status, query, page, perPage, sort)
+func (s *DashboardService) ListOffers(ctx context.Context, ownerID uuid.UUID, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+	if s.rdb == nil {
+		return s.offerRepo.FindAllByOwner(ownerID, status, query, page, perPage, sort)
+	}
+
+	version := s.rdb.Get(ctx, "offers:dashboard_cache_version").Val()
+	cacheKey := fmt.Sprintf("offers:dashboard:%s:%s:%s:%d:%d:v%s", ownerID, status, query, page, perPage, version)
+
+	if cached, err := s.rdb.Get(ctx, cacheKey).Result(); err == nil {
+		var result struct {
+			Offers []models.Offer `json:"offers"`
+			Total  int64          `json:"total"`
+		}
+		if err := json.Unmarshal([]byte(cached), &result); err == nil {
+			return result.Offers, result.Total, nil
+		}
+	}
+
+	offers, total, err := s.offerRepo.FindAllByOwner(ownerID, status, query, page, perPage, sort)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if data, err := json.Marshal(map[string]any{"offers": offers, "total": total}); err == nil {
+		s.rdb.Set(ctx, cacheKey, string(data), 30*time.Second)
+	}
+
+	return offers, total, nil
+}
+
+func (s *DashboardService) bumpDashboardOfferCacheVersion(ctx context.Context) {
+	if s.rdb != nil {
+		s.rdb.Incr(ctx, "offers:cache_version")
+		s.rdb.Incr(ctx, "offers:dashboard_cache_version")
+	}
 }
 
 func (s *DashboardService) GetRestaurantByIDForOwner(ownerID, restaurantID uuid.UUID) (*models.Restaurant, error) {
@@ -219,6 +259,7 @@ func (s *DashboardService) CreateOffer(req *request.CreateOfferRequest, ownerID 
 	if err := s.offerRepo.Create(offer); err != nil {
 		return nil, err
 	}
+	s.bumpDashboardOfferCacheVersion(context.Background())
 	return offer, nil
 }
 
@@ -275,6 +316,7 @@ func (s *DashboardService) UpdateOffer(id uuid.UUID, ownerID uuid.UUID, req *req
 	if err := s.offerRepo.Update(offer); err != nil {
 		return nil, err
 	}
+	s.bumpDashboardOfferCacheVersion(context.Background())
 	return offer, nil
 }
 
@@ -286,5 +328,9 @@ func (s *DashboardService) DeleteOffer(id uuid.UUID, ownerID uuid.UUID) error {
 	if ownerID != uuid.Nil && (offer.CreatedBy == nil || *offer.CreatedBy != ownerID) {
 		return errors.New("offer not found")
 	}
-	return s.offerRepo.Delete(id)
+	err = s.offerRepo.Delete(id)
+	if err == nil {
+		s.bumpDashboardOfferCacheVersion(context.Background())
+	}
+	return err
 }
