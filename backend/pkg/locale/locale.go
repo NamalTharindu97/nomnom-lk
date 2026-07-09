@@ -2,7 +2,6 @@ package locale
 
 import (
 	"encoding/json"
-	"strings"
 )
 
 func MergeTranslations(target map[string]interface{}, translationsJSON *json.RawMessage, lang string) {
@@ -17,8 +16,7 @@ func MergeTranslations(target map[string]interface{}, translationsJSON *json.Raw
 
 	for field, langMap := range translations {
 		if val, ok := langMap[lang]; ok && val != "" {
-			key := field + "_" + strings.ReplaceAll(lang, "-", "_")
-			target[key] = val
+			target[field] = val
 		}
 	}
 }
