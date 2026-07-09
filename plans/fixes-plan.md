@@ -8,7 +8,7 @@ Three fixes applied:
 - Verified: FCM v1 API returns HTTP 200. Notifications arrive on Android emulator in foreground, background, and killed states.
 
 ## Seed Data + MinIO Images Fix
-- Fixed `.env` `AWS_S3_ENDPOINT` inline comment (Viper reads `# comment` as part of value)
+- Fixed `.env` `R2_ENDPOINT` inline comment (Viper reads `# comment` as part of value)
 - Removed `http://` scheme (minio-go v7.2.0 rejects fully qualified endpoints)
 - Re-ran seed: 26 images uploaded, 8 restaurants + 18 offers created
 - Images serve HTTP 200 from MinIO via upload proxy

@@ -47,7 +47,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	cronService.SetScheduledRepo(scheduledNotificationRepo)
 	cronService.SetAuditLogRepo(auditLogRepo)
 
-	uploadService, err := services.NewUploadService(&cfg.AWS)
+	uploadService, err := services.NewUploadService(&cfg.R2)
 	if err != nil {
 		log.Warn().Err(err).Msg("upload service not available, upload routes disabled")
 		uploadService = nil

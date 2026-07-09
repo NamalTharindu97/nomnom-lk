@@ -71,12 +71,12 @@ func Setup() (*gin.Engine, string, error) {
 			AccessExpiry:  "24h",
 			RefreshExpiry: "720h",
 		},
-		AWS: config.AWSConfig{
+		R2: config.R2Config{
 			Region:          "ap-southeast-1",
 			AccessKeyID:     envOrDefault("TEST_MINIO_ACCESS_KEY", "minioadmin"),
 			SecretAccessKey: envOrDefault("TEST_MINIO_SECRET", "minioadmin"),
-			S3Bucket:        "nomnom-test-images",
-			S3Endpoint:      fmt.Sprintf("%s:9000", envOrDefault("TEST_MINIO_HOST", "localhost")),
+			Bucket:          "nomnom-test-images",
+			Endpoint:        fmt.Sprintf("%s:9000", envOrDefault("TEST_MINIO_HOST", "localhost")),
 			ForcePathStyle:  true,
 		},
 		CORS: config.CORSConfig{

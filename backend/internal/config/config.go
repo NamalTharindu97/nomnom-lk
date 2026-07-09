@@ -1,7 +1,11 @@
 package config
 
 import (
+	"fmt"
+	"net"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -12,7 +16,7 @@ type Config struct {
 	Redis    RedisConfig
 	JWT      JWTConfig
 	Firebase FirebaseConfig
-	AWS      AWSConfig
+	R2 R2Config
 	Sentry   SentryConfig
 	CORS     CORSConfig
 	Admin    AdminConfig
@@ -58,12 +62,12 @@ type FirebaseConfig struct {
 	CredentialsPath string
 }
 
-type AWSConfig struct {
+type R2Config struct {
 	Region          string
 	AccessKeyID     string
 	SecretAccessKey string
-	S3Bucket        string
-	S3Endpoint      string
+	Bucket          string
+	Endpoint        string
 	ForcePathStyle  bool
 }
 
@@ -78,6 +82,43 @@ type CORSConfig struct {
 type AdminConfig struct {
 	Email    string
 	Password string
+}
+
+type parsedDBConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	DBName   string
+	SSLMode  string
+}
+
+func parseDatabaseURL(databaseURL string) (*parsedDBConfig, error) {
+	u, err := url.Parse(databaseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	password, _ := u.User.Password()
+	host, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		host = u.Host
+		port = "5432"
+	}
+
+	sslmode := u.Query().Get("sslmode")
+	if sslmode == "" {
+		sslmode = "require"
+	}
+
+	return &parsedDBConfig{
+		Host:     host,
+		Port:     port,
+		User:     u.User.Username(),
+		Password: password,
+		DBName:   strings.TrimPrefix(u.Path, "/"),
+		SSLMode:  sslmode,
+	}, nil
 }
 
 func Load() (*Config, error) {
@@ -121,12 +162,12 @@ func Load() (*Config, error) {
 
 	v.SetDefault("FIREBASE_CREDENTIALS_PATH", "./config/firebase-credentials.json")
 
-	v.SetDefault("AWS_REGION", "ap-southeast-1")
-	v.SetDefault("AWS_ACCESS_KEY_ID", "minioadmin")
-	v.SetDefault("AWS_SECRET_ACCESS_KEY", "minioadmin")
-	v.SetDefault("AWS_S3_BUCKET", "nomnom-images")
-	v.SetDefault("AWS_S3_ENDPOINT", "localhost:9000")
-	v.SetDefault("AWS_S3_FORCE_PATH_STYLE", true)
+	v.SetDefault("R2_REGION", "ap-southeast-1")
+	v.SetDefault("R2_ACCESS_KEY_ID", "minioadmin")
+	v.SetDefault("R2_SECRET_ACCESS_KEY", "minioadmin")
+	v.SetDefault("R2_BUCKET", "nomnom-images")
+	v.SetDefault("R2_ENDPOINT", "localhost:9000")
+	v.SetDefault("R2_FORCE_PATH_STYLE", true)
 
 	v.SetDefault("SENTRY_DSN", "")
 
@@ -140,6 +181,37 @@ func Load() (*Config, error) {
 	v.SetDefault("SMTP_USERNAME", "")
 	v.SetDefault("SMTP_PASSWORD", "")
 	v.SetDefault("SMTP_FROM", "NomNom LK <noreply@nomnom.lk>")
+
+	// Parse DATABASE_URL (Render/Heroku style) — overrides individual DB vars
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		dbCfg, err := parseDatabaseURL(dbURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DATABASE_URL: %w", err)
+		}
+		v.Set("DATABASE_HOST", dbCfg.Host)
+		v.Set("DATABASE_PORT", dbCfg.Port)
+		v.Set("DATABASE_USER", dbCfg.User)
+		v.Set("DATABASE_PASSWORD", dbCfg.Password)
+		v.Set("DATABASE_NAME", dbCfg.DBName)
+		v.Set("DATABASE_SSLMODE", dbCfg.SSLMode)
+	}
+
+	// Parse REDIS_URL (Render/Upstash style) — overrides individual Redis vars
+	if redisURL := os.Getenv("REDIS_URL"); redisURL != "" {
+		u, err := url.Parse(redisURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse REDIS_URL: %w", err)
+		}
+		password, _ := u.User.Password()
+		v.Set("REDIS_PASSWORD", password)
+		host, port, err := net.SplitHostPort(u.Host)
+		if err == nil {
+			v.Set("REDIS_HOST", host)
+			v.Set("REDIS_PORT", port)
+		} else {
+			v.Set("REDIS_HOST", u.Host)
+		}
+	}
 
 	return &Config{
 		Server: ServerConfig{
@@ -168,13 +240,13 @@ func Load() (*Config, error) {
 		Firebase: FirebaseConfig{
 			CredentialsPath: v.GetString("FIREBASE_CREDENTIALS_PATH"),
 		},
-		AWS: AWSConfig{
-			Region:          v.GetString("AWS_REGION"),
-			AccessKeyID:     v.GetString("AWS_ACCESS_KEY_ID"),
-			SecretAccessKey: v.GetString("AWS_SECRET_ACCESS_KEY"),
-			S3Bucket:        v.GetString("AWS_S3_BUCKET"),
-			S3Endpoint:      v.GetString("AWS_S3_ENDPOINT"),
-			ForcePathStyle:  v.GetBool("AWS_S3_FORCE_PATH_STYLE"),
+		R2: R2Config{
+			Region:          v.GetString("R2_REGION"),
+			AccessKeyID:     v.GetString("R2_ACCESS_KEY_ID"),
+			SecretAccessKey: v.GetString("R2_SECRET_ACCESS_KEY"),
+			Bucket:          v.GetString("R2_BUCKET"),
+			Endpoint:        v.GetString("R2_ENDPOINT"),
+			ForcePathStyle:  v.GetBool("R2_FORCE_PATH_STYLE"),
 		},
 		Sentry: SentryConfig{
 			DSN: v.GetString("SENTRY_DSN"),

@@ -127,11 +127,11 @@ CI automatically builds & pushes images on master push.
 Image uploads use Cloudflare R2 (S3-compatible, 10GB free tier).
 Set these env vars on the backend service:
 
-- `AWS_S3_ENDPOINT` — your R2 bucket endpoint URL
-- `AWS_ACCESS_KEY_ID` — R2 API token ID
-- `AWS_SECRET_ACCESS_KEY` — R2 API token secret
-- `AWS_REGION=auto`
-- `AWS_S3_BUCKET=nomnom-images`
+- `R2_ENDPOINT` — your R2 bucket endpoint URL
+- `R2_ACCESS_KEY_ID` — R2 API token ID
+- `R2_SECRET_ACCESS_KEY` — R2 API token secret
+- `R2_REGION=auto`
+- `R2_BUCKET=nomnom-images`
 
 ### First-time Deploy
 
@@ -143,8 +143,8 @@ git push origin master
 #    Select render.yaml from the repo
 
 # 3. Set sync:false env vars in Render Dashboard:
-#    - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-#    - AWS_S3_ENDPOINT, ADMIN_PASSWORD
+#    - R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+#    - R2_ENDPOINT, ADMIN_PASSWORD
 #    - JWT_SECRET (optional — auto-generated)
 #    - FIREBASE_CREDENTIALS_PATH secret file
 ```
