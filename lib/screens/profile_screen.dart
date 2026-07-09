@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
 import '../providers/offer_provider.dart';
+import '../providers/restaurant_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../providers/theme_provider.dart';
 import '../utils/spacings.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.onNavigateToTab});
+
+  final void Function(int index)? onNavigateToTab;
 
   Future<void> _signOut(BuildContext context) async {
     await context.read<AuthProvider>().signOut();
@@ -38,11 +44,11 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(Spacings.lg, 18, Spacings.lg, Spacings.xxl),
               children: [
                 const SizedBox(height: 8),
-                _ProfileHeader(user: user),
+                _ProfileHeader(user: user, onEditProfile: () => Navigator.of(context).pushNamed(AppRoutes.editProfile)),
                 const SizedBox(height: 28),
-                _StatsRow(user: user),
+                _StatsRow(user: user, onNavigateToTab: onNavigateToTab),
                 const SizedBox(height: 28),
-                _MenuSection(user: user),
+                _MenuSection(user: user, onNavigateToTab: onNavigateToTab),
                 const SizedBox(height: 32),
                 _SignOutButton(
                   isGuest: user.isGuest,
@@ -59,9 +65,10 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.user});
+  const _ProfileHeader({required this.user, this.onEditProfile});
 
   final AppUser user;
+  final VoidCallback? onEditProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -70,59 +77,65 @@ class _ProfileHeader extends StatelessWidget {
 
     return Column(
       children: [
-        Stack(
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.curry,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.curry.withValues(alpha: 0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  user.name.isEmpty ? '?' : user.name.substring(0, 1).toUpperCase(),
-                  style: textTheme.headlineMedium?.copyWith(
-                    color: colors.background,
-                    fontWeight: FontWeight.w900,
+        GestureDetector(
+          onTap: user.isLoggedIn ? onEditProfile : null,
+          child: Stack(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.curry,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.curry.withValues(alpha: 0.35),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    user.name.isEmpty ? '?' : user.name.substring(0, 1).toUpperCase(),
+                    style: textTheme.headlineMedium?.copyWith(
+                      color: colors.background,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (user.isLoggedIn)
-              Positioned(
-                bottom: 0,
-                right: -2,
-                child: Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: colors.surfaceAlt, width: 2),
-                  ),
-                  child: Icon(
-                    Icons.edit_rounded,
-                    size: 14,
-                    color: AppColors.muted,
+              if (user.isLoggedIn)
+                Positioned(
+                  bottom: 0,
+                  right: -2,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: colors.surfaceAlt, width: 2),
+                    ),
+                    child: Icon(
+                      Icons.edit_rounded,
+                      size: 14,
+                      color: AppColors.muted,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 14),
-        Text(
-          user.name,
-          style: textTheme.titleLarge?.copyWith(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w900,
+        GestureDetector(
+          onTap: user.isLoggedIn ? onEditProfile : null,
+          child: Text(
+            user.name,
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
         if (!user.isGuest) ...[
@@ -143,11 +156,11 @@ class _ProfileHeader extends StatelessWidget {
           ),
           child: Text(
             user.isGuest
-                ? 'Guest'
+                ? AppLocalizations.of(context)!.generalGuest
                 : switch (user.role) {
-                    'admin' => 'Admin',
-                    'restaurant_owner' => 'Restaurant Owner',
-                    _ => 'Foodie',
+                    'admin' => AppLocalizations.of(context)!.profileAdmin,
+                    'restaurant_owner' => AppLocalizations.of(context)!.profileRestaurantOwner,
+                    _ => AppLocalizations.of(context)!.profileFoodie,
                   },
             style: textTheme.labelMedium?.copyWith(
               color: AppColors.curry,
@@ -161,9 +174,10 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _StatsRow extends StatelessWidget {
-  const _StatsRow({required this.user});
+  const _StatsRow({required this.user, this.onNavigateToTab});
 
   final AppUser user;
+  final void Function(int index)? onNavigateToTab;
 
   @override
   Widget build(BuildContext context) {
@@ -177,16 +191,23 @@ class _StatsRow extends StatelessWidget {
                 icon: Icons.favorite_rounded,
                 iconColor: AppColors.chili,
                 value: '$favoriteCount',
-                label: 'Saved',
+                label: AppLocalizations.of(context)!.profileSaved,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _StatCard(
-                icon: Icons.storefront_rounded,
-                iconColor: AppColors.ocean,
-                value: '-',
-                label: 'Restaurants',
+              child: Consumer<RestaurantProvider>(
+                builder: (context, provider, _) {
+                  return _StatCard(
+                    icon: Icons.storefront_rounded,
+                    iconColor: AppColors.ocean,
+                    value: '${provider.total}',
+                    label: AppLocalizations.of(context)!.restaurantsTitle,
+                    onTap: provider.restaurants.isEmpty
+                        ? null
+                        : () => Navigator.of(context).pushNamed(AppRoutes.restaurants),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
@@ -195,7 +216,7 @@ class _StatsRow extends StatelessWidget {
                 icon: Icons.calendar_month_rounded,
                 iconColor: AppColors.lime,
                 value: user.isGuest ? '-' : '1m',
-                label: 'Member',
+                label: AppLocalizations.of(context)!.profileMemberSince,
               ),
             ),
           ],
@@ -211,54 +232,60 @@ class _StatCard extends StatelessWidget {
     required this.iconColor,
     required this.value,
     required this.label,
+    this.onTap,
   });
 
   final IconData icon;
   final Color iconColor;
   final String value;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = context.colors;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: Spacings.md),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.surfaceAlt),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: textTheme.titleLarge?.copyWith(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w900,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: Spacings.md),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.surfaceAlt),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: iconColor, size: 22),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: textTheme.titleLarge?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: textTheme.labelSmall?.copyWith(
-              color: context.colors.muted,
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: textTheme.labelSmall?.copyWith(
+                color: context.colors.muted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _MenuSection extends StatelessWidget {
-  const _MenuSection({required this.user});
+  const _MenuSection({required this.user, this.onNavigateToTab});
 
   final AppUser user;
+  final void Function(int index)? onNavigateToTab;
 
   @override
   Widget build(BuildContext context) {
@@ -275,26 +302,53 @@ class _MenuSection extends StatelessWidget {
           _MenuTile(
             icon: Icons.favorite_rounded,
             iconColor: AppColors.chili,
-            title: 'My Favorites',
-            subtitle: 'Saved deals',
-            onTap: () => Navigator.of(context).pushNamed(AppRoutes.home, arguments: 2),
+            title: AppLocalizations.of(context)!.profileMyFavorites,
+            subtitle: AppLocalizations.of(context)!.profileSavedDeals,
+            onTap: onNavigateToTab != null
+                ? () => onNavigateToTab!(2)
+                : () => Navigator.of(context).pushNamed(AppRoutes.home, arguments: 2),
           ),
           _MenuDivider(),
           _MenuTile(
-            icon: Icons.storefront_rounded,
-            iconColor: AppColors.ocean,
-            title: 'Browse Restaurants',
-            subtitle: 'View all restaurants',
-            onTap: () => Navigator.of(context).pushNamed(AppRoutes.restaurants),
+            icon: Icons.notifications_outlined,
+            iconColor: AppColors.curry,
+            title: AppLocalizations.of(context)!.profileNotificationPreferences,
+            subtitle: AppLocalizations.of(context)!.profileManageNotifications,
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationPrefs),
           ),
           _MenuDivider(),
           _ThemeTile(),
           _MenuDivider(),
+          _LanguageTile(),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.edit_outlined,
+            iconColor: AppColors.ocean,
+            title: AppLocalizations.of(context)!.editProfileTitle,
+            subtitle: AppLocalizations.of(context)!.editProfileSubtitle,
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.editProfile),
+          ),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.share_outlined,
+            iconColor: AppColors.lime,
+            title: AppLocalizations.of(context)!.profileShareApp,
+            subtitle: AppLocalizations.of(context)!.profileShareAppSubtitle,
+            onTap: () => Share.share('${AppLocalizations.of(context)!.profileShareAppMessage}\nhttps://nomnom.lk'),
+          ),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.star_outline_rounded,
+            iconColor: AppColors.chili,
+            title: AppLocalizations.of(context)!.profileRateApp,
+            subtitle: AppLocalizations.of(context)!.profileRateAppSubtitle,
+          ),
+          _MenuDivider(),
           _MenuTile(
             icon: Icons.info_outline_rounded,
             iconColor: AppColors.muted,
-            title: 'About',
-            subtitle: 'Version 1.0.0',
+            title: AppLocalizations.of(context)!.profileAbout,
+            subtitle: AppLocalizations.of(context)!.profileVersion,
           ),
         ],
       ),
@@ -334,14 +388,14 @@ class _ThemeTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Theme',
+                    AppLocalizations.of(context)!.profileTheme,
                     style: textTheme.bodyLarge?.copyWith(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
-                    themeProvider.isDark ? 'Dark mode' : 'Light mode',
+                    themeProvider.isDark ? AppLocalizations.of(context)!.profileDarkMode : AppLocalizations.of(context)!.profileLightMode,
                     style: textTheme.bodySmall?.copyWith(
                       color: AppColors.muted,
                     ),
@@ -357,6 +411,68 @@ class _ThemeTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LanguageTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = context.colors;
+    final localeProvider = context.watch<LocaleProvider>();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: colors.surfaceAlt,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.translate_rounded,
+              color: AppColors.curry,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Language',
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '${localeProvider.flag} ${localeProvider.displayName}',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (code) {
+              localeProvider.setLocale(code);
+              context.read<OfferProvider>().loadOffers(forceRefresh: true);
+              context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
+            },
+            itemBuilder: (_) => localeProvider.supportedLocales.map((l) {
+              return PopupMenuItem(value: l.code, child: Text('${l.flag}  ${l.name}'));
+            }).toList(),
+            icon: const Icon(Icons.arrow_drop_down_rounded),
+          ),
+        ],
       ),
     );
   }
@@ -465,7 +581,7 @@ class _SignOutButton extends StatelessWidget {
               )
             : const Icon(Icons.logout_rounded),
         label: Text(
-          isGuest ? 'Sign In' : 'Sign Out',
+          isGuest ? AppLocalizations.of(context)!.loginSignInButton : AppLocalizations.of(context)!.generalLogout,
           style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
         style: OutlinedButton.styleFrom(
