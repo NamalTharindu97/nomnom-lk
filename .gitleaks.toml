@@ -1,0 +1,37 @@
+# Gitleaks config for NomNom LK
+
+title = "NomNom LK Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+  description = "Known dev credentials and generated files"
+  regexes = [
+    "(?i)minioadmin",
+    "(?i)Admin@123",
+    "(?i)Owner@123",
+    "change-me",
+    "test-secret-key-for-ci",
+    "firebase-credentials\\.json",
+    "nomnom123",
+  ]
+  paths = [
+    # Firebase configs (public API keys, not secrets)
+    "(?i)google-services\\.json$",
+    "(?i)GoogleService-Info\\.plist$",
+    "(?i)firebase-credentials\\.json$",
+    # Podfile.lock (version hashes, not secrets)
+    "Podfile\\.lock$",
+    # Generated Pod source
+    "Pods/",
+    # Backend log file
+    "backend\\.log$",
+    # Build artifacts
+    "\\.next/",
+    "\\.auth/",
+    "node_modules/",
+    # Docs with example config snippets
+    "plans/.*\\.md$",
+    "sonar-project\\.properties$",
+  ]
