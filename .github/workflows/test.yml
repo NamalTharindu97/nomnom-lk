@@ -78,8 +78,8 @@ jobs:
           govulncheck ./...
         working-directory: backend
 
-      - name: Run unit tests
-        run: go test ./internal/... -v -count=1 -race
+      - name: Run unit tests with coverage
+        run: go test ./internal/... -v -count=1 -race -coverprofile=coverage.out -covermode=atomic
         working-directory: backend
 
       - name: Run integration tests
@@ -96,6 +96,13 @@ jobs:
           TEST_MINIO_HOST: localhost
           TEST_MINIO_ACCESS_KEY: minioadmin
           TEST_MINIO_SECRET: minioadmin
+
+      - name: Upload Go coverage
+        uses: codecov/codecov-action@v5
+        with:
+          directory: backend
+          files: coverage.out
+          flags: backend
 
   admin:
     name: Admin (Next.js + Playwright)
@@ -159,6 +166,10 @@ jobs:
 
       - name: TypeScript type check
         run: npx tsc --noEmit
+        working-directory: admin
+
+      - name: Run unit tests with coverage
+        run: npx vitest run --coverage
         working-directory: admin
 
       - name: Build
@@ -326,6 +337,13 @@ jobs:
           name: playwright-test-results
           path: admin/test-results/
           retention-days: 3
+
+      - name: Upload admin coverage
+        uses: codecov/codecov-action@v5
+        with:
+          directory: admin
+          files: coverage/lcov.info
+          flags: admin
 
   flutter:
     name: Flutter Unit + Widget Tests

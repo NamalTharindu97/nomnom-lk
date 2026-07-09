@@ -9,6 +9,11 @@ export default defineConfig({
     globals: true,
     setupFiles: [],
     exclude: ["tests/**", "node_modules/**"],
+    coverage: {
+      provider: "v8",
+      reporter: ["lcov", "text-summary"],
+      reportsDirectory: "./coverage",
+    },
   },
   resolve: {
     alias: {
