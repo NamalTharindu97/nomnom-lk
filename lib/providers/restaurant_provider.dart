@@ -2,11 +2,26 @@ import 'package:flutter/foundation.dart';
 
 import '../models/restaurant.dart';
 import '../services/api_restaurant_service.dart';
+import '../services/connectivity_service.dart';
+import '../services/local/restaurant_store.dart';
 
 class RestaurantProvider extends ChangeNotifier {
-  RestaurantProvider(this._service);
+  RestaurantProvider(
+    this._service, {
+    required RestaurantStore restaurantStore,
+    required ConnectivityService connectivityService,
+  })  : _restaurantStore = restaurantStore,
+        _connectivityService = connectivityService {
+    _connectivityService.onConnectivityChanged.listen((online) {
+      _isOnline = online;
+    });
+  }
 
   final ApiRestaurantService _service;
+  final RestaurantStore _restaurantStore;
+  final ConnectivityService _connectivityService;
+
+  bool _isOnline = true;
 
   List<Restaurant> _restaurants = const [];
   List<Restaurant> _searchResults = const [];
@@ -34,15 +49,33 @@ class RestaurantProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     _currentPage = 1;
-    try {
-      final result = await _service.fetchRestaurants(page: _currentPage);
-      _restaurants = result.data;
-      _hasMore = result.hasMore;
-      _total = result.total;
-    } catch (e) {
-      _error = 'Failed to load restaurants.';
-      debugPrint('Failed to load restaurants: $e');
+
+    // Cache-first: populate from Hive immediately
+    final cached = _restaurantStore.getRestaurantsByPage(_currentPage);
+    if (cached != null && _restaurants.isEmpty) {
+      _restaurants = cached;
+      _total = cached.length;
+      _hasMore = false;
+      _setLoading(false);
     }
+
+    if (_isOnline) {
+      try {
+        final result = await _service.fetchRestaurants(page: _currentPage);
+        _restaurants = result.data;
+        _hasMore = result.hasMore;
+        _total = result.total;
+        await _restaurantStore.saveRestaurantsByPage(_currentPage, _restaurants);
+      } catch (e) {
+        _error = 'Failed to load restaurants.';
+        debugPrint('Failed to load restaurants: $e');
+      }
+    }
+
+    if (_restaurants.isEmpty && !_isOnline) {
+      _error ??= 'No internet connection';
+    }
+
     _setLoading(false);
   }
 
@@ -56,6 +89,7 @@ class RestaurantProvider extends ChangeNotifier {
       _hasMore = result.hasMore;
       _currentPage = nextPage;
       _restaurants = [..._restaurants, ...result.data];
+      await _restaurantStore.saveRestaurantsByPage(_currentPage, _restaurants);
     } catch (e) {
       debugPrint('Failed to load more restaurants: $e');
     }

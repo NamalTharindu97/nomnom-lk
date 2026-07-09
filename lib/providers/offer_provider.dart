@@ -3,16 +3,35 @@ import 'package:flutter/foundation.dart';
 import '../models/offer.dart';
 import '../services/api_favorites_service.dart';
 import '../services/api_offer_service.dart';
+import '../services/connectivity_service.dart';
+import '../services/local/favorite_store.dart';
+import '../services/local/offer_store.dart';
 
 class OfferProvider extends ChangeNotifier {
   OfferProvider({
     required ApiOfferService offerService,
     required ApiFavoritesService favoritesService,
+    required FavoriteStore favoriteStore,
+    required OfferStore offerStore,
+    required ConnectivityService connectivityService,
   })  : _offerService = offerService,
-        _favoritesService = favoritesService;
+        _favoritesService = favoritesService,
+        _favoriteStore = favoriteStore,
+        _offerStore = offerStore,
+        _connectivityService = connectivityService {
+    _connectivityService.onConnectivityChanged.listen((online) {
+      _isOnline = online;
+      if (online) _syncQueuedActions();
+    });
+  }
 
   final ApiOfferService _offerService;
   final ApiFavoritesService _favoritesService;
+  final FavoriteStore _favoriteStore;
+  final OfferStore _offerStore;
+  final ConnectivityService _connectivityService;
+
+  bool _isOnline = true;
 
   List<Offer> _offers = const [];
   List<Offer> _searchResults = const [];
@@ -134,16 +153,30 @@ class OfferProvider extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     _currentPage = 1;
-    try {
-      final result = await _offerService.fetchOffers(page: _currentPage);
-      _offers = result.data;
-      _rebuildOffersCache();
-      _filterVersion++;
-      _hasMore = result.hasMore;
-      _total = result.total;
-      _hasLoaded = true;
-    } catch (e) {
-      _error = 'Failed to load offers. Pull to retry.';
+    if (_isOnline) {
+      try {
+        final result = await _offerService.fetchOffers(page: _currentPage);
+        _offers = result.data;
+        _rebuildOffersCache();
+        _filterVersion++;
+        _hasMore = result.hasMore;
+        _total = result.total;
+        _hasLoaded = true;
+        await _offerStore.saveOffersByPage(_currentPage, _offers);
+      } catch (e) {
+        _error = 'Failed to load offers. Pull to retry.';
+      }
+    }
+    if (!_hasLoaded) {
+      final cached = _offerStore.getOffersByPage(_currentPage);
+      if (cached != null) {
+        _offers = cached;
+        _rebuildOffersCache();
+        _filterVersion++;
+        _hasLoaded = true;
+      } else {
+        _error = 'No internet connection';
+      }
     }
     _setLoading(false);
   }
@@ -160,6 +193,7 @@ class OfferProvider extends ChangeNotifier {
       _offers = [..._offers, ...result.data];
       _rebuildOffersCache();
       _filterVersion++;
+      await _offerStore.saveOffersByPage(_currentPage, _offers);
     } catch (e) {
       debugPrint('Failed to load more offers: $e');
     }
@@ -168,8 +202,10 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> refreshOffers() async {
-    await loadOffers(forceRefresh: true);
-    await loadFavorites();
+    await Future.wait([
+      loadOffers(forceRefresh: true),
+      loadFavorites(),
+    ]);
   }
 
   Future<void> searchOffers(String query) async {
@@ -244,9 +280,29 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> loadFavorites() async {
+    // Cache-first: apply locally stored favorites instantly
+    if (_offers.isNotEmpty) {
+      try {
+        final cachedIds = _favoriteStore.getFavorites();
+        if (cachedIds.isNotEmpty) {
+          _offers = _offers.map((offer) {
+            return offer.copyWith(isFavorite: cachedIds.contains(offer.id));
+          }).toList(growable: false);
+          _rebuildOffersCache();
+          _filterVersion++;
+          _searchResults = _searchResults.map((offer) {
+            return offer.copyWith(isFavorite: cachedIds.contains(offer.id));
+          }).toList(growable: false);
+          _rebuildSearchCache();
+          notifyListeners();
+        }
+      } catch (_) {}
+    }
+
     try {
       final favorites = await _favoritesService.fetchFavorites();
       final favoriteIds = favorites.map((o) => o.id).toSet();
+      await _favoriteStore.syncFromRemote(favoriteIds);
       _offers = _offers.map((offer) {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);
@@ -264,5 +320,9 @@ class OfferProvider extends ChangeNotifier {
     if (_isLoading == value) return;
     _isLoading = value;
     notifyListeners();
+  }
+
+  Future<void> _syncQueuedActions() async {
+    await loadFavorites();
   }
 }

@@ -7,6 +7,8 @@ import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
+import '../providers/restaurant_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -69,12 +71,14 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _bootstrap() async {
     final authProvider = context.read<AuthProvider>();
     final offerProvider = context.read<OfferProvider>();
+    final restaurantProvider = context.read<RestaurantProvider>();
     final notificationProvider = context.read<NotificationProvider>();
 
     try {
       await Future.wait([
         authProvider.restoreSession(),
         offerProvider.loadOffers(),
+        restaurantProvider.loadRestaurants(),
         Future<void>.delayed(const Duration(milliseconds: 1500)),
       ]);
 
@@ -157,8 +161,8 @@ class _SplashScreenState extends State<SplashScreen>
                 position: _textSlide,
                 child: FadeTransition(
                   opacity: _textFade,
-                  child: Text(
-                    'NomNom LK',
+                    child: Text(
+                      AppLocalizations.of(context)!.appName,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: context.colors.textPrimary,
                       fontWeight: FontWeight.w900,
@@ -170,7 +174,7 @@ class _SplashScreenState extends State<SplashScreen>
               FadeTransition(
                 opacity: _taglineFade,
                 child: Text(
-                  "Discover Sri Lanka's Best Food Deals",
+                  AppLocalizations.of(context)!.splashTagline,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.muted,
                     fontWeight: FontWeight.w600,
