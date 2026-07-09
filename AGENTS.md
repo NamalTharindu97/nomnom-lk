@@ -181,6 +181,12 @@
   - Docker infra (postgres, redis, minio) ✓, Backend running ✓, Admin running ✓, Flutter running ✓
   - All 48 Playwright E2E tests ✓
   - See `plans/devops-plan.md` for full Render deployment guide
+- **2026-07-09:** CI pipeline enhancement (Phase 1–4) — DONE.
+  - **Phase 1 (Linting):** `.golangci.yml` with 8 standard linters + revive/misspell; `golangci-lint` in CI; `npm run lint` + `npx tsc --noEmit` in admin CI.
+  - **Phase 2 (Security):** `.github/dependabot.yml` (Go, npm, GHA weekly); Gitleaks secret scan; `govulncheck` for Go vulns; `npm audit --audit-level=high`; Trivy container scan on Docker push.
+  - **Phase 3 (Coverage):** `sonar-project.properties` + `codecov.yml` (70% target); `@vitest/coverage-v8`; `go test -coverprofile`; Codecov upload for both backend and admin.
+  - **Phase 4 (Pipeline):** npm caching via `actions/cache`; Render deploy hook for backend + admin auto-deploy after Docker push.
+  - All committed to master (`104cb4c`).
 - **2026-07-09:** Docker Render-compatibility fixes — DONE.
   - `admin/Dockerfile`: Default `NEXT_PUBLIC_API_URL` changed to `/api/v1` (was `http://localhost:8080/api/v1`) for rewrite-based proxy. CMD now reads `PORT` env var via `next start -p ${PORT:-3000}`.
   - `backend/internal/config/config.go`: Added `PORT` env var fallback for cloud port convention (Render/Heroku). Only activates when `SERVER_PORT` is not explicitly set.
