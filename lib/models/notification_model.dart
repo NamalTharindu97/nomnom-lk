@@ -34,6 +34,18 @@ class AppNotification {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type,
+      'title': title,
+      'body': body,
+      'is_read': isRead,
+      'created_at': createdAt.toIso8601String(),
+      'offer_id': offerId,
+    };
+  }
+
   AppNotification copyWith({
     String? id,
     String? type,

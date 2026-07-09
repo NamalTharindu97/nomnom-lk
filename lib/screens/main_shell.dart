@@ -6,6 +6,7 @@ import '../core/theme/context_colors.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/restaurant_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import 'favorites_screen.dart';
 import 'home_screen.dart';
@@ -23,6 +24,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   late int _selectedIndex;
+  DateTime _lastResume = DateTime(2000);
 
   @override
   void initState() {
@@ -39,6 +41,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      if (DateTime.now().difference(_lastResume).inSeconds < 60) return;
+      _lastResume = DateTime.now();
       context.read<OfferProvider>().refreshOffers();
       context.read<RestaurantProvider>().loadRestaurants();
       context.read<ApiClient>().invalidateCache('/notifications');
@@ -67,7 +71,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       const SearchScreen(),
       const FavoritesScreen(),
       const NotificationsScreen(),
-      const ProfileScreen(),
+      ProfileScreen(onNavigateToTab: (index) => _selectTab(index)),
     ];
 
     return Scaffold(
@@ -92,7 +96,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 icon: Icons.local_fire_department_outlined,
                 activeIcon: Icons.local_fire_department_rounded,
               ),
-              label: 'Home',
+              label: AppLocalizations.of(context)!.navHome,
             ),
             BottomNavigationBarItem(
               icon: _NavIcon(
@@ -100,7 +104,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 icon: Icons.search_rounded,
                 activeIcon: Icons.search_rounded,
               ),
-              label: 'Search',
+              label: AppLocalizations.of(context)!.navSearch,
             ),
             BottomNavigationBarItem(
               icon: _NavIcon(
@@ -108,7 +112,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 icon: Icons.favorite_border_rounded,
                 activeIcon: Icons.favorite_rounded,
               ),
-              label: 'Favorites',
+              label: AppLocalizations.of(context)!.navFavorites,
             ),
             BottomNavigationBarItem(
               icon: _NavIcon(
@@ -117,7 +121,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 activeIcon: Icons.notifications_rounded,
                 badge: context.watch<NotificationProvider>().unreadCount,
               ),
-              label: 'Notifications',
+              label: AppLocalizations.of(context)!.navNotifications,
             ),
             BottomNavigationBarItem(
               icon: _NavIcon(
@@ -125,7 +129,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 icon: Icons.person_outline_rounded,
                 activeIcon: Icons.person_rounded,
               ),
-              label: 'Profile',
+              label: AppLocalizations.of(context)!.navProfile,
             ),
           ],
           selectedItemColor: AppColors.curry,

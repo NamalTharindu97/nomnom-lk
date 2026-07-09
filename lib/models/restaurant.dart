@@ -39,6 +39,20 @@ class Restaurant {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'slug': slug,
+      'address': address,
+      'phone': phone,
+      'description': description,
+      'cuisine_tags': cuisineTags,
+      'status': status,
+      'cover_image': coverImage,
+    };
+  }
+
   Restaurant copyWith({
     String? id,
     String? name,

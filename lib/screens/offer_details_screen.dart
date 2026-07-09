@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../services/api_offer_service.dart';
 import '../utils/currency_formatter.dart';
@@ -59,7 +60,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Could not load offer details.';
+          _error = AppLocalizations.of(context)!.offerDetailsError;
           _isLoading = false;
         });
       }
@@ -78,8 +79,8 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
       return Scaffold(
         body: EmptyState(
           icon: Icons.error_outline_rounded,
-          title: 'Offer not found',
-          message: _error ?? 'This deal may have been removed.',
+          title: AppLocalizations.of(context)!.offerNotFound,
+          message: _error ?? AppLocalizations.of(context)!.offerNotFoundSubtitle,
         ),
       );
     }
@@ -147,19 +148,19 @@ class _OfferDetailsContent extends StatelessWidget {
               const SizedBox(height: Spacings.xl),
               _InfoRow(
                 icon: Icons.storefront_rounded,
-                title: 'Restaurant',
+                title: AppLocalizations.of(context)!.offerRestaurantLabel,
                 value: offer.restaurantName,
               ),
               const SizedBox(height: 12),
               _InfoRow(
                 icon: Icons.location_on_rounded,
-                title: 'Location',
+                title: AppLocalizations.of(context)!.offerLocation,
                 value: offer.location,
               ),
               const SizedBox(height: 12),
               _InfoRow(
                 icon: Icons.local_offer_rounded,
-                title: 'Discount',
+                title: AppLocalizations.of(context)!.offerDiscountLabel,
                 value: offer.discountLabel,
               ),
               const SizedBox(height: Spacings.xxl),
@@ -195,7 +196,7 @@ class _PricePanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Deal price',
+                  AppLocalizations.of(context)!.offerDealPriceLabel,
                   style: textTheme.labelLarge?.copyWith(
                     color: context.colors.muted,
                     fontWeight: FontWeight.w700,
@@ -225,7 +226,7 @@ class _PricePanel extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Save ${CurrencyFormatter.lkr(offer.saving)}',
+                AppLocalizations.of(context)!.offerSaveAmount(CurrencyFormatter.lkr(offer.saving)),
                 style: textTheme.labelLarge?.copyWith(
                   color: AppColors.lime,
                   fontWeight: FontWeight.w900,

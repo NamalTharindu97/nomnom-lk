@@ -7,6 +7,10 @@ import 'package:provider/provider.dart';
 import '../core/app_routes.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notification_provider.dart';
+import '../providers/offer_provider.dart';
+import '../providers/restaurant_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
 
@@ -78,13 +82,13 @@ class _LoginScreenState extends State<LoginScreen>
         if (error is Map && error['message'] is String) {
           final msg = error['message'] as String;
           if (msg.contains('invalid email or password')) {
-            return 'Invalid email or password.';
+            return AppLocalizations.of(context)!.loginErrorInvalidCredentials;
           }
           if (msg.contains('suspended')) {
-            return 'Your account has been suspended. Contact an administrator.';
+            return AppLocalizations.of(context)!.loginErrorSuspended;
           }
           if (msg.contains('please sign in with Google')) {
-            return 'This email uses Google Sign-In.';
+            return AppLocalizations.of(context)!.loginErrorGoogleEmail;
           }
           if (msg.contains('verify your email')) {
             return msg;
@@ -93,7 +97,19 @@ class _LoginScreenState extends State<LoginScreen>
         }
       }
     }
-    return 'Login failed. Try again.';
+    return AppLocalizations.of(context)!.loginErrorGeneric;
+  }
+
+  Future<void> _syncDataAfterLogin() async {
+    try {
+      await Future.wait([
+        context.read<OfferProvider>().loadOffers(forceRefresh: true),
+        context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true),
+        context.read<NotificationProvider>().loadUnreadCount(),
+      ]);
+    } catch (e) {
+      debugPrint('Post-login data sync error: $e');
+    }
   }
 
   Future<void> _signInWithGoogle() async {
@@ -116,6 +132,10 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (idToken != null && mounted) {
         await context.read<AuthProvider>().signInWithFirebase(idToken);
+      }
+
+      if (mounted) {
+        await _syncDataAfterLogin();
       }
 
       if (mounted) {
@@ -146,6 +166,10 @@ class _LoginScreenState extends State<LoginScreen>
       await context.read<AuthProvider>().signInWithEmail(email, password);
 
       if (mounted) {
+        await _syncDataAfterLogin();
+      }
+
+      if (mounted) {
         await Navigator.of(context).pushNamedAndRemoveUntil(
           AppRoutes.home,
           (_) => false,
@@ -157,9 +181,9 @@ class _LoginScreenState extends State<LoginScreen>
         if (msg.contains('verify your email')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Please verify your email first'),
+              content: Text(AppLocalizations.of(context)!.loginEmailVerificationRequired),
               action: SnackBarAction(
-                label: 'Resend',
+                label: AppLocalizations.of(context)!.loginResend,
                 onPressed: () => Navigator.of(context).pushReplacementNamed(
                   AppRoutes.verifyEmail,
                   arguments: email,
@@ -227,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen>
                         child: FadeTransition(
                           opacity: _titleAnim,
                           child: Text(
-                            "Find Sri Lanka's Best\nFood Deals",
+                            AppLocalizations.of(context)!.splashTagline,
                             textAlign: TextAlign.center,
                             style: textTheme.titleMedium?.copyWith(
                               color: context.colors.textSecondary,
@@ -258,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                       )
                                     : const Icon(Icons.g_mobiledata_rounded, size: 28),
-                                label: Text(isLoading || _isGoogleLoading ? 'Signing in...' : 'Continue with Google'),
+                                label: Text(isLoading || _isGoogleLoading ? AppLocalizations.of(context)!.loginSigningIn : AppLocalizations.of(context)!.loginContinueWithGoogle),
                           ),
                         ),
                       ),
@@ -273,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen>
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2),
                                 child: Text(
-                                  'or continue with',
+                                  AppLocalizations.of(context)!.loginOrContinueWith,
                                   style: textTheme.titleSmall?.copyWith(
                                     color: context.colors.muted,
                                   ),
@@ -305,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 onPressed: () =>
                                     setState(() => _showEmailForm = true),
                                 icon: const Icon(Icons.mail_outline_rounded),
-                                label: const Text('Continue with email'),
+                                label: Text(AppLocalizations.of(context)!.loginContinueWithEmail),
                               ),
                             ),
                             secondChild: Form(
@@ -330,17 +354,17 @@ class _LoginScreenState extends State<LoginScreen>
                                       maxLength: 254,
                                       validator: (v) {
                                         if (v == null || v.trim().isEmpty) {
-                                          return 'Enter your email';
+                                          return AppLocalizations.of(context)!.loginEmailHint;
                                         }
                                         if (!RegExp(
                                                 r'^[^@]+@[^@]+\.[^@]+$')
                                             .hasMatch(v.trim())) {
-                                          return 'Enter a valid email';
+                                          return AppLocalizations.of(context)!.loginEmailInvalid;
                                         }
                                         return null;
                                       },
-                                      decoration: const InputDecoration(
-                                        hintText: 'Email address',
+                                      decoration: InputDecoration(
+                                        hintText: AppLocalizations.of(context)!.loginEmailLabel,
                                         counterText: '',
                                         prefixIcon: Icon(
                                             Icons.mail_outline_rounded),
@@ -357,15 +381,15 @@ class _LoginScreenState extends State<LoginScreen>
                                           _signInWithEmail(),
                                       validator: (v) {
                                         if (v == null || v.isEmpty) {
-                                          return 'Enter your password';
+                                          return AppLocalizations.of(context)!.loginPasswordHint;
                                         }
                                         if (v.length < 8) {
-                                          return 'At least 8 characters';
+                                          return AppLocalizations.of(context)!.loginPasswordMinChars;
                                         }
                                         return null;
                                       },
                                       decoration: InputDecoration(
-                                        hintText: 'Password',
+                                        hintText: AppLocalizations.of(context)!.loginPasswordLabel,
                                         counterText: '',
                                         prefixIcon: const Icon(
                                             Icons.lock_outline_rounded),
@@ -392,7 +416,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             : _signInWithEmail,
                                         icon: const Icon(
                                             Icons.arrow_forward_rounded),
-                                        label: const Text('Sign in'),
+                                        label: Text(AppLocalizations.of(context)!.loginSignInButton),
                                       ),
                                     ),
                                   ],
@@ -409,7 +433,7 @@ class _LoginScreenState extends State<LoginScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "Don't have an account? ",
+                              AppLocalizations.of(context)!.loginNoAccount,
                               style: textTheme.titleSmall?.copyWith(
                                 color: context.colors.muted,
                               ),
@@ -419,8 +443,8 @@ class _LoginScreenState extends State<LoginScreen>
                               onTap: () => Navigator.of(context).pushNamed(
                                 AppRoutes.register,
                               ),
-                                child: Text(
-                                  'Sign Up',
+                                  child: Text(
+                                    AppLocalizations.of(context)!.loginRegisterLink,
                                   style: textTheme.titleSmall?.copyWith(
                                     color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.w700,

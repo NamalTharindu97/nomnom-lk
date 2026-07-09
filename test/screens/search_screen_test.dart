@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../../lib/providers/offer_provider.dart';
 import '../../lib/providers/restaurant_provider.dart';
 import '../../lib/screens/search_screen.dart';
@@ -12,6 +13,8 @@ Widget buildTestApp({
   required RestaurantProvider restaurantProvider,
 }) {
   return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiProvider(
       providers: [
         ChangeNotifierProvider<OfferProvider>.value(value: offerProvider),
@@ -38,12 +41,23 @@ void main() {
       final mockOfferService = MockApiOfferService(offers: offers);
       final mockFavService = MockApiFavoritesService();
       final mockRestService = MockApiRestaurantService(restaurants: restaurants);
+      final mockConnectivity = MockConnectivityService();
+      final mockOfferStore = MockOfferStore();
+      final mockRestaurantStore = MockRestaurantStore();
+      final mockFavoriteStore = MockFavoriteStore();
 
       offerProvider = OfferProvider(
         offerService: mockOfferService,
         favoritesService: mockFavService,
+        favoriteStore: mockFavoriteStore,
+        connectivityService: mockConnectivity,
+        offerStore: mockOfferStore,
       );
-      restaurantProvider = RestaurantProvider(mockRestService);
+      restaurantProvider = RestaurantProvider(
+        mockRestService,
+        restaurantStore: mockRestaurantStore,
+        connectivityService: mockConnectivity,
+      );
       offerProvider.loadOffers(forceRefresh: true);
       restaurantProvider.loadRestaurants(forceRefresh: true);
     });

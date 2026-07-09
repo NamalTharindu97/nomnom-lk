@@ -32,7 +32,6 @@ func (h *UploadHandler) ServeFile(c *gin.Context) {
 		return
 	}
 	defer reader.Close()
-
 	c.Header("Content-Type", contentType)
 	c.Header("Cache-Control", "public, max-age=31536000")
 	c.Status(http.StatusOK)

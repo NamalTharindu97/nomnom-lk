@@ -29,11 +29,15 @@ type UploadService struct {
 }
 
 func NewUploadService(cfg *config.R2Config) (*UploadService, error) {
+	lookupType := minio.BucketLookupAuto
+	if cfg.ForcePathStyle {
+		lookupType = minio.BucketLookupPath
+	}
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:        credentials.NewStaticV4(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
 		Secure:       false,
 		Region:       cfg.Region,
-		BucketLookup: minio.BucketLookupAuto,
+		BucketLookup: lookupType,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create minio client: %w", err)

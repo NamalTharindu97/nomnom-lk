@@ -39,7 +39,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	emailService := services.NewEmailService(&cfg.SMTP, log)
 	authService := services.NewAuthService(userRepo, refreshTokenRepo, &cfg.JWT, rdb, emailService)
 	restaurantService := services.NewRestaurantService(restaurantRepo)
-	offerService := services.NewOfferService(offerRepo, restaurantRepo)
+	offerService := services.NewOfferService(offerRepo, restaurantRepo, rdb)
 	favoriteService := services.NewFavoriteService(favoriteRepo)
 	searchService := services.NewSearchService(db)
 	notificationService := services.NewNotificationService(notificationRepo, deviceTokenRepo, &cfg.Firebase)
@@ -57,7 +57,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	firebaseService := services.NewFirebaseService(&cfg.Firebase)
 	authHandler := handlers.NewAuthHandler(authService, firebaseService, auditService)
 	userHandler := handlers.NewUserHandler(userRepo, auditService)
-	dashboardService := services.NewDashboardService(restaurantRepo, offerRepo)
+	dashboardService := services.NewDashboardService(restaurantRepo, offerRepo, rdb)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService, auditService)
 	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo, auditService)
 	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService, auditService)
@@ -129,6 +129,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		{
 			usersGroup.GET("/me", userHandler.Me)
 			usersGroup.POST("/me/change-password", userHandler.ChangePassword)
+			usersGroup.PUT("/me/profile", userHandler.UpdateProfile)
 		}
 
 		adminUsers := usersGroup.Group("")

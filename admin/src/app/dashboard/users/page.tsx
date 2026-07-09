@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { BulkActionBar } from "@/components/bulk-action-bar"
 import { csvExport } from "@/lib/csv-export"
-import { Trash2, Search, Users, Plus, Download } from "lucide-react"
+import { Trash2, Search, Users, Plus, Download, Pencil } from "lucide-react"
 import UserDialog from "./_user-dialog"
 
 interface User {
@@ -54,6 +54,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all")
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [showUserDialog, setShowUserDialog] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
   const { selected, toggle, toggleAll, clear } = useBulk()
 
   const load = useCallback(async () => {
@@ -248,6 +249,9 @@ export default function UsersPage() {
                         {new Date(u.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditingUser(u); setShowUserDialog(true) }}>
+                          <Pencil className="size-4" />
+                        </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(u)}>
@@ -282,8 +286,9 @@ export default function UsersPage() {
       </div>
       <UserDialog
         open={showUserDialog}
-        onClose={() => setShowUserDialog(false)}
+        onClose={() => { setShowUserDialog(false); setEditingUser(null) }}
         onSaved={load}
+        user={editingUser}
       />
     </ErrorBoundary>
   )

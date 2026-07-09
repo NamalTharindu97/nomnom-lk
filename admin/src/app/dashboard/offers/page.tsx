@@ -44,6 +44,7 @@ interface Offer {
   description: string
   start_date: string
   image_urls: string[]
+  publish_at?: string
 }
 
 const PER_PAGE = 10
@@ -258,7 +259,14 @@ export default function OffersPage() {
                         </span>{" "}
                         <span className="text-success font-semibold">LKR {o.offer_price}</span>
                       </TableCell>
-                      <TableCell>{statusBadge(o.status)}</TableCell>
+                      <TableCell>
+                        {statusBadge(o.status)}
+                        {o.publish_at && new Date(o.publish_at) > new Date() && (
+                          <Badge variant="outline" className="ml-1 text-amber-600 border-amber-600">
+                            Scheduled
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-xs">
                         {new Date(o.end_date).toLocaleDateString()}
                       </TableCell>

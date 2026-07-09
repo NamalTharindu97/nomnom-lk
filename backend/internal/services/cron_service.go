@@ -129,6 +129,21 @@ func (s *CronService) ProcessScheduledNotifications() {
 	fmt.Printf("CRON: processed %d scheduled notifications\n", len(due))
 }
 
+func (s *CronService) ProcessScheduledPublishes() {
+	var offers []models.Offer
+	s.db.Model(&models.Offer{}).
+		Where("status = ? AND publish_at IS NOT NULL AND publish_at <= NOW()", models.OfferPending).
+		Find(&offers)
+
+	for _, offer := range offers {
+		s.db.Model(&offer).Update("status", models.OfferApproved)
+	}
+
+	if len(offers) > 0 {
+		fmt.Printf("CRON: auto-published %d scheduled offers\n", len(offers))
+	}
+}
+
 func (s *CronService) PruneAuditLogs() {
 	if s.auditLogRepo == nil {
 		return
@@ -145,5 +160,6 @@ func (s *CronService) RunAll() {
 	s.MarkExpiredOffers()
 	s.NotifyExpiringSoon()
 	s.ProcessScheduledNotifications()
+	s.ProcessScheduledPublishes()
 	s.PruneAuditLogs()
 }

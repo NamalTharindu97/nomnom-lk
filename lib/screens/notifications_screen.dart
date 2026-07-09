@@ -6,6 +6,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/stagger_item.dart';
@@ -41,7 +42,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Notifications',
+                      AppLocalizations.of(context)!.notificationsTitle,
                       style: textTheme.headlineSmall?.copyWith(
                         color: context.colors.textPrimary,
                         fontWeight: FontWeight.w900,
@@ -53,7 +54,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       if (provider.notifications.isEmpty) return const SizedBox();
                       return TextButton(
                         onPressed: () => provider.markAllAsRead(),
-                        child: const Text('Mark all read'),
+                        child: Text(AppLocalizations.of(context)!.notificationsMarkAllRead),
                       );
                     },
                   ),
@@ -72,17 +73,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   if (provider.error != null) {
                     return EmptyState(
                       icon: Icons.wifi_off_rounded,
-                      title: 'Failed to load',
+                      title: AppLocalizations.of(context)!.generalFailedToLoad,
                       message: provider.error!,
                     );
                   }
 
                   final notifications = provider.notifications;
                   if (notifications.isEmpty) {
-                    return const EmptyState(
+                    return EmptyState(
                       icon: Icons.notifications_none_rounded,
-                      title: 'No notifications',
-                      message: 'You\'re all caught up!',
+                      title: AppLocalizations.of(context)!.notificationsEmpty,
+                      message: AppLocalizations.of(context)!.notificationsAllCaughtUp,
                     );
                   }
 

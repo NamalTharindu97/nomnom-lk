@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -194,7 +195,7 @@ func TestOfferService_Create_Success(t *testing.T) {
 	mockRest := newMockRestaurantRepo()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
 
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	req := &request.CreateOfferRequest{
 		RestaurantID:  restID.String(),
@@ -223,7 +224,7 @@ func TestOfferService_Create_AdminAutoApproves(t *testing.T) {
 	mockRest := newMockRestaurantRepo()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
 
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	req := &request.CreateOfferRequest{
 		RestaurantID:  restID.String(),
@@ -239,7 +240,7 @@ func TestOfferService_Create_AdminAutoApproves(t *testing.T) {
 }
 
 func TestOfferService_Create_InvalidRestaurantID(t *testing.T) {
-	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo())
+	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo(), nil)
 	req := &request.CreateOfferRequest{
 		RestaurantID:  "not-a-uuid",
 		Title:         "Test",
@@ -252,7 +253,7 @@ func TestOfferService_Create_InvalidRestaurantID(t *testing.T) {
 }
 
 func TestOfferService_Create_RestaurantNotFound(t *testing.T) {
-	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo())
+	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo(), nil)
 	req := &request.CreateOfferRequest{
 		RestaurantID:  uuid.New().String(),
 		Title:         "Test",
@@ -267,7 +268,7 @@ func TestOfferService_Create_RestaurantNotFound(t *testing.T) {
 func TestOfferService_GetByID_Found(t *testing.T) {
 	mockOffer := newMockOfferRepo()
 	mockRest := newMockRestaurantRepo()
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	restID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
@@ -289,7 +290,7 @@ func TestOfferService_GetByID_Found(t *testing.T) {
 }
 
 func TestOfferService_GetByID_NotFound(t *testing.T) {
-	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo())
+	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo(), nil)
 	_, err := svc.GetByID(uuid.New())
 	assert.ErrorContains(t, err, "offer not found")
 }
@@ -300,7 +301,7 @@ func TestOfferService_Update_OwnerCanUpdate(t *testing.T) {
 	restID := uuid.New()
 	userID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	req := &request.CreateOfferRequest{
@@ -326,7 +327,7 @@ func TestOfferService_Update_NonOwnerCannotUpdate(t *testing.T) {
 	ownerID := uuid.New()
 	otherUserID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	req := &request.CreateOfferRequest{
@@ -349,7 +350,7 @@ func TestOfferService_Update_AdminCanUpdateAny(t *testing.T) {
 	mockRest := newMockRestaurantRepo()
 	restID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	req := &request.CreateOfferRequest{
@@ -374,7 +375,7 @@ func TestOfferService_Delete_OwnerCanDelete(t *testing.T) {
 	restID := uuid.New()
 	userID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	req := &request.CreateOfferRequest{
@@ -399,7 +400,7 @@ func TestOfferService_Delete_NonOwnerFails(t *testing.T) {
 	mockRest := newMockRestaurantRepo()
 	restID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	req := &request.CreateOfferRequest{
@@ -421,7 +422,7 @@ func TestOfferService_Approve(t *testing.T) {
 	mockRest := newMockRestaurantRepo()
 	restID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	req := &request.CreateOfferRequest{
@@ -445,7 +446,7 @@ func TestOfferService_Reject(t *testing.T) {
 	mockRest := newMockRestaurantRepo()
 	restID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	req := &request.CreateOfferRequest{
@@ -469,7 +470,7 @@ func TestOfferService_List(t *testing.T) {
 	mockRest := newMockRestaurantRepo()
 	restID := uuid.New()
 	mockRest.restaurants[restID] = &models.Restaurant{ID: restID, Name: "Test"}
-	svc := NewOfferService(mockOffer, mockRest)
+	svc := NewOfferService(mockOffer, mockRest, nil)
 
 	now := time.Now()
 	for i := 0; i < 5; i++ {
@@ -483,14 +484,14 @@ func TestOfferService_List(t *testing.T) {
 		svc.Create(req, uuid.New(), true)
 	}
 
-	offers, total, err := svc.List("", "", 1, 10, "")
+	offers, total, err := svc.List(context.Background(), "", "", 1, 10, "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(5), total)
 	assert.Len(t, offers, 5)
 }
 
 func TestOfferService_IncrementView(t *testing.T) {
-	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo())
+	svc := NewOfferService(newMockOfferRepo(), newMockRestaurantRepo(), nil)
 	err := svc.IncrementView(uuid.New())
 	assert.NoError(t, err)
 }

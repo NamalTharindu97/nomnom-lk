@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../../lib/providers/offer_provider.dart';
 import '../../lib/screens/home_screen.dart';
 import '../helpers/mocks.dart';
 
 Widget buildTestApp(OfferProvider provider) {
   return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: ChangeNotifierProvider<OfferProvider>.value(
       value: provider,
       child: const HomeScreen(onSearchTap: _noop),
@@ -47,9 +50,15 @@ void main() {
       ];
       final mockOfferService = MockApiOfferService(offers: offers);
       final mockFavService = MockApiFavoritesService();
+      final mockConnectivity = MockConnectivityService();
+      final mockOfferStore = MockOfferStore();
+      final mockFavoriteStore = MockFavoriteStore();
       provider = OfferProvider(
         offerService: mockOfferService,
         favoritesService: mockFavService,
+        favoriteStore: mockFavoriteStore,
+        connectivityService: mockConnectivity,
+        offerStore: mockOfferStore,
       );
     });
 
@@ -119,9 +128,15 @@ void main() {
       ];
       final mockOfferService = MockApiOfferService(offers: offers);
       final mockFavService = MockApiFavoritesService();
+      final mockConnectivity = MockConnectivityService();
+      final mockOfferStore = MockOfferStore();
+      final mockFavoriteStore = MockFavoriteStore();
       final provider = OfferProvider(
         offerService: mockOfferService,
         favoritesService: mockFavService,
+        favoriteStore: mockFavoriteStore,
+        connectivityService: mockConnectivity,
+        offerStore: mockOfferStore,
       );
       await provider.loadOffers(forceRefresh: true);
       await tester.pumpWidget(buildTestApp(provider));
@@ -134,9 +149,15 @@ void main() {
         (WidgetTester tester) async {
       final mockOfferService = MockApiOfferService(offers: []);
       final mockFavService = MockApiFavoritesService();
+      final mockConnectivity = MockConnectivityService();
+      final mockOfferStore = MockOfferStore();
+      final mockFavoriteStore = MockFavoriteStore();
       final provider = OfferProvider(
         offerService: mockOfferService,
         favoritesService: mockFavService,
+        favoriteStore: mockFavoriteStore,
+        connectivityService: mockConnectivity,
+        offerStore: mockOfferStore,
       );
       await provider.loadOffers(forceRefresh: true);
       await tester.pumpWidget(buildTestApp(provider));

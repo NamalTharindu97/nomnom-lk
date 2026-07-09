@@ -2,11 +2,14 @@ import 'package:flutter/foundation.dart';
 
 import '../models/notification_model.dart';
 import '../services/api_notification_service.dart';
+import '../services/local/notification_store.dart';
 
 class NotificationProvider extends ChangeNotifier {
-  NotificationProvider(this._service);
+  NotificationProvider(this._service, {required NotificationStore notificationStore})
+      : _notificationStore = notificationStore;
 
   final ApiNotificationService _service;
+  final NotificationStore _notificationStore;
 
   List<AppNotification> _notifications = const [];
   bool _isLoading = false;
@@ -24,9 +27,18 @@ class NotificationProvider extends ChangeNotifier {
     _error = null;
     try {
       _notifications = await _service.fetchNotifications();
+      await _notificationStore.saveNotifications(
+        _notifications.map((n) => n.toJson()).toList(),
+      );
     } catch (e) {
       _error = 'Failed to load notifications.';
       debugPrint('Failed to load notifications: $e');
+      final cached = _notificationStore.getNotifications();
+      if (cached != null) {
+        _notifications = cached
+            .map((n) => AppNotification.fromJson(n))
+            .toList();
+      }
     }
     _setLoading(false);
   }

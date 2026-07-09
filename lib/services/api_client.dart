@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:intl/intl.dart';
 
 import '../core/api_config.dart';
 import 'auth_interceptor.dart';
@@ -11,11 +12,12 @@ class ApiClient {
   late final CacheInterceptor _cacheInterceptor;
 
   ApiClient() {
+    final locale = Intl.defaultLocale?.split('_').first ?? 'en';
     _dio = Dio(BaseOptions(
       baseUrl: ApiConfig.baseUrl,
       connectTimeout: ApiConfig.connectTimeout,
       receiveTimeout: ApiConfig.receiveTimeout,
-      headers: {'Accept-Language': 'en'},
+      headers: {'Accept-Language': locale},
     ));
 
     _cacheInterceptor = CacheInterceptor(ttl: const Duration(minutes: 2));

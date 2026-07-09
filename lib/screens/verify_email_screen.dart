@@ -6,6 +6,7 @@ import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
 
@@ -76,7 +77,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
         }
       }
     }
-    return 'Something went wrong. Try again.';
+    return AppLocalizations.of(context)!.verifyErrorGeneric;
   }
 
   Future<void> _verify() async {
@@ -109,7 +110,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
       await context.read<AuthProvider>().sendVerificationCode(widget.email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Code resent!')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.verifyCodeResent)),
         );
       }
     } catch (e) {
@@ -181,7 +182,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                           child: FadeTransition(
                             opacity: _titleAnim,
                             child: Text(
-                              "Check your email",
+                              AppLocalizations.of(context)!.verifyCheckYourEmail,
                               textAlign: TextAlign.center,
                               style: textTheme.titleLarge?.copyWith(
                                 color: context.colors.textPrimary,
@@ -199,7 +200,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                           child: FadeTransition(
                             opacity: _titleAnim,
                             child: Text(
-                              "We sent a 6-digit code to",
+                              AppLocalizations.of(context)!.verifyWeSentCodeTo,
                               textAlign: TextAlign.center,
                               style: textTheme.bodyMedium?.copyWith(
                                 color: AppColors.muted,
@@ -256,7 +257,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                 onFieldSubmitted: (_) => _verify(),
                                 validator: (v) {
                                   if (v == null || v.trim().length != 6) {
-                                    return 'Enter the 6-digit code';
+                                    return AppLocalizations.of(context)!.verifyEnterCode;
                                   }
                                   return null;
                                 },
@@ -301,7 +302,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                       )
                                     : const Icon(Icons.check_rounded, size: 22),
                                 label: Text(
-                                    isLoading ? 'Verifying...' : 'Verify & Login'),
+                                    isLoading ? AppLocalizations.of(context)!.verifyVerifying : AppLocalizations.of(context)!.verifyVerifyAndLogin),
                               ),
                             ),
                           ),
@@ -321,8 +322,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                       _resendCooldown > 0 ? null : _resend,
                                   child: Text(
                                     _resendCooldown > 0
-                                        ? 'Resend code in ${_resendCooldown}s'
-                                        : 'Resend code',
+                                        ? AppLocalizations.of(context)!.verifyResendCodeIn(_resendCooldown)
+                                        : AppLocalizations.of(context)!.verifyResendCode,
                                     style: textTheme.bodySmall?.copyWith(
                                       color: _resendCooldown > 0
                                           ? AppColors.muted
@@ -339,7 +340,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                     (_) => false,
                                   ),
                                   child: Text(
-                                    'Use a different email',
+                                    AppLocalizations.of(context)!.verifyUseDifferentEmail,
                                     style: textTheme.bodySmall?.copyWith(
                                       color: AppColors.muted,
                                       fontWeight: FontWeight.w500,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/offer_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 
 class FavoriteButton extends StatelessWidget {
   const FavoriteButton({
@@ -40,7 +41,7 @@ class FavoriteButton extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => context.read<OfferProvider>().toggleFavorite(offerId),
               icon: icon,
-              label: Text(isFavorite ? 'Saved to favorites' : 'Add to favorites'),
+              label: Text(AppLocalizations.of(context)!.favoriteAdd),
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     isFavorite ? AppColors.chili : AppColors.curry,
@@ -53,7 +54,7 @@ class FavoriteButton extends StatelessWidget {
 
         return IconButton.filledTonal(
           onPressed: () => context.read<OfferProvider>().toggleFavorite(offerId),
-          tooltip: isFavorite ? 'Remove favorite' : 'Save favorite',
+          tooltip: isFavorite ? AppLocalizations.of(context)!.favoriteRemove : AppLocalizations.of(context)!.favoriteAdd,
           icon: icon,
           style: IconButton.styleFrom(
             backgroundColor: context.colors.background.withValues(alpha: 0.78),

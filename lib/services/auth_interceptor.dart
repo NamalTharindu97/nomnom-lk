@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:intl/intl.dart';
 
 class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._storage, this._dio);
@@ -13,7 +14,7 @@ class AuthInterceptor extends Interceptor {
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
-    options.headers['Accept-Language'] = 'en';
+    options.headers['Accept-Language'] = Intl.defaultLocale?.split('_').first ?? 'en';
     handler.next(options);
   }
 
