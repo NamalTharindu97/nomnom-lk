@@ -152,6 +152,15 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            admin/node_modules
+          key: npm-${{ hashFiles('admin/package-lock.json') }}
+          restore-keys: npm-
+
       - name: Install dependencies
         run: npm install
         working-directory: admin
@@ -434,3 +443,11 @@ jobs:
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
+
+      - name: Deploy backend to Render
+        run: |
+          curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+
+      - name: Deploy admin to Render
+        run: |
+          curl -X POST "${{ secrets.RENDER_ADMIN_DEPLOY_HOOK }}"
