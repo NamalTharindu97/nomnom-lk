@@ -57,7 +57,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25.12"
           cache-dependency-path: backend/go.sum
@@ -189,7 +189,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25.12"
           cache-dependency-path: backend/go.sum
