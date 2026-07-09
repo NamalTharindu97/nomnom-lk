@@ -27,6 +27,9 @@ swagger:
 lint:
 	golangci-lint run ./...
 
+lint-ci:
+	golangci-lint run ./... --out-format=github-actions
+
 # ── Docker Infrastructure ──────────────────────────────────────
 
 infra:
