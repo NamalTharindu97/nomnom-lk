@@ -444,10 +444,3 @@ jobs:
           exit-code: 1
           severity: HIGH,CRITICAL
 
-      - name: Deploy backend to Render
-        run: |
-          curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
-
-      - name: Deploy admin to Render
-        run: |
-          curl -X POST "${{ secrets.RENDER_ADMIN_DEPLOY_HOOK }}"

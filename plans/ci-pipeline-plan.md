@@ -274,27 +274,6 @@ sonar:
 ### CI Changes
 
 **npm caching** — admin job:
-```yaml
-- name: Cache npm
-  uses: actions/cache@v4
-  with:
-    path: |
-      ~/.npm
-      admin/node_modules
-    key: npm-${{ hashFiles('admin/package-lock.json') }}
-    restore-keys: npm-
-```
-
-**Render deploy hook** — docker job, after push:
-```yaml
-- name: Deploy backend to Render
-  run: |
-    curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
-
-- name: Deploy admin to Render
-  run: |
-    curl -X POST "${{ secrets.RENDER_ADMIN_DEPLOY_HOOK }}"
-```
 
 **Admin Vitest coverage config** — `admin/vitest.config.ts`:
 ```ts
@@ -344,8 +323,7 @@ PR push
   ├── SonarQube quality gate         ← Phase 3
   │
   └── [on master only]
-      ├── Trivy Docker scan          ← Phase 2
-      └── Render deploy hook         ← Phase 4
+      └── Trivy Docker scan          ← Phase 2
 ```
 
 ## Tool Summary
@@ -361,4 +339,3 @@ PR push
 | **Trivy** | Container scan | Open source, CI-native, covers OS + language deps |
 | **SonarQube Cloud** | Quality gate | Free for public repos, PR comments, coverage tracking |
 | **Codecov** | Coverage | Free for public, PR annotations, GitHub integration |
-| **Render Deploy Hook** | Auto-deploy | Native Render feature, triggered via curl |
