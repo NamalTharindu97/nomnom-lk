@@ -95,6 +95,11 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(false);
   }
 
+  void updateUser(AppUser updated) {
+    _user = updated;
+    notifyListeners();
+  }
+
   void _setLoading(bool value) {
     if (_isLoading == value) {
       return;
