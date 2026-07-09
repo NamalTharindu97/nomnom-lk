@@ -51,6 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -65,6 +70,12 @@ jobs:
 
       - name: Install dependencies
         run: go mod tidy
+        working-directory: backend
+
+      - name: Check Go vulnerabilities
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
         working-directory: backend
 
       - name: Run unit tests
@@ -124,6 +135,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -135,6 +151,10 @@ jobs:
 
       - name: Lint
         run: npm run lint
+        working-directory: admin
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
         working-directory: admin
 
       - name: TypeScript type check
@@ -368,6 +388,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@v0.29
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:latest
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
       - name: Build & Push Admin
         uses: docker/build-push-action@v5
         with:
@@ -380,3 +408,11 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.meta.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Scan admin image
+        uses: aquasecurity/trivy-action@v0.29
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
