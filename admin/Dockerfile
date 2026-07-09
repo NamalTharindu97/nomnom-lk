@@ -3,6 +3,7 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+RUN npm install -g npm@latest && npm cache clean --force && rm -rf /tmp/*
 COPY package.json package-lock.json ./
 RUN npm install
 
@@ -14,6 +15,8 @@ RUN npm run build
 
 # Runtime stage
 FROM node:22-alpine AS runtime
+
+RUN npm install -g npm@latest && npm cache clean --force && rm -rf /tmp/*
 
 WORKDIR /app
 
