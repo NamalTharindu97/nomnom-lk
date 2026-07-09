@@ -73,7 +73,6 @@ jobs:
         working-directory: backend
 
       - name: Check Go vulnerabilities
-        continue-on-error: true
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
@@ -417,7 +416,6 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan backend image
-        continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:latest
@@ -439,7 +437,6 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan admin image
-        continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
