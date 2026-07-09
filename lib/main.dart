@@ -2,19 +2,25 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 import 'core/api_config.dart';
 import 'core/app_routes.dart';
 import 'core/theme/app_theme.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import 'models/offer.dart';
 import 'providers/auth_provider.dart';
+import 'providers/locale_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/offer_provider.dart';
 import 'providers/restaurant_provider.dart';
 import 'providers/theme_provider.dart';
+import 'screens/edit_profile_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
+import 'screens/notification_prefs_screen.dart';
 import 'screens/offer_details_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/restaurants_screen.dart';
@@ -26,11 +32,17 @@ import 'services/api_favorites_service.dart';
 import 'services/api_notification_service.dart';
 import 'services/api_offer_service.dart';
 import 'services/api_restaurant_service.dart';
+import 'services/connectivity_service.dart';
 import 'services/fcm_messaging_service.dart';
+import 'services/local/favorite_store.dart';
+import 'services/local/notification_store.dart';
+import 'services/local/offer_store.dart';
+import 'services/local/restaurant_store.dart';
 import 'services/sse_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
   try {
     await Firebase.initializeApp();
   } catch (e) {
@@ -38,21 +50,36 @@ void main() async {
   }
   final themeProvider = ThemeProvider();
   await themeProvider.load();
-  runApp(NomNomBootstrap(themeProvider: themeProvider));
+  final localeProvider = LocaleProvider();
+  await localeProvider.initialize();
+  runApp(NomNomBootstrap(themeProvider: themeProvider, localeProvider: localeProvider));
 }
 
 class NomNomBootstrap extends StatelessWidget {
-  const NomNomBootstrap({super.key, required this.themeProvider});
+  const NomNomBootstrap({super.key, required this.themeProvider, required this.localeProvider});
 
   final ThemeProvider themeProvider;
+  final LocaleProvider localeProvider;
 
   @override
   Widget build(BuildContext context) {
     final apiClient = ApiClient();
+    final connectivityService = ConnectivityService();
+    final offerStore = OfferStore();
+    final restaurantStore = RestaurantStore();
+    final favoriteStore = FavoriteStore();
+    final notificationStore = NotificationStore();
+
     return MultiProvider(
       providers: [
         Provider<ApiClient>.value(value: apiClient),
+        Provider<ConnectivityService>.value(value: connectivityService),
+        Provider<OfferStore>.value(value: offerStore),
+        Provider<RestaurantStore>.value(value: restaurantStore),
+        Provider<FavoriteStore>.value(value: favoriteStore),
+        Provider<NotificationStore>.value(value: notificationStore),
         ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: localeProvider),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(ApiAuthService(apiClient)),
         ),
@@ -60,22 +87,54 @@ class NomNomBootstrap extends StatelessWidget {
           create: (_) => OfferProvider(
             offerService: ApiOfferService(apiClient),
             favoritesService: ApiFavoritesService(apiClient),
+            favoriteStore: favoriteStore,
+            offerStore: offerStore,
+            connectivityService: connectivityService,
           ),
         ),
         ChangeNotifierProvider(
           create: (_) => NotificationProvider(
             ApiNotificationService(apiClient),
+            notificationStore: notificationStore,
           ),
         ),
         ChangeNotifierProvider(
           create: (_) => RestaurantProvider(
             ApiRestaurantService(apiClient),
+            restaurantStore: restaurantStore,
+            connectivityService: connectivityService,
           ),
         ),
       ],
-      child: const _FcmInitializer(child: NomNomApp()),
+      child: const _StoreInitializer(child: _FcmInitializer(child: NomNomApp())),
     );
   }
+}
+
+class _StoreInitializer extends StatefulWidget {
+  final Widget child;
+  const _StoreInitializer({required this.child});
+
+  @override
+  State<_StoreInitializer> createState() => _StoreInitializerState();
+}
+
+class _StoreInitializerState extends State<_StoreInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initStores());
+  }
+
+  Future<void> _initStores() async {
+    await context.read<OfferStore>().init();
+    await context.read<RestaurantStore>().init();
+    await context.read<FavoriteStore>().init();
+    await context.read<NotificationStore>().init();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _FcmInitializer extends StatefulWidget {
@@ -99,13 +158,17 @@ class _FcmInitializerState extends State<_FcmInitializer> {
       nav.pushNamed(AppRoutes.home, arguments: 3);
       return;
     }
-    if (payload.startsWith('offer_')) {
-      nav.pushNamed(AppRoutes.offerDetails, arguments: payload.substring(6));
+    // Deep link to offer
+    if (payload.startsWith('offer_') || payload.contains('offer_id')) {
+      final parts = payload.split('_');
+      final id = parts.length > 1 ? parts.last : payload;
+      nav.pushNamed(AppRoutes.offerDetailPath(id));
       return;
     }
+    // Direct offer ID (UUID)
     final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
     if (uuidRegex.hasMatch(payload)) {
-      nav.pushNamed(AppRoutes.offerDetails, arguments: payload);
+      nav.pushNamed(AppRoutes.offerDetailPath(payload));
       return;
     }
     nav.pushNamed(AppRoutes.home);
@@ -253,6 +316,18 @@ class NomNomApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('en'),
+        const Locale('si'),
+        const Locale('ta'),
+      ],
+      locale: context.watch<LocaleProvider>().locale,
       initialRoute: AppRoutes.splash,
       routes: {
         AppRoutes.splash: (_) => const SplashScreen(),
@@ -283,13 +358,27 @@ class NomNomApp extends StatelessWidget {
           );
         }
 
-        if (settings.name == AppRoutes.offerDetails) {
+        if (settings.name == AppRoutes.editProfile) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => const EditProfileScreen(),
+          );
+        }
+
+        if (settings.name == AppRoutes.notificationPrefs) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => const NotificationPrefsScreen(),
+          );
+        }
+
+        if (settings.name == AppRoutes.offerDetails ||
+            settings.name?.startsWith('/offer/') == true) {
           final offerId = switch (settings.arguments) {
             final Offer offer => offer.id,
             final String id => id,
-            _ => '',
+            _ => settings.name?.split('/').last ?? '',
           };
-
           return MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => OfferDetailsScreen(offerId: offerId),

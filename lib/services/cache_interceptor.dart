@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:dio/dio.dart';
 
 class _CacheEntry {
@@ -8,10 +10,18 @@ class _CacheEntry {
 }
 
 class CacheInterceptor extends Interceptor {
-  final Map<String, _CacheEntry> _cache = {};
+  final int maxEntries;
   final Duration ttl;
+  final Map<String, _CacheEntry> _cache = LinkedHashMap();
 
-  CacheInterceptor({this.ttl = const Duration(minutes: 2)});
+  CacheInterceptor({this.ttl = const Duration(minutes: 5), this.maxEntries = 100});
+
+  void _set(String key, _CacheEntry entry) {
+    if (_cache.length >= maxEntries) {
+      _cache.remove(_cache.keys.first);
+    }
+    _cache[key] = entry;
+  }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -23,6 +33,8 @@ class CacheInterceptor extends Interceptor {
     final entry = _cache[key];
 
     if (entry != null && DateTime.now().isBefore(entry.expiresAt)) {
+      _cache.remove(key);
+      _cache[key] = entry;
       return handler.resolve(
         Response(
           requestOptions: options,
@@ -32,16 +44,19 @@ class CacheInterceptor extends Interceptor {
       );
     }
 
+    _cache.remove(key);
     handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (response.requestOptions.method == 'GET' && response.data != null) {
-      final key = _cacheKey(response.requestOptions);
-      _cache[key] = _CacheEntry(
-        response.data as Map<String, dynamic>,
-        DateTime.now().add(ttl),
+      _set(
+        _cacheKey(response.requestOptions),
+        _CacheEntry(
+          response.data as Map<String, dynamic>,
+          DateTime.now().add(ttl),
+        ),
       );
     }
     handler.next(response);
@@ -53,6 +68,8 @@ class CacheInterceptor extends Interceptor {
       final key = _cacheKey(err.requestOptions);
       final entry = _cache[key];
       if (entry != null) {
+        _cache.remove(key);
+        _cache[key] = entry;
         return handler.resolve(
           Response(
             requestOptions: err.requestOptions,
@@ -76,8 +93,10 @@ class CacheInterceptor extends Interceptor {
     _cache.clear();
   }
 
+  int get cachedEntryCount => _cache.length;
+
   String _cacheKey(RequestOptions options) {
-    final uri = options.uri.toString();
-    return uri;
+    final locale = options.headers['Accept-Language'] ?? 'en';
+    return '${options.uri.toString()}|lang=$locale';
   }
 }
