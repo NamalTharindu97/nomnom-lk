@@ -10,34 +10,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api"
 import { notify } from "@/components/ui/toast"
 import { Loader2, X } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 
-interface RestaurantForm {
-  name: string
-  slug: string
-  address: string
-  cuisine_tags: string
-  description: string
-  phone: string
-  owner_id: string
-  name_si: string
-  name_ta: string
-  description_si: string
-  description_ta: string
-}
+const restaurantSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase, alphanumeric, with dashes"),
+  address: z.string().min(1, "Address is required"),
+  cuisine_tags: z.string().optional(),
+  description: z.string().optional(),
+  contact_phone: z.string().optional(),
+  owner_id: z.string().optional(),
+  name_si: z.string().optional(),
+  name_ta: z.string().optional(),
+  description_si: z.string().optional(),
+  description_ta: z.string().optional(),
+})
 
-const emptyForm: RestaurantForm = {
-  name: "",
-  slug: "",
-  address: "",
-  cuisine_tags: "",
-  description: "",
-  phone: "",
-  owner_id: "",
-  name_si: "",
-  name_ta: "",
-  description_si: "",
-  description_ta: "",
-}
+type FormData = z.infer<typeof restaurantSchema>
 
 interface OwnerOption {
   id: string
@@ -53,7 +44,6 @@ interface RestaurantDialogProps {
 }
 
 export default function RestaurantDialog({ open, onClose, onSaved, restaurant }: RestaurantDialogProps) {
-  const [form, setForm] = useState<RestaurantForm>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
@@ -61,6 +51,21 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   const [owners, setOwners] = useState<OwnerOption[]>([])
 
   const isEdit = !!restaurant
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(restaurantSchema),
+    defaultValues: {
+      name: "", slug: "", address: "", cuisine_tags: "", description: "",
+      contact_phone: "", owner_id: "", name_si: "", name_ta: "",
+      description_si: "", description_ta: "",
+    },
+  })
 
   useEffect(() => {
     if (open) {
@@ -72,13 +77,13 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
 
   useEffect(() => {
     if (restaurant) {
-      setForm({
+      reset({
         name: restaurant.name || "",
         slug: restaurant.slug || "",
         address: restaurant.address || "",
         cuisine_tags: (restaurant.cuisine_tags || []).join(", "),
         description: restaurant.description || "",
-        phone: restaurant.contact_phone || "",
+        contact_phone: restaurant.contact_phone || "",
         owner_id: restaurant.owner_id || "",
         name_si: restaurant.name_si || "",
         name_ta: restaurant.name_ta || "",
@@ -87,15 +92,11 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       })
       setCoverPreview(restaurant.cover_image || null)
     } else {
-      setForm(emptyForm)
+      reset()
       setCoverFile(null)
       setCoverPreview(null)
     }
-  }, [restaurant])
-
-  function set<K extends keyof RestaurantForm>(key: K, value: RestaurantForm[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }))
-  }
+  }, [restaurant, reset])
 
   function onFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null
@@ -129,22 +130,17 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
     }
   }
 
-  async function handleSave() {
-    if (!form.name.trim() || !form.slug.trim()) {
-      notify("Name and slug are required", "error")
-      return
-    }
+  async function onSave(data: FormData) {
     setSaving(true)
     try {
       const coverImage = await uploadFile()
 
-      const { phone, owner_id, ...restForm } = form
       const body: Record<string, any> = {
-        ...restForm,
-        contact_phone: phone || null,
-        cuisine_tags: form.cuisine_tags.split(",").map((s) => s.trim()).filter(Boolean),
+        ...data,
+        cuisine_tags: data.cuisine_tags ? data.cuisine_tags.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
       }
-      if (owner_id && owner_id !== "__none") body.owner_id = owner_id
+      if (data.owner_id && data.owner_id !== "__none") body.owner_id = data.owner_id
+      else delete body.owner_id
 
       if (coverImage) {
         body.cover_image = coverImage
@@ -175,45 +171,46 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSave() }}>
+        <form onSubmit={handleSubmit(onSave)}>
           <div className="overflow-y-auto max-h-[55vh] space-y-4 px-1 scrollbar-thin">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} />
+                <Input id="name" {...register("name")} />
+                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="slug">Slug</Label>
-                <Input id="slug" value={form.slug} onChange={(e) => set("slug", e.target.value)} />
+                <Input id="slug" {...register("slug")} />
+                {errors.slug && <p className="text-xs text-destructive">{errors.slug.message}</p>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="address">Address</Label>
-                <Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} />
+                <Input id="address" {...register("address")} />
+                {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+                <Label htmlFor="contact_phone">Phone</Label>
+                <Input id="contact_phone" {...register("contact_phone")} />
               </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="cuisine_tags">Cuisine Tags (comma-separated)</Label>
-              <Input id="cuisine_tags" value={form.cuisine_tags} onChange={(e) => set("cuisine_tags", e.target.value)} />
+              <Input id="cuisine_tags" {...register("cuisine_tags")} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                className="min-h-[80px]"
-                value={form.description}
-                onChange={(e) => set("description", e.target.value)}
-              />
+              <Textarea id="description" className="min-h-[80px]" {...register("description")} />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="owner">Owner</Label>
-              <Select value={form.owner_id} onValueChange={(v) => set("owner_id", v)}>
+              <Select
+                defaultValue=""
+                onValueChange={(v) => setValue("owner_id", v)}
+              >
                 <SelectTrigger id="owner">
                   <SelectValue placeholder="No owner (admin-managed)" />
                 </SelectTrigger>
@@ -253,16 +250,11 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                   <div className="grid gap-2">
                     <div className="grid gap-1">
                       <Label htmlFor="name_si">Name</Label>
-                      <Input id="name_si" value={form.name_si} onChange={(e) => set("name_si", e.target.value)} />
+                      <Input id="name_si" {...register("name_si")} />
                     </div>
                     <div className="grid gap-1">
                       <Label htmlFor="description_si">Description</Label>
-                      <Textarea
-                        id="description_si"
-                        className="min-h-[60px]"
-                        value={form.description_si}
-                        onChange={(e) => set("description_si", e.target.value)}
-                      />
+                      <Textarea id="description_si" className="min-h-[60px]" {...register("description_si")} />
                     </div>
                   </div>
                 </div>
@@ -271,16 +263,11 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                   <div className="grid gap-2">
                     <div className="grid gap-1">
                       <Label htmlFor="name_ta">Name</Label>
-                      <Input id="name_ta" value={form.name_ta} onChange={(e) => set("name_ta", e.target.value)} />
+                      <Input id="name_ta" {...register("name_ta")} />
                     </div>
                     <div className="grid gap-1">
                       <Label htmlFor="description_ta">Description</Label>
-                      <Textarea
-                        id="description_ta"
-                        className="min-h-[60px]"
-                        value={form.description_ta}
-                        onChange={(e) => set("description_ta", e.target.value)}
-                      />
+                      <Textarea id="description_ta" className="min-h-[60px]" {...register("description_ta")} />
                     </div>
                   </div>
                 </div>

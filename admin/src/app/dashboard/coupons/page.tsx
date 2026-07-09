@@ -19,6 +19,24 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Plus, Pencil, Trash2, Ticket } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+
+const couponSchema = z.object({
+  code: z.string().min(1, "Code is required").max(50),
+  discount_type: z.enum(["percentage", "fixed"]),
+  discount_value: z.number().positive("Must be positive"),
+  min_order_amount: z.number().min(0).optional(),
+  max_uses: z.number().int().positive("Must be positive").optional(),
+  starts_at: z.string().optional(),
+  expires_at: z.string().optional(),
+}).refine(
+  (data) => data.discount_type !== "percentage" || data.discount_value <= 100,
+  { message: "Percentage must be ≤ 100", path: ["discount_value"] }
+)
+
+type FormData = z.infer<typeof couponSchema>
 
 interface Coupon {
   id: string
@@ -38,15 +56,20 @@ export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Coupon | null>(null)
-  const [code, setCode] = useState("")
-  const [discountType, setDiscountType] = useState("percentage")
-  const [discountValue, setDiscountValue] = useState("")
-  const [minOrder, setMinOrder] = useState("")
-  const [maxUses, setMaxUses] = useState("")
-  const [startsAt, setStartsAt] = useState("")
-  const [expiresAt, setExpiresAt] = useState("")
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Coupon | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(couponSchema),
+    defaultValues: { code: "", discount_type: "percentage", discount_value: 0, min_order_amount: 0, max_uses: 0, starts_at: "", expires_at: "" },
+  })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -59,19 +82,35 @@ export default function CouponsPage() {
 
   useEffect(() => { load() }, [load])
 
-  function startCreate() { setEditing(null); setCode(""); setDiscountType("percentage"); setDiscountValue(""); setMinOrder(""); setMaxUses(""); setStartsAt(""); setExpiresAt("") }
-  function startEdit(c: Coupon) { setEditing(c); setCode(c.code); setDiscountType(c.discount_type); setDiscountValue(String(c.discount_value)); setMinOrder(String(c.min_order_amount || "")); setMaxUses(String(c.max_uses || "")); setStartsAt(c.starts_at ? c.starts_at.slice(0, 16) : ""); setExpiresAt(c.expires_at ? c.expires_at.slice(0, 16) : "") }
+  function startCreate() {
+    setEditing(null)
+    reset({ code: "", discount_type: "percentage", discount_value: 0, min_order_amount: 0, max_uses: 0, starts_at: "", expires_at: "" })
+  }
 
-  async function handleSave() {
-    if (!code || !discountValue) { notify("Code and discount value are required", "error"); return }
+  function startEdit(c: Coupon) {
+    setEditing(c)
+    reset({
+      code: c.code,
+      discount_type: c.discount_type as "percentage" | "fixed",
+      discount_value: c.discount_value,
+      min_order_amount: c.min_order_amount || 0,
+      max_uses: c.max_uses || 0,
+      starts_at: c.starts_at ? c.starts_at.slice(0, 16) : "",
+      expires_at: c.expires_at ? c.expires_at.slice(0, 16) : "",
+    })
+  }
+
+  async function onSave(data: FormData) {
     setSaving(true)
     try {
       const payload: any = {
-        code, discount_type: discountType, discount_value: parseFloat(discountValue),
-        min_order_amount: minOrder ? parseFloat(minOrder) : 0,
-        max_uses: maxUses ? parseInt(maxUses) : 0,
-        starts_at: startsAt ? new Date(startsAt).toISOString() : null,
-        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+        code: data.code.toUpperCase(),
+        discount_type: data.discount_type,
+        discount_value: data.discount_value,
+        min_order_amount: data.min_order_amount || 0,
+        max_uses: data.max_uses || 0,
+        starts_at: data.starts_at ? new Date(data.starts_at).toISOString() : null,
+        expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
       }
       if (editing) {
         await api.put(`/admin/coupons/${editing.id}`, payload)
@@ -106,23 +145,51 @@ export default function CouponsPage() {
         <Card>
           <CardHeader><CardTitle>{editing ? "Edit Coupon" : "New Coupon"}</CardTitle><CardDescription>Create percentage or fixed discount codes</CardDescription></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-2"><Label htmlFor="code">Code</Label><Input id="code" value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="SAVE20" /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="grid gap-2"><Label>Type</Label><Select value={discountType} onValueChange={setDiscountType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percentage">Percentage</SelectItem><SelectItem value="fixed">Fixed</SelectItem></SelectContent></Select></div>
-              <div className="grid gap-2"><Label htmlFor="discount">Value</Label><Input id="discount" type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)} placeholder={discountType === "percentage" ? "20" : "500"} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="grid gap-2"><Label htmlFor="minOrder">Min Order</Label><Input id="minOrder" type="number" value={minOrder} onChange={e => setMinOrder(e.target.value)} placeholder="0" /></div>
-              <div className="grid gap-2"><Label htmlFor="maxUses">Max Uses</Label><Input id="maxUses" type="number" value={maxUses} onChange={e => setMaxUses(e.target.value)} placeholder="Unlimited" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="grid gap-2"><Label htmlFor="starts">Starts At</Label><Input id="starts" type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} /></div>
-              <div className="grid gap-2"><Label htmlFor="expires">Expires At</Label><Input id="expires" type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} /></div>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : editing ? "Update" : "Create"}</Button>
-              {editing && <Button variant="outline" onClick={startCreate}>Cancel</Button>}
-            </div>
+            <form onSubmit={handleSubmit(onSave)}>
+              <div className="grid gap-2">
+                <Label htmlFor="code">Code</Label>
+                <Input id="code" {...register("code")} onChange={(e) => setValue("code", e.target.value.toUpperCase(), { shouldDirty: true })} placeholder="SAVE20" />
+                {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <div className="grid gap-2">
+                  <Label>Type</Label>
+                  <Select value={watch("discount_type") || "percentage"} onValueChange={(v) => setValue("discount_type", v as "percentage" | "fixed")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="percentage">Percentage</SelectItem><SelectItem value="fixed">Fixed</SelectItem></SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="discount_value">Value</Label>
+                  <Input id="discount_value" type="number" {...register("discount_value", { valueAsNumber: true })} placeholder={watch("discount_type") === "percentage" ? "20" : "500"} />
+                  {errors.discount_value && <p className="text-xs text-destructive">{errors.discount_value.message}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="min_order_amount">Min Order</Label>
+                  <Input id="min_order_amount" type="number" {...register("min_order_amount", { valueAsNumber: true })} placeholder="0" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="max_uses">Max Uses</Label>
+                  <Input id="max_uses" type="number" {...register("max_uses", { valueAsNumber: true })} placeholder="Unlimited" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="starts_at">Starts At</Label>
+                  <Input id="starts_at" type="datetime-local" {...register("starts_at")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="expires_at">Expires At</Label>
+                  <Input id="expires_at" type="datetime-local" {...register("expires_at")} />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button type="submit" disabled={saving}>{saving ? "Saving..." : editing ? "Update" : "Create"}</Button>
+                {editing && <Button variant="outline" type="button" onClick={startCreate}>Cancel</Button>}
+              </div>
+            </form>
           </CardContent>
         </Card>
         <Card>

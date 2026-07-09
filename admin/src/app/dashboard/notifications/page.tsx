@@ -32,8 +32,20 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 
 const PER_PAGE = 10
+
+const notificationSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  body: z.string().min(1, "Body is required"),
+  target: z.enum(["all", "user"]),
+  schedule_at: z.string().optional(),
+})
+
+type FormData = z.infer<typeof notificationSchema>
 
 interface OfferOption {
   id: string
@@ -56,25 +68,36 @@ interface TemplateOption {
 }
 
 export default function NotificationsPage() {
-  const [title, setTitle] = useState("")
-  const [body, setBody] = useState("")
-  const [target, setTarget] = useState("all")
-  const [userId, setUserId] = useState("")
-  const [offerId, setOfferId] = useState("")
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [open, setOpen] = useState(false)
   const [sending, setSending] = useState(false)
-  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [userId, setUserId] = useState("")
+  const [offerId, setOfferId] = useState("")
 
   const [users, setUsers] = useState<UserOption[]>([])
   const [loadingUsers, setLoadingUsers] = useState(true)
-
   const [offers, setOffers] = useState<OfferOption[]>([])
   const [loadingOffers, setLoadingOffers] = useState(true)
-
   const [templates, setTemplates] = useState<TemplateOption[]>([])
-  const [scheduleAt, setScheduleAt] = useState("")
-
   const [analytics, setAnalytics] = useState<{ total: number; sent: number; pending: number; failed: number } | null>(null)
+  const [history, setHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(notificationSchema),
+    defaultValues: { title: "", body: "", target: "all", schedule_at: "" },
+  })
+
+  const target = watch("target")
 
   useEffect(() => {
     if (!result) return
@@ -83,11 +106,6 @@ export default function NotificationsPage() {
   }, [result])
 
   const selectedUser = useMemo(() => users.find((u) => u.id === userId), [users, userId])
-
-  const [history, setHistory] = useState<any[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(true)
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     api.get<{ data: UserOption[] }>("/users?per_page=500")
@@ -136,33 +154,31 @@ export default function NotificationsPage() {
     if (value === "none") return
     const tpl = templates.find((t) => t.id === value)
     if (tpl) {
-      setTitle(tpl.title)
-      setBody(tpl.body)
+      setValue("title", tpl.title)
+      setValue("body", tpl.body)
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function onSave(data: FormData) {
     setSending(true)
     setResult(null)
 
     try {
       const payload: any = {
-        title,
-        body,
-        target,
-        user_id: target === "user" ? userId : "",
+        title: data.title,
+        body: data.body,
+        target: data.target,
+        user_id: data.target === "user" ? userId : "",
         offer_id: offerId && offerId !== "none" ? offerId : undefined,
       }
-      if (scheduleAt) {
-        payload.schedule_at = new Date(scheduleAt).toISOString()
+      if (data.schedule_at) {
+        payload.schedule_at = new Date(data.schedule_at).toISOString()
       }
       await api.post("/admin/notifications/push", payload)
-      setResult({ ok: true, message: scheduleAt ? "Notification scheduled!" : "Push notification sent successfully!" })
-      setTitle("")
-      setBody("")
+      setResult({ ok: true, message: data.schedule_at ? "Notification scheduled!" : "Push notification sent successfully!" })
+      reset()
       setOfferId("")
-      setScheduleAt("")
+      setUserId("")
       loadHistory()
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Failed to send notification"
@@ -188,7 +204,7 @@ export default function NotificationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSave)} className="space-y-4">
             {templates.length > 0 && (
               <div className="grid gap-2">
                 <Label>Load Template</Label>
@@ -209,25 +225,24 @@ export default function NotificationsPage() {
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                {...register("title")}
                 placeholder="New offer available!"
-                required
               />
+              {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="body">Body</Label>
               <Textarea
                 id="body"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
+                className="min-h-[80px]"
+                {...register("body")}
                 placeholder="Check out our latest deals..."
-                required
               />
+              {errors.body && <p className="text-xs text-destructive">{errors.body.message}</p>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="target">Target</Label>
-              <Select value={target} onValueChange={setTarget}>
+              <Select value={target || "all"} onValueChange={(v) => setValue("target", v as "all" | "user")}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -318,8 +333,7 @@ export default function NotificationsPage() {
               <Input
                 id="schedule"
                 type="datetime-local"
-                value={scheduleAt}
-                onChange={(e) => setScheduleAt(e.target.value)}
+                {...register("schedule_at")}
               />
               <p className="text-xs text-muted-foreground">Leave empty to send immediately</p>
             </div>
@@ -329,7 +343,7 @@ export default function NotificationsPage() {
               </p>
             )}
             <Button type="submit" disabled={sending}>
-              {sending ? "Sending..." : scheduleAt ? "Schedule" : "Send Push Notification"}
+              {sending ? "Sending..." : watch("schedule_at") ? "Schedule" : "Send Push Notification"}
             </Button>
           </form>
         </CardContent>

@@ -15,6 +15,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import ImageCropDialog from "@/components/image-crop-dialog"
 
+function formatDateTimeLocal(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 const offerSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
@@ -23,6 +28,7 @@ const offerSchema = z.object({
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
   restaurant_id: z.string().min(1, "Restaurant is required"),
+  publish_at: z.string().optional(),
   title_si: z.string().optional(),
   title_ta: z.string().optional(),
   description_si: z.string().optional(),
@@ -237,6 +243,11 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
 
       if (body.start_date) body.start_date = `${body.start_date}T00:00:00Z`
       if (body.end_date) body.end_date = `${body.end_date}T00:00:00Z`
+      if (body.publish_at) {
+        body.publish_at = new Date(body.publish_at).toISOString()
+      } else {
+        delete body.publish_at
+      }
 
       if (isEdit) {
         await api.put(`/dashboard/offers/${offer.id}`, body)
@@ -364,6 +375,18 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
                   <Input id="end_date" type="date" {...register("end_date")} />
                   {errors.end_date && <p className="text-xs text-destructive">{errors.end_date.message}</p>}
                 </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="publish_at">Schedule Publish</Label>
+                <Input
+                  id="publish_at"
+                  type="datetime-local"
+                  {...register("publish_at")}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to publish immediately upon approval
+                </p>
               </div>
 
               <div className="grid gap-2">
