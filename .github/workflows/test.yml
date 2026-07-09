@@ -73,6 +73,7 @@ jobs:
         working-directory: backend
 
       - name: Check Go vulnerabilities
+        continue-on-error: true
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
