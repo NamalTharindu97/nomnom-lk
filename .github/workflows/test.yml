@@ -417,7 +417,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@v0.29
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:latest
           format: table
@@ -438,7 +438,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan admin image
-        uses: aquasecurity/trivy-action@v0.29
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
           format: table
