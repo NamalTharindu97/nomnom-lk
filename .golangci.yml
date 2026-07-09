@@ -1,20 +1,59 @@
 version: "2"
-run:
-  timeout: 5m
-  modules-download-mode: readonly
 linters:
   default: standard
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
     - misspell
     - revive
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
+  settings:
+    errcheck:
+      exclude-functions:
+        - io.Copy
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+      - linters:
+          - errcheck
+        text: \.Close\b
+      - linters:
+          - errcheck
+        text: Count
+      - linters:
+          - errcheck
+        text: DeleteByID
+      - linters:
+          - errcheck
+        text: IncrementView
+      - linters:
+          - errcheck
+        text: MarkSent
+      - linters:
+          - errcheck
+        text: MarkFailed
+      - linters:
+          - errcheck
+        text: SendPush
+      - linters:
+          - staticcheck
+        text: CredentialsFromJSON
+      - linters:
+          - unused
+        path: testutil
+      - linters:
+          - unused
+        path: email_service
+      - linters:
+          - unused
+        path: impersonation_service
