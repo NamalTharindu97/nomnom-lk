@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../core/app_routes.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
 
@@ -79,13 +80,13 @@ class _RegisterScreenState extends State<RegisterScreen>
         if (error is Map && error['message'] is String) {
           final msg = error['message'] as String;
           if (msg.contains('already registered')) {
-            return 'An account with this email already exists.';
+            return AppLocalizations.of(context)!.registerErrorEmailExists;
           }
           return msg;
         }
       }
     }
-    return 'Registration failed. Try again.';
+    return AppLocalizations.of(context)!.registerErrorGeneric;
   }
 
   Future<void> _register() async {
@@ -166,7 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           child: FadeTransition(
                             opacity: _titleAnim,
                             child: Text(
-                              "Create your account",
+                              AppLocalizations.of(context)!.registerCreateAccount,
                               textAlign: TextAlign.center,
                               style: textTheme.titleLarge?.copyWith(
                                 color: context.colors.textPrimary,
@@ -200,10 +201,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     maxLength: 255,
                                     validator: (v) =>
                                         (v == null || v.trim().isEmpty)
-                                            ? 'Enter your name'
+                                            ? AppLocalizations.of(context)!.registerFullNameHint
                                             : null,
-                                    decoration: const InputDecoration(
-                                      hintText: 'Full name',
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(context)!.registerFullNameLabel,
                                       counterText: '',
                                       prefixIcon:
                                           Icon(Icons.person_outline_rounded),
@@ -217,17 +218,17 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     maxLength: 254,
                                     validator: (v) {
                                       if (v == null || v.trim().isEmpty) {
-                                        return 'Enter your email';
+                                        return AppLocalizations.of(context)!.registerEmailHint;
                                       }
                                       if (!RegExp(
                                               r'^[^@]+@[^@]+\.[^@]+$')
                                           .hasMatch(v.trim())) {
-                                        return 'Enter a valid email';
+                                        return AppLocalizations.of(context)!.registerEmailInvalid;
                                       }
                                       return null;
                                     },
-                                    decoration: const InputDecoration(
-                                      hintText: 'Email address',
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(context)!.registerEmailLabel,
                                       counterText: '',
                                       prefixIcon:
                                           Icon(Icons.mail_outline_rounded),
@@ -241,12 +242,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     maxLength: 128,
                                     validator: (v) {
                                       if (v == null || v.length < 8) {
-                                        return 'At least 8 characters';
+                                        return AppLocalizations.of(context)!.registerPasswordMinChars;
                                       }
                                       return null;
                                     },
                                     decoration: InputDecoration(
-                                      hintText: 'Password',
+                                      hintText: AppLocalizations.of(context)!.registerPasswordLabel,
                                       counterText: '',
                                       prefixIcon: const Icon(
                                           Icons.lock_outline_rounded),
@@ -271,12 +272,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     onFieldSubmitted: (_) => _register(),
                                     validator: (v) {
                                       if (v != _passwordController.text) {
-                                        return 'Passwords do not match';
+                                        return AppLocalizations.of(context)!.registerPasswordsDoNotMatch;
                                       }
                                       return null;
                                     },
                                     decoration: InputDecoration(
-                                      hintText: 'Confirm password',
+                                      hintText: AppLocalizations.of(context)!.registerConfirmPasswordLabel,
                                       counterText: '',
                                       prefixIcon: const Icon(
                                           Icons.lock_outline_rounded),
@@ -321,8 +322,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     : const Icon(
                                         Icons.person_add_rounded, size: 22),
                                 label: Text(isLoading
-                                    ? 'Creating account...'
-                                    : 'Create account'),
+                                    ? AppLocalizations.of(context)!.registerCreatingAccount
+                                    : AppLocalizations.of(context)!.registerCreateAccountButton),
                               ),
                             ),
                           ),
@@ -339,7 +340,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Already have an account? ',
+                                  AppLocalizations.of(context)!.registerAlreadyHaveAccount,
                                   style: textTheme.bodySmall?.copyWith(
                                     color: context.colors.muted,
                                   ),
@@ -347,7 +348,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 GestureDetector(
                                   onTap: () => Navigator.of(context).pop(),
                                   child: Text(
-                                    'Sign In',
+                                    AppLocalizations.of(context)!.registerSignInLink,
                                     style: textTheme.bodySmall?.copyWith(
                                       color: Theme.of(context).colorScheme.primary,
                                       fontWeight: FontWeight.w700,

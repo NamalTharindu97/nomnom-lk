@@ -18,6 +18,10 @@ class SSEService {
   SSEService(this.baseUrl);
 
   final String baseUrl;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 10;
+  static const Duration _initialDelay = Duration(seconds: 1);
+  static const Duration _maxDelay = Duration(seconds: 30);
   StreamSubscription? _subscription;
   HttpClient? _client;
   final _controller = StreamController<SSEEvent>.broadcast();
@@ -27,6 +31,25 @@ class SSEService {
 
   Stream<SSEEvent> get events => _controller.stream;
   bool get isConnected => _isConnected;
+  bool get isReconnecting => _reconnectAttempts > 0;
+
+  Duration _getReconnectDelay() {
+    final delay = _initialDelay * (1 << _reconnectAttempts);
+    return delay > _maxDelay ? _maxDelay : delay;
+  }
+
+  void _scheduleReconnect() {
+    if (!_shouldReconnect || _reconnectAttempts >= _maxReconnectAttempts) return;
+    _reconnectAttempts++;
+    final delay = _getReconnectDelay();
+    debugPrint('SSE reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)...');
+    Future.delayed(delay, () {
+      if (_shouldReconnect && !_isConnected) {
+        debugPrint('SSE reconnecting...');
+        connect();
+      }
+    });
+  }
 
   Future<void> connect() async {
     if (_isConnected) return;
@@ -44,6 +67,7 @@ class SSEService {
 
       final response = await request.close().timeout(const Duration(seconds: 10));
       _isConnected = true;
+      _reconnectAttempts = 0;
       debugPrint('SSE connected');
 
       _subscription = response.transform(utf8.decoder).listen(
@@ -97,6 +121,7 @@ class SSEService {
 
   void disconnect() {
     _shouldReconnect = false;
+    _reconnectAttempts = 0;
     _subscription?.cancel();
     _subscription = null;
     _client?.close();
@@ -107,15 +132,5 @@ class SSEService {
   void dispose() {
     disconnect();
     _controller.close();
-  }
-
-  void _scheduleReconnect() {
-    if (!_shouldReconnect) return;
-    Future.delayed(const Duration(seconds: 5), () {
-      if (_shouldReconnect && !_isConnected) {
-        debugPrint('SSE reconnecting...');
-        connect();
-      }
-    });
   }
 }

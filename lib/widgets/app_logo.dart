@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 
 class AppLogo extends StatelessWidget {
   const AppLogo({
@@ -40,7 +41,7 @@ class AppLogo extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Text(
-          'NomNom LK',
+          AppLocalizations.of(context)!.appName,
           style: (compact ? textTheme.titleLarge : textTheme.headlineMedium)
               ?.copyWith(
             color: context.colors.textPrimary,

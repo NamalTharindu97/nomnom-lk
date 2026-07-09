@@ -7,43 +7,100 @@ class ApiAuthService {
   ApiAuthService(this._client);
 
   final ApiClient _client;
+  bool _firebaseAvailable = true;
+
+  bool get firebaseAvailable => _firebaseAvailable;
+
+  String _friendlyErrorMessage(dynamic e) {
+    // Handle Firebase Auth exceptions
+    if (e is Exception && e.toString().contains('FirebaseAuthException')) {
+      final msg = e.toString();
+      if (msg.contains('user-not-found') || msg.contains('wrong-password')) {
+        return 'Invalid email or password.';
+      }
+      if (msg.contains('user-disabled')) {
+        return 'This account has been disabled.';
+      }
+      if (msg.contains('too-many-requests')) {
+        return 'Too many attempts. Please try later.';
+      }
+      if (msg.contains('invalid-email')) {
+        return 'Please enter a valid email.';
+      }
+      if (msg.contains('weak-password')) {
+        return 'Password is too weak.';
+      }
+      if (msg.contains('email-already-in-use')) {
+        return 'An account with this email already exists.';
+      }
+      if (msg.contains('operation-not-allowed') || msg.contains('NetworkError')) {
+        _firebaseAvailable = false;
+        return 'Firebase login unavailable.';
+      }
+      return 'Sign in failed. Please try again.';
+    }
+    return e.toString();
+  }
 
   Future<AppUser> signInWithFirebase(String firebaseToken) async {
-    final response = await _client.post('/auth/firebase', {
-      'firebase_token': firebaseToken,
-    });
-    return _handleAuthResponse(response);
+    if (!_firebaseAvailable) {
+      throw Exception('Firebase login unavailable');
+    }
+    try {
+      final response = await _client.post('/auth/firebase', {
+        'firebase_token': firebaseToken,
+      });
+      return _handleAuthResponse(response);
+    } catch (e) {
+      _firebaseAvailable = false;
+      throw Exception(_friendlyErrorMessage(e));
+    }
   }
 
   Future<AppUser> login(String email, String password) async {
-    final response = await _client.post('/auth/login', {
-      'email': email,
-      'password': password,
-    });
-    return _handleAuthResponse(response);
+    try {
+      final response = await _client.post('/auth/login', {
+        'email': email,
+        'password': password,
+      });
+      return _handleAuthResponse(response);
+    } catch (e) {
+      throw Exception(_friendlyErrorMessage(e));
+    }
   }
 
   Future<Map<String, dynamic>> register(String email, String password, String name) async {
-    final response = await _client.post('/auth/register', {
-      'email': email,
-      'password': password,
-      'name': name,
-    });
-    return response;
+    try {
+      return await _client.post('/auth/register', {
+        'email': email,
+        'password': password,
+        'name': name,
+      });
+    } catch (e) {
+      throw Exception(_friendlyErrorMessage(e));
+    }
   }
 
   Future<void> sendVerificationCode(String email) async {
-    await _client.post('/auth/send-verification', {
-      'email': email,
-    });
+    try {
+      await _client.post('/auth/send-verification', {
+        'email': email,
+      });
+    } catch (e) {
+      throw Exception(_friendlyErrorMessage(e));
+    }
   }
 
   Future<AppUser> verifyEmail(String email, String code) async {
-    final response = await _client.post('/auth/verify-email', {
-      'email': email,
-      'code': code,
-    });
-    return _handleAuthResponse(response);
+    try {
+      final response = await _client.post('/auth/verify-email', {
+        'email': email,
+        'code': code,
+      });
+      return _handleAuthResponse(response);
+    } catch (e) {
+      throw Exception(_friendlyErrorMessage(e));
+    }
   }
 
   Future<void> logout() async {

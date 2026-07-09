@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/restaurant.dart';
 import '../providers/restaurant_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/shimmer_loading.dart';
@@ -31,49 +32,43 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text(AppLocalizations.of(context)!.restaurantsTitle),
+        actions: [
+          Consumer<RestaurantProvider>(
+            builder: (context, provider, _) {
+              if (provider.restaurants.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(right: Spacings.md),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacings.xs,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.colors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.restaurantsTotal(provider.total),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: AppColors.curry,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Spacings.md, 18, Spacings.md, Spacings.sm),
-              child: Row(
-                children: [
-                  Text(
-                    'Restaurants',
-                    style: textTheme.headlineSmall?.copyWith(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const Spacer(),
-                  Consumer<RestaurantProvider>(
-                    builder: (context, provider, _) {
-                      if (provider.restaurants.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacings.xs,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.colors.surfaceAlt,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${provider.total} total',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: AppColors.curry,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () =>
@@ -93,7 +88,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                             height: MediaQuery.of(context).size.height * 0.4,
                             child: EmptyState(
                               icon: Icons.wifi_off_rounded,
-                              title: 'Failed to load',
+                              title: AppLocalizations.of(context)!.restaurantsFailedToLoad,
                               message: provider.error!,
                               onRetry: provider.refreshRestaurants,
                             ),
@@ -104,10 +99,10 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
 
                     final restaurants = provider.restaurants;
                     if (restaurants.isEmpty) {
-                      return const EmptyState(
+                      return EmptyState(
                         icon: Icons.storefront_outlined,
-                        title: 'No restaurants',
-                        message: 'No restaurants available right now.',
+                        title: AppLocalizations.of(context)!.restaurantsEmpty,
+                        message: '',
                       );
                     }
 

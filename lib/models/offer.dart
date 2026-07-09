@@ -78,6 +78,31 @@ class Offer {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'title_si': titleSi,
+      'title_ta': titleTa,
+      'description': description,
+      'description_si': descriptionSi,
+      'description_ta': descriptionTa,
+      'original_price': originalPrice,
+      'offer_price': offerPrice,
+      'image_urls': imageUrls,
+      'end_date': endDate.toIso8601String(),
+      'is_favorited': isFavorite,
+      'distance_km': distanceKm,
+      'restaurant': {
+        'id': restaurantId,
+        'name': restaurantName,
+        'slug': restaurantSlug,
+        'cuisine_tags': cuisineTags,
+        'address': location,
+      },
+    };
+  }
+
   Offer copyWith({
     String? id,
     String? restaurantId,

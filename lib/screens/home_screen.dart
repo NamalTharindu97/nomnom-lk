@@ -7,6 +7,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
@@ -83,7 +84,7 @@ class _HomeBody extends StatelessWidget {
             hasScrollBody: false,
             child: EmptyState(
               icon: Icons.wifi_off_rounded,
-              title: 'Something went wrong',
+              title: AppLocalizations.of(context)!.generalError,
               message: state.error!,
               onRetry: context.read<OfferProvider>().refreshOffers,
             ),
@@ -95,12 +96,12 @@ class _HomeBody extends StatelessWidget {
         }
 
         if (offers.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyState(
               icon: Icons.no_food_rounded,
-              title: 'No deals yet',
-              message: 'Check back for new offers from your favorite eateries.',
+              title: AppLocalizations.of(context)!.homeNoDeals,
+              message: AppLocalizations.of(context)!.homeNoDealsSubtitle,
             ),
           );
         }
@@ -194,7 +195,7 @@ class _HomeHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '$offerCount deals',
+                    AppLocalizations.of(context)!.homeDealCount(offerCount),
                     style: textTheme.labelLarge?.copyWith(
                       color: AppColors.curry,
                       fontWeight: FontWeight.w900,
@@ -205,7 +206,7 @@ class _HomeHeader extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Best deals near you',
+              AppLocalizations.of(context)!.homeBestDeals,
               style: textTheme.headlineSmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontWeight: FontWeight.w900,
@@ -213,7 +214,7 @@ class _HomeHeader extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Discover the best food deals from your favorite local spots.',
+              AppLocalizations.of(context)!.homeBestDealsSubtitle,
               style: textTheme.bodyMedium?.copyWith(color: context.colors.muted),
             ),
             const SizedBox(height: 18),
@@ -234,7 +235,7 @@ class _HomeHeader extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Search kottu, hoppers, restaurants',
+                        AppLocalizations.of(context)!.homeSearchHint,
                         style: textTheme.bodyMedium?.copyWith(
                           color: context.colors.muted,
                           fontWeight: FontWeight.w600,
@@ -275,7 +276,7 @@ class _TrendingCarousel extends StatelessWidget {
                   Icon(Icons.local_fire_department_rounded, color: AppColors.chili, size: 18),
                   const SizedBox(width: 6),
                   Text(
-                    'Hot Offers',
+                    AppLocalizations.of(context)!.homeHotOffers,
                     style: textTheme.titleSmall?.copyWith(
                       color: context.colors.textPrimary,
                       fontWeight: FontWeight.w800,
@@ -441,7 +442,7 @@ class _CuisineFilterChips extends StatelessWidget {
             child: Row(
               children: [
                 _FilterChip(
-                  label: 'All',
+                  label: AppLocalizations.of(context)!.allLabel,
                   isSelected: state.selected == null,
                   onTap: () => context.read<OfferProvider>().clearCuisineFilter(),
                 ),

@@ -4,6 +4,69 @@ import '../../lib/models/restaurant.dart';
 import '../../lib/services/api_favorites_service.dart';
 import '../../lib/services/api_offer_service.dart';
 import '../../lib/services/api_restaurant_service.dart';
+import '../../lib/services/connectivity_service.dart';
+import '../../lib/services/local/favorite_store.dart';
+import '../../lib/services/local/offer_store.dart';
+import '../../lib/services/local/restaurant_store.dart';
+
+class MockConnectivityService implements ConnectivityService {
+  @override
+  bool isOnline = true;
+
+  @override
+  Stream<bool> get onConnectivityChanged => const Stream.empty();
+
+  @override
+  Future<bool> checkConnectivity() async => true;
+
+  @override
+  void dispose() {}
+}
+
+class MockOfferStore implements OfferStore {
+  @override
+  Future<void> init() async {}
+
+  @override
+  List<Offer>? getOffersByPage(int page) => null;
+
+  @override
+  Future<void> saveOffersByPage(int page, List<Offer> offers) async {}
+
+  @override
+  Future<void> clear() async {}
+}
+
+class MockFavoriteStore implements FavoriteStore {
+  @override
+  Set<String> getFavorites() => {};
+
+  @override
+  Future<void> addFavorite(String offerId) async {}
+
+  @override
+  Future<void> removeFavorite(String offerId) async {}
+
+  @override
+  Future<void> syncFromRemote(Set<String> remoteIds) async {}
+
+  @override
+  Future<void> init() async {}
+}
+
+class MockRestaurantStore implements RestaurantStore {
+  @override
+  Future<void> init() async {}
+
+  @override
+  List<Restaurant>? getRestaurantsByPage(int page) => null;
+
+  @override
+  Future<void> saveRestaurantsByPage(int page, List<Restaurant> restaurants) async {}
+
+  @override
+  Future<void> clear() async {}
+}
 
 Offer makeOffer({
   String id = '1',

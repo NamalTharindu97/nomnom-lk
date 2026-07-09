@@ -8,6 +8,7 @@ import '../core/theme/context_colors.dart';
 import '../models/restaurant.dart';
 import '../providers/offer_provider.dart';
 import '../providers/restaurant_provider.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/offer_card.dart';
@@ -101,7 +102,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Search',
+                    AppLocalizations.of(context)!.navSearch,
                     style: textTheme.headlineSmall?.copyWith(
                       color: context.colors.textPrimary,
                       fontWeight: FontWeight.w900,
@@ -123,7 +124,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       }
                     },
                     decoration: InputDecoration(
-                      hintText: 'Food or restaurant name',
+                      hintText: AppLocalizations.of(context)!.searchHint,
                       prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: _controller.text.isEmpty
                           ? null
@@ -163,7 +164,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 height: MediaQuery.of(context).size.height * 0.3,
                                 child: EmptyState(
                                   icon: Icons.wifi_off_rounded,
-                                  title: 'Search failed',
+                                  title: AppLocalizations.of(context)!.searchFailed,
                                   message: offerProvider.searchError ??
                                       restProvider.searchError!,
                                   onRetry: _retrySearch,
@@ -174,10 +175,10 @@ class _SearchScreenState extends State<SearchScreen> {
                         }
 
                         if (offers.isEmpty && restaurants.isEmpty) {
-                          return const EmptyState(
+                          return EmptyState(
                             icon: Icons.search_off_rounded,
-                            title: 'No deals found',
-                            message: 'Try another dish or restaurant name.',
+                            title: AppLocalizations.of(context)!.searchNoResults,
+                            message: AppLocalizations.of(context)!.searchNoResultsSubtitle,
                           );
                         }
 
@@ -188,7 +189,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               Padding(
                               padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.xs, Spacings.md, Spacings.xxs),
                                   child: Text(
-                                'Restaurants',
+                                AppLocalizations.of(context)!.searchRestaurantsTab,
                                 style: textTheme.titleSmall?.copyWith(
                                     color: context.colors.muted,
                                     fontWeight: FontWeight.w700,
@@ -206,7 +207,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               Padding(
                               padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.xs, Spacings.md, Spacings.xxs),
                                   child: Text(
-                                'Offers',
+                                AppLocalizations.of(context)!.searchOffersTab,
                                 style: textTheme.titleSmall?.copyWith(
                                     color: context.colors.muted,
                                     fontWeight: FontWeight.w700,
@@ -255,7 +256,7 @@ class _SearchIdleState extends StatelessWidget {
               Icon(Icons.history_rounded, size: 18, color: context.colors.muted),
               const SizedBox(width: Spacings.xs),
               Text(
-                'Recent',
+                AppLocalizations.of(context)!.searchRecent,
                 style: textTheme.titleSmall?.copyWith(
                   color: context.colors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -265,7 +266,7 @@ class _SearchIdleState extends StatelessWidget {
               GestureDetector(
                 onTap: onClearRecent,
                 child: Text(
-                  'Clear all',
+                  AppLocalizations.of(context)!.searchClearAll,
                   style: textTheme.bodySmall?.copyWith(
                     color: AppColors.chili,
                     fontWeight: FontWeight.w600,
@@ -293,10 +294,10 @@ class _SearchIdleState extends StatelessWidget {
       );
     }
 
-    return const EmptyState(
+    return EmptyState(
       icon: Icons.search_rounded,
-      title: 'What are you craving?',
-      message: 'Search for dishes, restaurants, or cuisines.',
+      title: AppLocalizations.of(context)!.searchEmptyTitle,
+      message: AppLocalizations.of(context)!.searchEmptySubtitle,
     );
   }
 }
