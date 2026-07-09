@@ -7,7 +7,7 @@ test.describe.serial("Coupons", () => {
     await page.goto("/dashboard/coupons")
 
     await page.getByPlaceholder("SAVE20").fill(couponCode)
-    await page.locator("#discount").fill("10")
+    await page.locator("#discount_value").fill("10")
     await page.getByRole("button", { name: "Create" }).click()
 
     await expect(page.getByText(couponCode)).toBeVisible()

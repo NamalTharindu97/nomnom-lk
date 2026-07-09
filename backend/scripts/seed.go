@@ -203,7 +203,7 @@ func main() {
 		{RestaurantIdx: 10, Title: "Taco Deal", TitleSi: "ටැකෝ ගනුදෙනුව", TitleTa: "டாகோ சலுகை", Description: "3 tacos with salsa, guacamole, and sour cream", DescSi: "සල්සා, ග්වාකමෝල් සහ ඇඹුල් ක්‍රීම් සමඟ ටැකෝ 3ක්", DescTa: "சல்சா, குவாக்கமோல் மற்றும் புளிப்பு கிரீமுடன் 3 டாகோக்கள்", OriginalPrice: 1500, OfferPrice: 990, ImageSeed: "taco-bell-tacos", DaysValid: 21},
 	}
 
-	samplesBase := "/Users/namal/dev/MobileApps/NomNom LK/assets/samples"
+	samplesBase := "../assets/samples"
 
 	sampleFiles := map[string]string{
 		"pizza-hut":              filepath.Join(samplesBase, "pizza hut granddipper.jpeg"),

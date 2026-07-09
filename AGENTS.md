@@ -106,6 +106,29 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
+- **2026-07-10:** P35 (Locale initialization fix, image streaming, loading optimizations) — merged to master.
+  - **Backend fixes**:
+    - Image streaming from MinIO: changed from HTTP redirect to direct byte streaming via `GetFile()` (`upload_service.go`)
+    - Added `ForcePathStyle: true` to MinIO client config for CI/MinIO compat (`upload_service.go`)
+    - `CronService` audit log prune 15-min schedule confirmed running
+  - **Flutter fixes**:
+    - Locale initialization race condition: moved `_loadLocale()` from `LocaleProvider` constructor into async `initialize()` method, awaited before `runApp()` in `main.dart`
+    - Login data sync: `_syncDataAfterLogin()` now calls `loadOffers(forceRefresh: true)` instead of `loadFavorites()` to ensure offers load after login
+    - ARB localization files (`app_en.arb`, `app_si.arb`, `app_ta.arb`) with generated `AppLocalizations` classes
+    - New screens: `edit_profile_screen.dart`, `notification_prefs_screen.dart`
+    - Local stores for offline: `favorite_store.dart`, `notification_store.dart`, `offer_store.dart`, `restaurant_store.dart`
+    - Connectivity service, cache interceptor improvements, SSE service updates
+  - **Admin dashboard**:
+    - User creation dialog (`_user-dialog.tsx`) with form validation
+    - Notification page enhancements (template picker, schedule)
+    - Coupons page completed with activate/deactivate workflow
+    - Settings page validation for empty fields
+  - **CI status**: All 48 Playwright E2E passing on master. 3 test failures fixed:
+    - `coupons.spec.ts`: `#discount` → `#discount_value` (id changed to match Zod form); `max_uses` Zod schema changed from `.positive()` to `.min(0)` to allow 0 (unlimited)
+    - `restaurant-crud.spec.ts`: validation text changed from "Name and slug are required" → "Name is required" + "Slug is required" (new Zod validation per-field)
+    - `settings.spec.ts`: validation text changed from "All fields are required" → "Current password is required" (new Zod per-field validation)
+    - Hardcoded macOS path in `seed.go` (`samplesBase`) changed from `/Users/namal/.../assets/samples` to `../assets/samples` for CI compat
+  - PR #22 merged to master. See commit `605d5df`.
 - **2026-07-06:** P34 (Audit Log Enhancements + CI Fixes) — on `phase/P34-audit-log-improvements`.
   - **Audit logging enhancements**: `AdminRole` field on `AuditLog` model; `LogAction` accepts `userRole`; all 35 callers updated. Action/entity filters use ILIKE partial match; new `role` filter. Frontend: 17 categorized action options, Role/Admin/Owner filter dropdowns, table horizontal scroll, details wrap, 6-column skeleton.
   - **"Switch Account" terminology**: Sidebar "Viewing as", filter label "Switch Account", owners button "Switch".

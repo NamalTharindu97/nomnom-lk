@@ -28,7 +28,7 @@ const couponSchema = z.object({
   discount_type: z.enum(["percentage", "fixed"]),
   discount_value: z.number().positive("Must be positive"),
   min_order_amount: z.number().min(0).optional(),
-  max_uses: z.number().int().positive("Must be positive").optional(),
+  max_uses: z.number().int().min(0, "Must be 0 or positive").optional(),
   starts_at: z.string().optional(),
   expires_at: z.string().optional(),
 }).refine(

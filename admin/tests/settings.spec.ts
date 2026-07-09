@@ -15,6 +15,6 @@ test.describe("Settings", () => {
     await page.goto("/dashboard/settings")
 
     await page.getByRole("button", { name: "Update Password" }).click()
-    await expect(page.getByText("All fields are required", { exact: true }).first()).toBeVisible()
+    await expect(page.getByText("Current password is required", { exact: true })).toBeVisible()
   })
 })

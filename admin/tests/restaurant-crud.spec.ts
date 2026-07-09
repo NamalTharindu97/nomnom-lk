@@ -40,7 +40,8 @@ test.describe("Restaurant CRUD", () => {
     await dialog.expectOpen()
 
     await dialog.clickSubmit()
-    await expect(page.getByText("Name and slug are required", { exact: true })).toBeVisible()
+    await expect(page.getByText("Name is required", { exact: true })).toBeVisible()
+    await expect(page.getByText("Slug is required", { exact: true })).toBeVisible()
     await dialog.expectOpen()
   })
 
