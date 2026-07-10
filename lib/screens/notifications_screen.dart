@@ -181,7 +181,7 @@ class _NotificationTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _formatDate(notification.createdAt),
+                    _formatDate(context, notification.createdAt),
                     style: textTheme.labelSmall?.copyWith(
                       color: context.colors.muted.withValues(alpha: 0.7),
                     ),
@@ -195,12 +195,13 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(BuildContext context, DateTime date) {
+    final loc = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final diff = now.difference(date);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 60) return loc.notificationsMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return loc.notificationsHoursAgo(diff.inHours);
+    if (diff.inDays < 7) return loc.notificationsDaysAgo(diff.inDays);
     return '${date.day}/${date.month}/${date.year}';
   }
 }

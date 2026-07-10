@@ -9,8 +9,15 @@ class _Colors {
   Color get lime => AppColors.lime;
   Color get ocean => AppColors.ocean;
 
+  // Semantic
+  Color get success => AppColors.lime;
+  Color get warning => AppColors.curry;
+  Color get error => AppColors.chili;
+
   // Muted (theme-aware)
   final Color muted;
+  final Color border;
+  final Color disabled;
 
   // Backgrounds
   final Color background;
@@ -22,6 +29,8 @@ class _Colors {
 
   const _Colors._dark()
       : muted = AppColors.muted,
+        border = AppColors.darkBorder,
+        disabled = AppColors.darkDisabled,
         background = AppColors.darkBackground,
         backgroundAlt = AppColors.darkBackgroundAlt,
         surface = AppColors.darkSurface,
@@ -31,6 +40,8 @@ class _Colors {
 
   const _Colors._light()
       : muted = AppColors.lightMuted,
+        border = AppColors.lightBorder,
+        disabled = AppColors.lightDisabled,
         background = AppColors.lightBackground,
         backgroundAlt = AppColors.lightBackgroundAlt,
         surface = AppColors.lightSurface,

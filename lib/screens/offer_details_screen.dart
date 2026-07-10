@@ -14,6 +14,46 @@ import '../widgets/empty_state.dart';
 import '../widgets/favorite_button.dart';
 import '../widgets/offer_image.dart';
 
+class _StaggeredFadeSlide extends StatelessWidget {
+  final Animation<double> animation;
+  final int index;
+  final Widget child;
+
+  const _StaggeredFadeSlide({
+    required this.animation,
+    required this.index,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final double delay = (index * 0.08).clamp(0.0, 1.0);
+    final double start = delay;
+    final double end = (delay + 0.4).clamp(0.0, 1.0);
+
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Interval(start, end, curve: Curves.easeOut),
+        ),
+      ),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.06),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: Interval(start, end, curve: Curves.easeOut),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
 class OfferDetailsScreen extends StatefulWidget {
   const OfferDetailsScreen({
     super.key,
@@ -70,13 +110,15 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null || _fetchedOffer == null) {
       return Scaffold(
+        appBar: AppBar(),
         body: EmptyState(
           icon: Icons.error_outline_rounded,
           title: AppLocalizations.of(context)!.offerNotFound,
@@ -89,14 +131,44 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   }
 }
 
-class _OfferDetailsContent extends StatelessWidget {
+class _OfferDetailsContent extends StatefulWidget {
+  final Offer offer;
+
   const _OfferDetailsContent({required this.offer});
 
-  final Offer offer;
+  @override
+  State<_OfferDetailsContent> createState() => _OfferDetailsContentState();
+}
+
+class _OfferDetailsContentState extends State<_OfferDetailsContent>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final offer = widget.offer;
 
     return Scaffold(
       appBar: AppBar(
@@ -111,60 +183,92 @@ class _OfferDetailsContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      offer.localizedTitle(Localizations.localeOf(context).languageCode),
-                      style: textTheme.headlineSmall?.copyWith(
-                        color: context.colors.textPrimary,
-                        fontWeight: FontWeight.w900,
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 0,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        offer.localizedTitle(Localizations.localeOf(context).languageCode),
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 12),
+                    _DiscountPill(label: offer.discountLabelLocalized(Localizations.localeOf(context).languageCode)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Spacings.xl),
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 1,
+                child: Text(
+                  offer.localizedDescription(Localizations.localeOf(context).languageCode),
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: context.colors.textSecondary,
+                    height: 1.45,
                   ),
-                  const SizedBox(width: 12),
-                  _DiscountPill(label: offer.discountLabel),
-                ],
-              ),
-              const SizedBox(height: Spacings.xl),
-              Text(
-                offer.localizedDescription(Localizations.localeOf(context).languageCode),
-                style: textTheme.bodyLarge?.copyWith(
-                  color: context.colors.textSecondary,
-                  height: 1.45,
                 ),
               ),
               const SizedBox(height: Spacings.xl),
-              AspectRatio(
-                aspectRatio: 1 / 1,
-                child: OfferImage(
-                  imageUrl: offer.primaryImage,
-                  heroTag: 'offer-image-${offer.id}',
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 2,
+                child: AspectRatio(
+                  aspectRatio: 1 / 1,
+                  child: OfferImage(
+                    imageUrl: offer.primaryImage,
+                    heroTag: 'offer-image-${offer.id}',
+                  ),
                 ),
               ),
               const SizedBox(height: Spacings.xl),
-              _PricePanel(offer: offer),
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 3,
+                child: _PricePanel(offer: offer),
+              ),
               const SizedBox(height: Spacings.xl),
-              _InfoRow(
-                icon: Icons.storefront_rounded,
-                title: AppLocalizations.of(context)!.offerRestaurantLabel,
-                value: offer.restaurantName,
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 4,
+                child: _InfoRow(
+                  icon: Icons.storefront_rounded,
+                  title: AppLocalizations.of(context)!.offerRestaurantLabel,
+                  value: offer.restaurantName,
+                ),
               ),
               const SizedBox(height: 12),
-              _InfoRow(
-                icon: Icons.location_on_rounded,
-                title: AppLocalizations.of(context)!.offerLocation,
-                value: offer.location,
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 5,
+                child: _InfoRow(
+                  icon: Icons.location_on_rounded,
+                  title: AppLocalizations.of(context)!.offerLocation,
+                  value: offer.location,
+                ),
               ),
               const SizedBox(height: 12),
-              _InfoRow(
-                icon: Icons.local_offer_rounded,
-                title: AppLocalizations.of(context)!.offerDiscountLabel,
-                value: offer.discountLabel,
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 6,
+                child: _InfoRow(
+                  icon: Icons.local_offer_rounded,
+                  title: AppLocalizations.of(context)!.offerDiscountLabel,
+                  value: offer.discountLabelLocalized(Localizations.localeOf(context).languageCode),
+                ),
               ),
               const SizedBox(height: Spacings.xxl),
-              FavoriteButton(offerId: offer.id, showLabel: true),
+              _StaggeredFadeSlide(
+                animation: _animation,
+                index: 7,
+                child: FavoriteButton(offerId: offer.id, showLabel: true),
+              ),
             ],
           ),
         ),

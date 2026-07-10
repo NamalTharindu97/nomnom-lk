@@ -19,8 +19,12 @@ class DiscountBadge extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: context.colors.background,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? context.colors.background
+                  : Colors.white,
               fontWeight: FontWeight.w900,
             ),
       ),

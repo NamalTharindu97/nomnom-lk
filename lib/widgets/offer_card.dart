@@ -44,12 +44,13 @@ class OfferCard extends StatelessWidget {
                     child: OfferImage(
                       imageUrl: offer.primaryImage,
                       borderRadius: BorderRadius.zero,
+                      heroTag: 'offer-image-${offer.id}',
                     ),
                   ),
                   Positioned(
                     top: Spacings.sm,
                     left: Spacings.sm,
-                    child: DiscountBadge(label: offer.discountLabel),
+                    child: DiscountBadge(label: offer.discountLabelLocalized(Localizations.localeOf(context).languageCode)),
                   ),
                   Positioned(
                     top: 8,

@@ -27,6 +27,7 @@ import {
   Ticket,
   Folder,
   UserCheck,
+  Image as ImageIcon,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -41,6 +42,7 @@ const adminNavItems = [
   { href: "/dashboard/coupons", label: "Coupons", icon: Ticket },
   { href: "/dashboard/categories", label: "Categories", icon: Folder },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/banners", label: "Banners", icon: ImageIcon },
   { href: "/dashboard/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
@@ -49,6 +51,7 @@ const ownerNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/restaurants", label: "My Restaurants", icon: Store },
   { href: "/dashboard/offers", label: "My Offers", icon: Tag },
+  { href: "/dashboard/banners", label: "My Banners", icon: ImageIcon },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]

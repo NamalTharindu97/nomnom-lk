@@ -175,7 +175,7 @@ class OfferProvider extends ChangeNotifier {
         _hasLoaded = true;
         await _offerStore.saveOffersByPage(_currentPage, _offers);
       } catch (e) {
-        _error = 'Failed to load offers. Pull to retry.';
+        _error = 'failedLoadPullRetry';
       }
     }
     if (!_hasLoaded) {
@@ -186,7 +186,7 @@ class OfferProvider extends ChangeNotifier {
         _filterVersion++;
         _hasLoaded = true;
       } else {
-        _error = 'No internet connection';
+        _error = 'noInternet';
       }
     }
     _setLoading(false);
@@ -241,7 +241,7 @@ class OfferProvider extends ChangeNotifier {
       _hasMore = result.hasMore;
       _total = result.total;
     } catch (_) {
-      _searchError = 'Search failed. Try again.';
+      _searchError = 'searchFailedTryAgain';
     }
     _isSearching = false;
     notifyListeners();

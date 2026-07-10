@@ -2,20 +2,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
-import '../utils/currency_formatter.dart';
 import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
-import '../widgets/discount_badge.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/favorite_button.dart';
+import '../widgets/featured_banner_carousel.dart';
+import '../widgets/hot_offer_card.dart';
 import '../widgets/offer_card.dart';
-import '../widgets/offer_image.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/stagger_item.dart';
 
@@ -55,14 +52,31 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              SliverToBoxAdapter(child: _TrendingCarousel()),
+              const SliverToBoxAdapter(child: FeaturedBannerCarousel()),
+              const SliverToBoxAdapter(child: SizedBox(height: Spacings.md)),
+              const SliverToBoxAdapter(child: _HotOffersSection()),
+              SliverToBoxAdapter(child: _SectionDivider()),
+              const SliverToBoxAdapter(child: SizedBox(height: Spacings.sm)),
               SliverToBoxAdapter(child: _CuisineFilterChips()),
+              SliverToBoxAdapter(child: _AllOffersHeader()),
+              const SliverToBoxAdapter(child: SizedBox(height: Spacings.xs)),
               _HomeBody(),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+String _resolveError(String token, AppLocalizations loc) {
+  switch (token) {
+    case 'failedLoadPullRetry':
+      return loc.generalLoadingFailedPullToRestart;
+    case 'noInternet':
+      return loc.generalNoInternetConnection;
+    default:
+      return loc.generalError;
   }
 }
 
@@ -80,12 +94,13 @@ class _HomeBody extends StatelessWidget {
         final offers = state.offers;
 
         if (state.error != null && offers.isEmpty) {
+          final loc = AppLocalizations.of(context)!;
           return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyState(
               icon: Icons.wifi_off_rounded,
-              title: AppLocalizations.of(context)!.generalError,
-              message: state.error!,
+              title: loc.generalError,
+              message: _resolveError(state.error!, loc),
               onRetry: context.read<OfferProvider>().refreshOffers,
             ),
           );
@@ -177,6 +192,7 @@ class _HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final t = AppLocalizations.of(context)!;
 
     return SafeArea(
       bottom: false,
@@ -187,7 +203,8 @@ class _HomeHeader extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Expanded(child: AppLogo(compact: true)),
+                const AppLogo(compact: true),
+                const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: Spacings.xs, vertical: Spacings.xs),
                   decoration: BoxDecoration(
@@ -195,7 +212,7 @@ class _HomeHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    AppLocalizations.of(context)!.homeDealCount(offerCount),
+                    t.homeDealCount(offerCount),
                     style: textTheme.labelLarge?.copyWith(
                       color: AppColors.curry,
                       fontWeight: FontWeight.w900,
@@ -204,9 +221,9 @@ class _HomeHeader extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Text(
-              AppLocalizations.of(context)!.homeBestDeals,
+              t.homeBestDeals,
               style: textTheme.headlineSmall?.copyWith(
                 color: context.colors.textPrimary,
                 fontWeight: FontWeight.w900,
@@ -214,10 +231,10 @@ class _HomeHeader extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              AppLocalizations.of(context)!.homeBestDealsSubtitle,
+              t.homeBestDealsSubtitle,
               style: textTheme.bodyMedium?.copyWith(color: context.colors.muted),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             InkWell(
               key: const ValueKey('home-search-bar'),
               onTap: onSearchTap,
@@ -231,18 +248,18 @@ class _HomeHeader extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search_rounded, color: AppColors.muted),
-                    const SizedBox(width: 10),
+                    const Icon(Icons.search_rounded, color: AppColors.muted, size: 18),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        AppLocalizations.of(context)!.homeSearchHint,
+                        t.homeSearchHint,
                         style: textTheme.bodyMedium?.copyWith(
                           color: context.colors.muted,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_rounded, color: AppColors.curry),
+                    const Icon(Icons.arrow_forward_rounded, color: AppColors.curry, size: 18),
                   ],
                 ),
               ),
@@ -254,26 +271,88 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _TrendingCarousel extends StatelessWidget {
+class _AllOffersHeader extends StatelessWidget {
+  const _AllOffersHeader();
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Selector<OfferProvider, List<Offer>>(
-      selector: (_, p) => p.hotOffers,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.xs, Spacings.md, 0),
+      child: Row(
+        children: [
+          Text(
+            AppLocalizations.of(context)!.allLabel,
+            style: textTheme.titleSmall?.copyWith(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: Spacings.sm),
+          Expanded(
+            child: Divider(
+              thickness: 1,
+              color: context.colors.textPrimary.withValues(alpha: 0.08),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 16,
+      endIndent: 16,
+      color: context.colors.textPrimary.withValues(alpha: 0.08),
+    );
+  }
+}
+
+class _HotOffersSection extends StatelessWidget {
+  const _HotOffersSection();
+
+  static const _cardScale = 0.52;
+  static const _cardAspect = 9 / 16;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final locale = Localizations.localeOf(context).languageCode;
+
+    return Selector<OfferProvider, _HotState>(
+      selector: (_, p) => _HotState(
+        offers: p.hotOffers,
+        isLoading: p.isLoading && !p.hasLoaded,
+      ),
       shouldRebuild: (prev, next) => prev != next,
-      builder: (_, hotOffers, __) {
-        if (hotOffers.length < 2) return const SizedBox.shrink();
+      builder: (_, state, __) {
+        if (state.isLoading) {
+          return _buildLoading(context);
+        }
+
+        final hotOffers = state.offers;
+        if (hotOffers.isEmpty) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: Spacings.md, bottom: Spacings.sm),
+              padding: const EdgeInsets.only(
+                left: Spacings.md, bottom: Spacings.sm, right: Spacings.md,
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.local_fire_department_rounded, color: AppColors.chili, size: 18),
+                  Icon(Icons.local_fire_department_rounded,
+                    color: AppColors.chili, size: 18),
                   const SizedBox(width: 6),
                   Text(
                     AppLocalizations.of(context)!.homeHotOffers,
@@ -286,135 +365,101 @@ class _TrendingCarousel extends StatelessWidget {
               ),
             ),
             SizedBox(
-              height: 280,
+              height: _cardHeight(context),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: Spacings.md, right: Spacings.md),
+                padding: const EdgeInsets.symmetric(horizontal: Spacings.md),
+                physics: const BouncingScrollPhysics(),
+                clipBehavior: Clip.none,
                 separatorBuilder: (_, __) => const SizedBox(width: Spacings.sm),
-                itemCount: hotOffers.length,
+                itemCount: hotOffers.length + _endPad(hotOffers.length),
                 itemBuilder: (context, index) {
+                  if (index >= hotOffers.length) {
+                    return const SizedBox(width: Spacings.md);
+                  }
                   final offer = hotOffers[index];
                   return SizedBox(
-                    width: 260,
-                    child: Material(
-                      color: context.colors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () => Navigator.of(context).pushNamed(
-                          AppRoutes.offerDetails,
-                          arguments: offer.id,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Stack(
-                              children: [
-                                AspectRatio(
-                                  aspectRatio: 16 / 9,
-                                  child: OfferImage(
-                                    imageUrl: offer.primaryImage,
-                                    borderRadius: BorderRadius.zero,
-                                    height: double.infinity,
-                                  ),
-                                ),
-                                Positioned(
-                                  top: Spacings.sm,
-                                  left: Spacings.sm,
-                                  child: DiscountBadge(label: offer.discountLabel),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: Spacings.xs,
-                                  child: FavoriteButton(offerId: offer.id),
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(Spacings.sm + 2),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                          child: Text(
-                                          offer.localizedTitle(Localizations.localeOf(context).languageCode),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: textTheme.titleMedium?.copyWith(
-                                            color: context.colors.textPrimary,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: Spacings.sm),
-                                      Text(
-                                        CurrencyFormatter.lkr(offer.offerPrice),
-                                        style: textTheme.titleMedium?.copyWith(
-                                          color: AppColors.curry,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: Spacings.xs),
-                                  Text(
-                                    offer.restaurantName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: context.colors.textSecondary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: Spacings.xs),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on_rounded,
-                                        color: AppColors.ocean,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: Spacings.xxs),
-                                      Expanded(
-                                        child: Text(
-                                          offer.location,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: textTheme.bodySmall?.copyWith(
-                                            color: context.colors.muted,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        CurrencyFormatter.lkr(offer.originalPrice),
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: context.colors.muted,
-                                          decoration: TextDecoration.lineThrough,
-                                          decorationColor: context.colors.muted,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    width: _cardWidth(context),
+                    child: HotOfferCard(offer: offer, locale: locale),
                   );
                 },
               ),
             ),
-            const SizedBox(height: Spacings.md),
           ],
         );
       },
     );
   }
+
+  Widget _buildLoading(BuildContext context) {
+    final height = _cardHeight(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: Spacings.md, bottom: Spacings.sm),
+          child: Row(
+            children: [
+              Icon(Icons.local_fire_department_rounded,
+                color: AppColors.chili, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                AppLocalizations.of(context)!.homeHotOffers,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: height,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: Spacings.md),
+            separatorBuilder: (_, __) => const SizedBox(width: Spacings.sm),
+            itemCount: 3,
+            itemBuilder: (_, __) => HotOfferShimmer(
+              width: _cardWidth(context),
+              height: height,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _cardWidth(BuildContext context) =>
+      MediaQuery.of(context).size.width * _cardScale;
+
+  double _cardHeight(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    final labelSize = theme.labelLarge?.fontSize ?? 14;
+    final labelLineHeight = labelSize * 1.6;
+    final padding = (Spacings.sm - 2) * 2;
+    return _cardWidth(context) * _cardAspect + padding + labelLineHeight + 4;
+  }
+
+  int _endPad(int count) => count > 1 ? 1 : 0;
+}
+
+class _HotState {
+  final List<Offer> offers;
+  final bool isLoading;
+
+  const _HotState({required this.offers, required this.isLoading});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _HotState &&
+          isLoading == other.isLoading &&
+          listEquals(offers, other.offers);
+
+  @override
+  int get hashCode => Object.hash(isLoading, Object.hashAll(offers));
 }
 
 class _CuisineFilterChips extends StatelessWidget {
@@ -432,10 +477,8 @@ class _CuisineFilterChips extends StatelessWidget {
         if (state.tags.isEmpty) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(
-            left: Spacings.md,
-            right: Spacings.md,
-            bottom: Spacings.sm,
+          padding: const EdgeInsets.fromLTRB(
+            Spacings.md, Spacings.sm, Spacings.md, Spacings.sm,
           ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -466,7 +509,7 @@ class _CuisineFilterChips extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
+class _FilterChip extends StatefulWidget {
   const _FilterChip({
     required this.label,
     required this.isSelected,
@@ -478,25 +521,40 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_FilterChip> createState() => _FilterChipState();
+}
+
+class _FilterChipState extends State<_FilterChip> with SingleTickerProviderStateMixin {
+  double _scale = 1.0;
+
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2, vertical: Spacings.xs),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.curry : context.colors.surfaceAlt,
-          borderRadius: BorderRadius.circular(20),
-          border: isSelected
-              ? null
-              : Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
-        ),
-        child: Text(
-          label,
-          style: textTheme.labelMedium?.copyWith(
-            color: isSelected ? context.colors.background : context.colors.textSecondary,
-            fontWeight: FontWeight.w700,
+      onTapDown: (_) => setState(() => _scale = 0.93),
+      onTapUp: (_) => setState(() => _scale = 1.0),
+      onTapCancel: () => setState(() => _scale = 1.0),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2, vertical: Spacings.xs),
+          decoration: BoxDecoration(
+            color: widget.isSelected ? AppColors.curry : context.colors.surfaceAlt,
+            borderRadius: BorderRadius.circular(20),
+            border: widget.isSelected
+                ? null
+                : Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
+          ),
+          child: Text(
+            widget.label,
+            style: textTheme.labelMedium?.copyWith(
+              color: widget.isSelected ? context.colors.background : context.colors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),

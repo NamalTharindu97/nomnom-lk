@@ -468,4 +468,45 @@ class AppLocalizationsSi extends AppLocalizations {
 
   @override
   String get allLabel => 'සියල්ල';
+
+  @override
+  String get editProfileSaveError => 'පැතිකඩ සුරැකීමට නොහැකි විය. නැවත උත්සාහ කරන්න.';
+
+  @override
+  String get uploadFailed => 'රූපය උඩුගත කිරීමට අසමත් විය';
+
+  @override
+  String get featuredLabel => 'විශේෂාංග';
+
+  @override
+  String sponsoredBy(String name) => '$name විසින් අනුග්‍රහය දක්වන ලදී';
+
+  @override
+  String get languageLabel => 'භාෂාව';
+
+  @override
+  String get retryLabel => 'නැවත උත්සාහ කරන්න';
+
+  @override
+  String offerShareText(String restaurant, String deal, String title, String description) {
+    return '$restaurant හි මෙම දීමනාව බලන්න!\n$title මත $deal\n\n$description\n\nදිනපතා ආහාර දීමනා සඳහා යෙදුම බාගන්න!';
+  }
+
+  @override
+  String get generalSearchFailedTryAgain => 'සෙවීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.';
+
+  @override
+  String get generalLoadingFailedPullToRestart => 'පූරණය කිරීමට අසමත් විය. නැවත උත්සාහ කිරීමට පහළට අදින්න.';
+
+  @override
+  String get generalNoInternetConnection => 'අන්තර්ජාල සම්බන්ධතාවක් නොමැත';
+
+  @override
+  String notificationsMinutesAgo(int count) => 'මිනිත්තු $countකට පෙර';
+
+  @override
+  String notificationsHoursAgo(int count) => 'පැය $countකට පෙර';
+
+  @override
+  String notificationsDaysAgo(int count) => 'දින $countකට පෙර';
 }

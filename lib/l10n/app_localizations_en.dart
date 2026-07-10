@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'NomNom LK';
 
   @override
-  String get splashTagline => 'Discover Sri Lanka\'s Best Food Deals';
+  String get splashTagline => 'Discover Sri Lanka\'s Daily Best Food Deals';
 
   @override
   String get loginTitle => 'Sign In';
@@ -78,48 +78,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeHotOffers => 'Hot Offers';
 
   @override
-  String get homeBestDeals => 'Best deals near you';
+  String get homeBestDeals => 'Today\'s Deals';
 
   @override
-  String get homeBestDealsSubtitle => 'Discover the best food deals from your favorite local spots.';
+  String get homeBestDealsSubtitle => 'Fresh daily offers from your favorite spots';
 
   @override
-  String get homeNoDeals => 'No deals yet';
+  String get homeNoDeals => 'No daily deals yet';
 
   @override
-  String get homeNoDealsSubtitle => 'Check back for new offers from your favorite eateries.';
+  String get homeNoDealsSubtitle => 'Check back tomorrow for fresh daily offers';
 
   @override
   String get homeRestaurants => 'Restaurants';
 
   @override
-  String get homeSearchHint => 'Search kottu, hoppers, restaurants...';
+  String get homeSearchHint => 'Search today\'s deals';
 
   @override
   String homeDealCount(int count) {
-    return '$count deals';
+    return '$count daily deals';
   }
 
   @override
-  String get searchHint => 'Search for dishes, restaurants, or cuisines...';
+  String get searchHint => 'Search daily deals, dishes, restaurants...';
 
   @override
   String get searchEmptyTitle => 'What are you craving?';
 
   @override
-  String get searchEmptySubtitle => 'Search for dishes, restaurants, or cuisines.';
+  String get searchEmptySubtitle => 'Search today\'s deals or your favorite restaurants';
 
   @override
-  String get searchNoResults => 'No deals found';
+  String get searchNoResults => 'No daily deals found';
 
   @override
-  String get searchNoResultsSubtitle => 'Try another dish or restaurant name.';
+  String get searchNoResultsSubtitle => 'Try searching for another dish or restaurant';
 
   @override
   String get searchRestaurantsTab => 'Restaurants';
 
   @override
-  String get searchOffersTab => 'Offers';
+  String get searchOffersTab => 'Daily Offers';
 
   @override
   String get searchRecent => 'Recent';
@@ -134,10 +134,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favoritesTitle => 'Your Favorites';
 
   @override
-  String get favoritesEmpty => 'Tap the heart on any deal to save it here.';
+  String get favoritesEmpty => 'Tap the heart on any daily deal to save it here';
 
   @override
-  String get favoritesNoSavedDeals => 'No saved deals';
+  String get favoritesNoSavedDeals => 'No saved daily deals';
 
   @override
   String get restaurantsTitle => 'All Restaurants';
@@ -223,7 +223,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offerNotFound => 'Offer not found';
 
   @override
-  String get offerNotFoundSubtitle => 'This deal may have been removed.';
+  String get offerNotFoundSubtitle => 'This daily deal may have expired';
 
   @override
   String get offerRestaurantLabel => 'Restaurant';
@@ -232,7 +232,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offerDiscountLabel => 'Discount';
 
   @override
-  String get offerDealPriceLabel => 'Deal price';
+  String get offerDealPriceLabel => 'Today\'s price';
 
   @override
   String offerSaveAmount(String amount) {
@@ -374,7 +374,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileShareAppSubtitle => 'Tell your friends';
 
   @override
-  String get profileShareAppMessage => 'Check out NomNom LK - Sri Lanka\'s best food deals app!';
+  String get profileShareAppMessage => 'Check out NomNom LK - Sri Lanka\'s daily food deals app!';
 
   @override
   String get profileRateApp => 'Rate the App';
@@ -413,13 +413,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifPrefsNewOffers => 'New Offers';
 
   @override
-  String get notifPrefsNewOffersDesc => 'New offers from your favorite restaurants';
+  String get notifPrefsNewOffersDesc => 'Daily offers from your favorite restaurants';
 
   @override
   String get notifPrefsPriceDrops => 'Price Drops';
 
   @override
-  String get notifPrefsPriceDropsDesc => 'When prices drop on saved deals';
+  String get notifPrefsPriceDropsDesc => 'When prices drop on saved daily deals';
 
   @override
   String get notifPrefsOpenings => 'Restaurant Openings';
@@ -468,4 +468,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allLabel => 'All';
+
+  @override
+  String get editProfileSaveError => 'Could not save profile. Please try again.';
+
+  @override
+  String get uploadFailed => 'Failed to upload image';
+
+  @override
+  String get featuredLabel => 'Featured';
+
+  @override
+  String sponsoredBy(String name) => 'Sponsored by $name';
+
+  @override
+  String get languageLabel => 'Language';
+
+  @override
+  String get retryLabel => 'Retry';
+
+  @override
+  String offerShareText(String restaurant, String deal, String title, String description) {
+    return 'Check out this deal at $restaurant!\n$deal on $title\n\n$description\n\nDownload the app for daily food deals in Sri Lanka!';
+  }
+
+  @override
+  String get generalSearchFailedTryAgain => 'Search failed. Try again.';
+
+  @override
+  String get generalLoadingFailedPullToRestart => 'Failed to load. Pull to retry.';
+
+  @override
+  String get generalNoInternetConnection => 'No internet connection';
+
+  @override
+  String notificationsMinutesAgo(int count) => '${count}m ago';
+
+  @override
+  String notificationsHoursAgo(int count) => '${count}h ago';
+
+  @override
+  String notificationsDaysAgo(int count) => '${count}d ago';
 }

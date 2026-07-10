@@ -10,6 +10,7 @@ class AppUser {
     this.isGuest = false,
     this.phone,
     this.role,
+    this.avatarUrl,
   });
 
   factory AppUser.guest() {
@@ -31,6 +32,7 @@ class AppUser {
       isGuest: false,
       phone: json['phone'] as String?,
       role: json['role'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
@@ -41,6 +43,7 @@ class AppUser {
   final bool isGuest;
   final String? phone;
   final String? role;
+  final String? avatarUrl;
 
   AppUser copyWith({
     String? id,
@@ -50,6 +53,7 @@ class AppUser {
     bool? isGuest,
     String? phone,
     String? role,
+    String? avatarUrl,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -59,6 +63,7 @@ class AppUser {
       isGuest: isGuest ?? this.isGuest,
       phone: phone ?? this.phone,
       role: role ?? this.role,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
     );
   }
 }

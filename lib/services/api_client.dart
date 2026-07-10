@@ -54,6 +54,20 @@ class ApiClient {
     await _dio.delete(path, data: data);
   }
 
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String fileField,
+    required String filePath,
+    Map<String, String>? queryParams,
+  }) async {
+    final formData = FormData.fromMap({
+      fileField: await MultipartFile.fromFile(filePath),
+    });
+    final response = await _dio.post(path, data: formData, queryParameters: queryParams);
+    if (response.data == null || response.data is! Map) return <String, dynamic>{};
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<void> clearTokens() async {
     await _storage.deleteAll();
   }

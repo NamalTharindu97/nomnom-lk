@@ -990,6 +990,45 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All'**
   String get allLabel;
+
+  /// No description provided for @editProfileSaveError.
+  String get editProfileSaveError;
+
+  /// No description provided for @uploadFailed.
+  String get uploadFailed;
+
+  /// No description provided for @featuredLabel.
+  String get featuredLabel;
+
+  /// No description provided for @sponsoredBy.
+  String sponsoredBy(String name);
+
+  /// No description provided for @languageLabel.
+  String get languageLabel;
+
+  /// No description provided for @retryLabel.
+  String get retryLabel;
+
+  /// No description provided for @offerShareText.
+  String offerShareText(String restaurant, String deal, String title, String description);
+
+  /// No description provided for @generalSearchFailedTryAgain.
+  String get generalSearchFailedTryAgain;
+
+  /// No description provided for @generalLoadingFailedPullToRestart.
+  String get generalLoadingFailedPullToRestart;
+
+  /// No description provided for @generalNoInternetConnection.
+  String get generalNoInternetConnection;
+
+  /// No description provided for @notificationsMinutesAgo.
+  String notificationsMinutesAgo(int count);
+
+  /// No description provided for @notificationsHoursAgo.
+  String notificationsHoursAgo(int count);
+
+  /// No description provided for @notificationsDaysAgo.
+  String notificationsDaysAgo(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

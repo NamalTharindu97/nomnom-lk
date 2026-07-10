@@ -12,6 +12,7 @@ import 'core/theme/app_theme.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import 'models/offer.dart';
 import 'providers/auth_provider.dart';
+import 'providers/banner_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/offer_provider.dart';
@@ -27,6 +28,7 @@ import 'screens/restaurants_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/verify_email_screen.dart';
 import 'services/api_auth_service.dart';
+import 'services/api_banner_service.dart';
 import 'services/api_client.dart';
 import 'services/api_favorites_service.dart';
 import 'services/api_notification_service.dart';
@@ -109,6 +111,9 @@ class NomNomBootstrap extends StatelessWidget {
             connectivityService: connectivityService,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => BannerProvider(ApiBannerService(apiClient)),
+        ),
       ],
       child: const _StoreInitializer(child: _FcmInitializer(child: NomNomApp())),
     );
@@ -166,13 +171,13 @@ class _FcmInitializerState extends State<_FcmInitializer> {
     if (payload.startsWith('offer_') || payload.contains('offer_id')) {
       final parts = payload.split('_');
       final id = parts.length > 1 ? parts.last : payload;
-      nav.pushNamed(AppRoutes.offerDetailPath(id));
+      nav.pushNamed('${AppRoutes.offerDetails}/$id');
       return;
     }
     // Direct offer ID (UUID)
     final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
     if (uuidRegex.hasMatch(payload)) {
-      nav.pushNamed(AppRoutes.offerDetailPath(payload));
+      nav.pushNamed('${AppRoutes.offerDetails}/$payload');
       return;
     }
     nav.pushNamed(AppRoutes.home);
@@ -308,6 +313,33 @@ class _SseListenerState extends State<_SseListener> with WidgetsBindingObserver 
   Widget build(BuildContext context) => widget.child;
 }
 
+PageRoute<void> _buildSlideUpRoute({
+  required RouteSettings settings,
+  required WidgetBuilder builder,
+}) {
+  return PageRouteBuilder<void>(
+    settings: settings,
+    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.15),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutQuart,
+          reverseCurve: Curves.easeInQuart,
+        )),
+        child: FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 350),
+  );
+}
+
 class NomNomApp extends StatelessWidget {
   const NomNomApp({super.key});
 
@@ -320,6 +352,12 @@ class NomNomApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          child: child!,
+        );
+      },
       localizationsDelegates: [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -363,14 +401,14 @@ class NomNomApp extends StatelessWidget {
         }
 
         if (settings.name == AppRoutes.editProfile) {
-          return MaterialPageRoute<void>(
+          return _buildSlideUpRoute(
             settings: settings,
             builder: (_) => const EditProfileScreen(),
           );
         }
 
         if (settings.name == AppRoutes.notificationPrefs) {
-          return MaterialPageRoute<void>(
+          return _buildSlideUpRoute(
             settings: settings,
             builder: (_) => const NotificationPrefsScreen(),
           );
@@ -383,7 +421,7 @@ class NomNomApp extends StatelessWidget {
             final String id => id,
             _ => settings.name?.split('/').last ?? '',
           };
-          return MaterialPageRoute<void>(
+          return _buildSlideUpRoute(
             settings: settings,
             builder: (_) => OfferDetailsScreen(offerId: offerId),
           );

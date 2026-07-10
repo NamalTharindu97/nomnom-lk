@@ -21,6 +21,7 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
   };
 
   late Map<String, bool> _values;
+  bool _loaded = false;
 
   @override
   void initState() {
@@ -31,10 +32,12 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       for (final entry in _keys.entries) {
         _values[entry.key] = prefs.getBool(entry.value) ?? true;
       }
+      _loaded = true;
     });
   }
 
@@ -60,61 +63,63 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
       appBar: AppBar(
         title: Text(loc.notifPrefsTitle),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(Spacings.lg),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final (title, desc, key, icon) = items[index];
-          return Container(
-            padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.sm + 2, Spacings.xs, Spacings.sm + 2),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.surfaceAlt),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
+      body: _loaded
+          ? ListView.separated(
+              padding: const EdgeInsets.all(Spacings.lg),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final (title, desc, key, icon) = items[index];
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.sm + 2, Spacings.xs, Spacings.sm + 2),
                   decoration: BoxDecoration(
-                    color: colors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(10),
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colors.surfaceAlt),
                   ),
-                  child: Icon(icon, color: colors.textPrimary, size: 20),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        title,
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w700,
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceAlt,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(icon, color: colors.textPrimary, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              desc,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colors.muted,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        desc,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colors.muted,
-                        ),
+                      Switch(
+                        value: _values[key]!,
+                        onChanged: (v) => _toggle(key, v),
+                        activeColor: AppColors.curry,
                       ),
                     ],
                   ),
-                ),
-                Switch(
-                  value: _values[key]!,
-                  onChanged: (v) => _toggle(key, v),
-                  activeColor: AppColors.curry,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+                );
+              },
+            )
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 }

@@ -51,8 +51,15 @@ class Offer {
   }
 
   String get discountLabel {
-    if (discountPercent > 0) return '${discountPercent.round()}% off';
-    return 'Rs. ${saving.round()} off';
+    if (discountPercent > 0) return '${discountPercent.round()}%';
+    return '${saving.round()}';
+  }
+
+  String discountLabelLocalized(String locale) {
+    if (discountPercent > 0) return '${discountPercent.round()}%';
+    if (locale == 'si') return 'රු. ${saving.round()}';
+    if (locale == 'ta') return 'ரூ. ${saving.round()}';
+    return 'Rs. ${saving.round()}';
   }
 
   String localizedTitle(String locale) {
