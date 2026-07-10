@@ -116,7 +116,7 @@ class _OfferDetailsContent extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      offer.title,
+                      offer.localizedTitle(Localizations.localeOf(context).languageCode),
                       style: textTheme.headlineSmall?.copyWith(
                         color: context.colors.textPrimary,
                         fontWeight: FontWeight.w900,
@@ -129,7 +129,7 @@ class _OfferDetailsContent extends StatelessWidget {
               ),
               const SizedBox(height: Spacings.xl),
               Text(
-                offer.description,
+                offer.localizedDescription(Localizations.localeOf(context).languageCode),
                 style: textTheme.bodyLarge?.copyWith(
                   color: context.colors.textSecondary,
                   height: 1.45,

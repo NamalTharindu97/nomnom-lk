@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/offer.dart';
+import '../providers/locale_provider.dart';
 import '../services/api_favorites_service.dart';
 import '../services/api_offer_service.dart';
 import '../services/connectivity_service.dart';
@@ -23,6 +24,16 @@ class OfferProvider extends ChangeNotifier {
       _isOnline = online;
       if (online) _syncQueuedActions();
     });
+  }
+
+  void setLocaleProvider(LocaleProvider provider) {
+    provider.addListener(_onLocaleChanged);
+  }
+
+  void _onLocaleChanged() {
+    if (_hasLoaded) {
+      loadOffers(forceRefresh: true);
+    }
   }
 
   final ApiOfferService _offerService;

@@ -22,8 +22,8 @@ class ApiClient {
 
     _cacheInterceptor = CacheInterceptor(ttl: const Duration(minutes: 2));
     _dio.interceptors.addAll([
-      _cacheInterceptor,
       AuthInterceptor(_storage, _dio),
+      _cacheInterceptor,
     ]);
   }
 

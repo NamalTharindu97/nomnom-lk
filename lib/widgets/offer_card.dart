@@ -21,6 +21,7 @@ class OfferCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final locale = Localizations.localeOf(context).languageCode;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.md),
@@ -66,7 +67,7 @@ class OfferCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            offer.title,
+                            offer.localizedTitle(locale),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.titleMedium?.copyWith(

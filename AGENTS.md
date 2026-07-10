@@ -106,6 +106,10 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
+- **2026-07-10:** CI fix — committed & pushed to master (`12a556f`), run #133 all-green.
+  - 3 test fixes (coupons, restaurant-crud, settings validation messages/id changes)
+  - Hardcoded macOS path in `seed.go` changed to relative `../assets/samples` for CI compat
+  - All 48 Playwright E2E passing, all 4 CI jobs green (Flutter, Admin, Backend, Docker push)
 - **2026-07-10:** P35 (Locale initialization fix, image streaming, loading optimizations) — merged to master.
   - **Backend fixes**:
     - Image streaming from MinIO: changed from HTTP redirect to direct byte streaming via `GetFile()` (`upload_service.go`)

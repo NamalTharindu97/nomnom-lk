@@ -55,6 +55,18 @@ class Offer {
     return 'Rs. ${saving.round()} off';
   }
 
+  String localizedTitle(String locale) {
+    if (locale == 'si' && titleSi != null && titleSi!.isNotEmpty) return titleSi!;
+    if (locale == 'ta' && titleTa != null && titleTa!.isNotEmpty) return titleTa!;
+    return title;
+  }
+
+  String localizedDescription(String locale) {
+    if (locale == 'si' && descriptionSi != null && descriptionSi!.isNotEmpty) return descriptionSi!;
+    if (locale == 'ta' && descriptionTa != null && descriptionTa!.isNotEmpty) return descriptionTa!;
+    return description;
+  }
+
   factory Offer.fromJson(Map<String, dynamic> json) {
     return Offer(
       id: json['id'] as String,

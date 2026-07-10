@@ -338,8 +338,8 @@ class _TrendingCarousel extends StatelessWidget {
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: Text(
-                                          offer.title,
+                                          child: Text(
+                                          offer.localizedTitle(Localizations.localeOf(context).languageCode),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: textTheme.titleMedium?.copyWith(
