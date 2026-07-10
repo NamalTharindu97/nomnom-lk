@@ -226,3 +226,28 @@
   - **Phase 5** (Frontend): Debounced search (300ms), placeholder "Search all logs...", user role display in audit log table.
   - Backend `go build ./...` ✓, Admin `npx next build` ✓, Backend unit tests ✓, Integration tests ✓
   - See `plans/audit-log-plan.md`
+- **2026-07-10:** Profile tab — share, rate, edit profile with avatar upload (camera+gallery).
+  - Added `avatarUrl` to `AppUser` model with `fromJson`/`copyWith` support
+  - Backend `UpdateProfile` now accepts `avatar_url` field
+  - `image_picker` + `url_launcher` deps added; `postMultipart` helper on `ApiClient`
+  - Edit profile: camera icon opens bottom sheet (Camera/Gallery) → upload to MinIO → save URL to profile
+  - Profile header: shows avatar image (with initial-letter fallback)
+  - Rate tile: opens Play Store / App Store via `url_launcher` (iOS ID placeholder in `AppStore`)
+  - Share URL: updated from `https://nomnom.lk` to actual store URL
+  - See `plans/profile-share-rate-edit-plan.md`
+- **2026-07-10:** Featured banners carousel + backend/admin support.
+  - New Flutter widgets: `featured_banner_carousel.dart` (auto-advancing carousel with sponsor name overlay) + `banner.dart` model + `banner_provider.dart` + `api_banner_service.dart`
+  - Backend: `banner_handler.go` (CRUD + approve/reject), `banner_repo.go`, `banner.go` model, routes in `router.go`, DB migration in `postgres.go`
+  - Admin: `banners/page.tsx` dashboard page
+  - See `plans/featured-banner-plan.md`
+- **2026-07-11:** UI/UX audit (6 batches, 44 issues) — critical bugs through theme system.
+  - **Batch 1 — Critical bugs:** `_isSaving` stuck fix + empty-name crash guard in `edit_profile_screen.dart`; AppBar added to loading/error states in `offer_details_screen.dart`; `signInWithFirebase` loading leak fixed with try/finally in `auth_provider.dart`
+  - **Batch 2 — i18n (~30 edits, 16 files):** Provider error strings replaced with tokens → resolved via `_resolveError()` helpers in 4 screens; `api_auth_service.dart` raw `e.toString()` → generic message; login/edit profile SnackBars use localized strings; 12 hardcoded labels/placeholders localized; `offer.dart` `discountLabel` → `discountLabelLocalized(locale)` with si/ta prefixes; 13 new ARB keys + implementations in en/si/ta locale files
+  - **Batch 3 — Accessibility:** `main.dart` — `MediaQuery` with `TextScaler.noScaling` clamp; `discount_badge.dart` — WCAG contrast fix (dark mode uses `context.colors.background`, light mode `Colors.white`) + `maxLines: 1` + `overflow: TextOverflow.ellipsis`
+  - **Batch 4 — Performance + State:** `featured_banner_carousel.dart` — `shouldRebuild: prev != next`; `favorites_screen.dart` — login gate + error state + `RefreshIndicator` + `Consumer2`; `verify_email_screen.dart` — resend cooldown replaced with `Timer.periodic` + `dispose` cleanup; `notification_prefs_screen.dart` — `_loaded` flag + loading spinner prevents flash of defaults
+  - **Batch 5 — UI Polish:** `splash_screen.dart` — `SafeArea` + gradient color consistency; `search_screen.dart` — `autofocus: true`; `restaurants_screen.dart` — meaningful empty state message; `home_screen.dart` — hot-offer card sizing; `featured_banner_carousel.dart` — sponsor name `maxLines: 1` + overflow; `offer_card.dart` — `maxLines: 2` for title
+  - **Batch 6 — Theme System:** 3 hardcoded `Color(0xFFE38D12)` → `AppColors.curry`; `context_colors.dart` — added `success`, `warning`, `error`, `border`, `disabled`; `app_colors.dart` — added `darkBorder`, `darkDisabled`, `lightBorder`, `lightDisabled`; `app_routes.dart` — removed dead `offerDetail`/`offerDetailPath`
+- **2026-07-11:** Hot offers section optimization (2 rounds).
+  - **Round 1:** Extracted `HotOfferCard` widget (image + title + price + restaurant + strikethrough); `HotOfferShimmer` skeleton; edge-peek scroll with `BouncingScrollPhysics` + `Clip.none`; `_HotState` value class for `shouldRebuild`; page dots indicator; reduced `< 2` guard to `< 1`; cached locale per build; 4 unused imports cleaned.
+  - **Round 2 (overflow fix):** Replaced magic `_infoScale` (0.086) with theme-based height calculation from `textTheme.labelLarge.fontSize × 1.6` + padding — eliminates 37px bottom overflow. Simplified card to image + title + price only (dropped restaurant name and strikethrough). Updated `HotOfferShimmer` to 1-line skeleton. Removed `_PageDots` widget (static dots don't track scroll position). Border radius 8→12 for softer corners.
+  - New files: `lib/widgets/hot_offer_card.dart`; modified: `lib/screens/home_screen.dart`, `lib/widgets/shimmer_loading.dart`.

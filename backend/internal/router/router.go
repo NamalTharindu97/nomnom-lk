@@ -55,13 +55,14 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 	// Handlers
 	firebaseService := services.NewFirebaseService(&cfg.Firebase)
+	bannerRepo := repository.NewBannerRepo(db)
 	authHandler := handlers.NewAuthHandler(authService, firebaseService, auditService)
 	userHandler := handlers.NewUserHandler(userRepo, auditService)
 	dashboardService := services.NewDashboardService(restaurantRepo, offerRepo, rdb)
-	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService, auditService)
+	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService, auditService, bannerRepo)
 	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo, auditService)
 	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService, auditService)
-	offerHandler := handlers.NewOfferHandler(offerService, sseService, auditService)
+	offerHandler := handlers.NewOfferHandler(offerService, sseService, auditService, bannerRepo)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService, sseService)
 	searchHandler := handlers.NewSearchHandler(searchService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService, auditService)
@@ -69,6 +70,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	templateHandler := handlers.NewTemplateHandler(templateRepo)
 	couponHandler := handlers.NewCouponHandler(couponRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
+	bannerHandler := handlers.NewBannerHandler(bannerRepo, offerRepo, auditService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditService)
 	impersonationHandler := handlers.NewImpersonationHandler(impersonationService)
@@ -185,6 +187,16 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		v1.GET("/search", searchHandler.Search)
 
+		bannersGroup := v1.Group("/banners")
+		{
+			bannersGroup.GET("/active", bannerHandler.ListActive)
+			bannersAuth := bannersGroup.Group("")
+			bannersAuth.Use(middleware.Auth(cfg.JWT.Secret))
+			{
+				bannersAuth.POST("/:id/click", bannerHandler.TrackClick)
+			}
+		}
+
 		var uploadHandler *handlers.UploadHandler
 		if uploadService != nil {
 			uploadHandler = handlers.NewUploadHandler(uploadService)
@@ -236,6 +248,10 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			dashboardGroup.POST("/offers", dashboardHandler.CreateOffer)
 			dashboardGroup.PUT("/offers/:id", dashboardHandler.UpdateOffer)
 			dashboardGroup.DELETE("/offers/:id", dashboardHandler.DeleteOffer)
+			dashboardGroup.GET("/banners", bannerHandler.ListOwner)
+			dashboardGroup.POST("/banners", bannerHandler.CreateOwner)
+			dashboardGroup.PUT("/banners/:id", bannerHandler.UpdateOwner)
+			dashboardGroup.DELETE("/banners/:id", bannerHandler.DeleteOwner)
 		}
 
 		adminGroup := v1.Group("/admin")
@@ -280,6 +296,12 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.POST("/categories", categoryHandler.Create)
 			adminGroup.PUT("/categories/:id", categoryHandler.Update)
 			adminGroup.DELETE("/categories/:id", categoryHandler.Delete)
+			adminGroup.GET("/banners", bannerHandler.List)
+			adminGroup.POST("/banners", bannerHandler.Create)
+			adminGroup.PUT("/banners/:id", bannerHandler.Update)
+			adminGroup.DELETE("/banners/:id", bannerHandler.Delete)
+			adminGroup.POST("/banners/:id/approve", bannerHandler.Approve)
+			adminGroup.POST("/banners/:id/reject", bannerHandler.Reject)
 		}
 
 		impersonationGroup := v1.Group("/admin")

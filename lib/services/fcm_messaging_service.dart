@@ -137,7 +137,7 @@ class FcmMessagingService {
     const androidDetails = AndroidNotificationDetails(
       'nomnom_notifications',
       'NomNom Notifications',
-      channelDescription: 'New deals and updates from NomNom LK',
+      channelDescription: 'Daily deals and updates from NomNom LK',
       importance: Importance.high,
       priority: Priority.high,
     );

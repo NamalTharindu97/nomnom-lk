@@ -5,6 +5,7 @@ import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
+import '../providers/banner_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/restaurant_provider.dart';
@@ -73,12 +74,14 @@ class _SplashScreenState extends State<SplashScreen>
     final offerProvider = context.read<OfferProvider>();
     final restaurantProvider = context.read<RestaurantProvider>();
     final notificationProvider = context.read<NotificationProvider>();
+    final bannerProvider = context.read<BannerProvider>();
 
     try {
       await Future.wait([
         authProvider.restoreSession(),
         offerProvider.loadOffers(),
         restaurantProvider.loadRestaurants(),
+        bannerProvider.loadBanners(),
         Future<void>.delayed(const Duration(milliseconds: 1500)),
       ]);
 
@@ -114,14 +117,15 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.colors.background,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              context.colors.background,
-              context.colors.backgroundAlt,
-              const Color(0xFF26130F),
-            ],
+      body: SafeArea(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                context.colors.background,
+                context.colors.backgroundAlt,
+                const Color(0xFF24170C),
+              ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -193,6 +197,7 @@ class _SplashScreenState extends State<SplashScreen>
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -9,6 +9,7 @@ import (
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
+	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/pkg/locale"
 	"github.com/nomnom-lk/backend/pkg/pagination"
@@ -19,13 +20,15 @@ type OfferHandler struct {
 	service      *services.OfferService
 	sseService   *services.SSEService
 	auditService *services.AuditService
+	bannerRepo   *repository.BannerRepo
 }
 
-func NewOfferHandler(service *services.OfferService, sseService *services.SSEService, auditService *services.AuditService) *OfferHandler {
+func NewOfferHandler(service *services.OfferService, sseService *services.SSEService, auditService *services.AuditService, bannerRepo *repository.BannerRepo) *OfferHandler {
 	return &OfferHandler{
 		service:      service,
 		sseService:   sseService,
 		auditService: auditService,
+		bannerRepo:   bannerRepo,
 	}
 }
 
@@ -160,6 +163,8 @@ func (h *OfferHandler) Delete(c *gin.Context) {
 		response.Error(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 		return
 	}
+
+	_ = h.bannerRepo.DeactivateByOfferID(id)
 
 	if uid, ok := middleware.GetUserID(c); ok {
 		n, _ := middleware.GetUserName(c)

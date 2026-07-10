@@ -39,7 +39,7 @@ class ApiAuthService {
       }
       return 'Sign in failed. Please try again.';
     }
-    return e.toString();
+    return 'Sign in failed. Please try again.';
   }
 
   Future<AppUser> signInWithFirebase(String firebaseToken) async {

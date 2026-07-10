@@ -15,6 +15,6 @@ class ShareService {
     return 'Check out this deal at ${offer.restaurantName}!\n'
         '$dealText on ${offer.title}\n\n'
         '${offer.description}\n\n'
-        'Download NomNom LK to discover Sri Lanka\'s best food deals!';
+        'Download NomNom LK for daily food deals in Sri Lanka!';
   }
 }

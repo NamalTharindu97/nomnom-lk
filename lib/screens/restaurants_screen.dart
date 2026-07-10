@@ -11,6 +11,17 @@ import '../widgets/empty_state.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/stagger_item.dart';
 
+String _resolveError(String token, AppLocalizations loc) {
+  switch (token) {
+    case 'failedLoadPullRetry':
+      return loc.generalLoadingFailedPullToRestart;
+    case 'noInternet':
+      return loc.generalNoInternetConnection;
+    default:
+      return loc.generalError;
+  }
+}
+
 class RestaurantsScreen extends StatefulWidget {
   const RestaurantsScreen({super.key});
 
@@ -82,14 +93,15 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                     }
 
                     if (provider.error != null) {
+                      final loc = AppLocalizations.of(context)!;
                       return ListView(
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
                             child: EmptyState(
                               icon: Icons.wifi_off_rounded,
-                              title: AppLocalizations.of(context)!.restaurantsFailedToLoad,
-                              message: provider.error!,
+                              title: loc.restaurantsFailedToLoad,
+                              message: _resolveError(provider.error!, loc),
                               onRetry: provider.refreshRestaurants,
                             ),
                           ),
@@ -102,7 +114,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                       return EmptyState(
                         icon: Icons.storefront_outlined,
                         title: AppLocalizations.of(context)!.restaurantsEmpty,
-                        message: '',
+                        message: AppLocalizations.of(context)!.restaurantsFailedToLoad,
                       );
                     }
 

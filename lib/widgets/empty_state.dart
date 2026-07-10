@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../utils/spacings.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 
 class EmptyState extends StatefulWidget {
   const EmptyState({
@@ -93,7 +94,7 @@ class _EmptyStateState extends State<EmptyState>
               FilledButton.icon(
                 onPressed: widget.onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(widget.retryLabel ?? 'Retry'),
+                label: Text(widget.retryLabel ?? AppLocalizations.of(context)!.retryLabel),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.curry,
                   foregroundColor: context.colors.background,

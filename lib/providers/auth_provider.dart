@@ -32,10 +32,13 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signInWithFirebase(String firebaseToken) async {
     _setLoading(true);
-    _user = await _authService.signInWithFirebase(firebaseToken);
-    _isInitialized = true;
-    _setLoading(false);
-    fcmService?.registerCurrentToken();
+    try {
+      _user = await _authService.signInWithFirebase(firebaseToken);
+      _isInitialized = true;
+      fcmService?.registerCurrentToken();
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> signInWithEmail(String email, String password) async {

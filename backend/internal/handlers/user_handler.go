@@ -207,8 +207,9 @@ func (h *UserHandler) Update(c *gin.Context) {
 
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	var req struct {
-		Name  *string `json:"name"`
-		Phone *string `json:"phone"`
+		Name      *string `json:"name"`
+		Phone     *string `json:"phone"`
+		AvatarURL *string `json:"avatar_url"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
@@ -232,6 +233,9 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 	if req.Phone != nil {
 		user.Phone = req.Phone
+	}
+	if req.AvatarURL != nil {
+		user.AvatarURL = req.AvatarURL
 	}
 
 	if err := h.repo.Update(user); err != nil {

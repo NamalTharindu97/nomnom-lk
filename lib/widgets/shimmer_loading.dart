@@ -150,6 +150,54 @@ class RestaurantCardShimmer extends StatelessWidget {
   }
 }
 
+class HotOfferShimmer extends StatelessWidget {
+  const HotOfferShimmer({
+    super.key,
+    required this.width,
+    required this.height,
+  });
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: context.colors.surface,
+      highlightColor: context.colors.surfaceAlt,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.colors.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Spacings.sm + 2, Spacings.sm - 2,
+                Spacings.sm + 2, Spacings.sm - 2,
+              ),
+              child: const _SkeletonBlock(width: 90, height: 11),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class RestaurantShimmerList extends StatelessWidget {
   const RestaurantShimmerList({super.key});
 

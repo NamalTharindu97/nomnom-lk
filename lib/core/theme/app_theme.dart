@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
@@ -13,18 +14,27 @@ class _NomNomSlideTransitionBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0.08, 0),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      )),
-      child: FadeTransition(
-        opacity: animation,
-        child: child,
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.97, end: 1.0).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        ),
+      ),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.08, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        )),
+        child: FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
       ),
     );
   }
@@ -50,6 +60,8 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBackground,
       colorScheme: colorScheme,
+      fontFamily: GoogleFonts.nunito().fontFamily,
+      textTheme: GoogleFonts.nunitoTextTheme(),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.darkTextPrimary,
@@ -144,7 +156,7 @@ class AppTheme {
       seedColor: AppColors.curry,
       brightness: Brightness.light,
     ).copyWith(
-      primary: const Color(0xFFE38D12),
+      primary: AppColors.curry,
       secondary: AppColors.ocean,
       tertiary: const Color(0xFF3E8D39),
       surface: AppColors.lightSurface,
@@ -156,6 +168,8 @@ class AppTheme {
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.lightBackground,
       colorScheme: colorScheme,
+      fontFamily: GoogleFonts.nunito().fontFamily,
+      textTheme: GoogleFonts.nunitoTextTheme(),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.lightTextPrimary,
@@ -164,7 +178,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.lightSurface,
-        selectedItemColor: const Color(0xFFE38D12),
+        selectedItemColor: AppColors.curry,
         unselectedItemColor: AppColors.lightMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -226,7 +240,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFFE38D12),
+          foregroundColor: AppColors.curry,
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),

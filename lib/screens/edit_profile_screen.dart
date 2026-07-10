@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/app_user.dart';
@@ -21,6 +25,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   bool _isSaving = false;
+  bool _isUploadingImage = false;
+  String? _selectedAvatarPath;
+  String? _uploadedAvatarUrl;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
@@ -28,6 +36,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = context.read<AuthProvider>().user;
     _nameController = TextEditingController(text: user?.name ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
+    _uploadedAvatarUrl = user?.avatarUrl;
   }
 
   @override
@@ -37,12 +46,91 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await _picker.pickImage(source: source, maxWidth: 256, maxHeight: 256);
+    if (picked == null) return;
+    setState(() {
+      _selectedAvatarPath = picked.path;
+      _uploadedAvatarUrl = null;
+    });
+  }
+
+  void _showImagePickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Spacings.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Camera'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Gallery'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _uploadImage(String path) async {
+    try {
+      final api = context.read<ApiClient>();
+      final response = await api.postMultipart(
+        '/upload',
+        fileField: 'file',
+        filePath: path,
+        queryParams: {'folder': 'avatars'},
+      );
+      final data = response['data'];
+      if (data is Map<String, dynamic> && data['url'] is String) {
+        return data['url'] as String;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
 
     try {
+      String? avatarUrl = _uploadedAvatarUrl;
+
+      if (_selectedAvatarPath != null && avatarUrl == null) {
+        setState(() => _isUploadingImage = true);
+        avatarUrl = await _uploadImage(_selectedAvatarPath!);
+        setState(() => _isUploadingImage = false);
+
+        if (avatarUrl == null && mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.uploadFailed)),
+          );
+          return;
+        }
+      }
+
       final api = context.read<ApiClient>();
       final body = <String, dynamic>{
         'name': _nameController.text.trim(),
@@ -50,21 +138,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (_phoneController.text.trim().isNotEmpty) {
         body['phone'] = _phoneController.text.trim();
       }
+      if (avatarUrl != null) {
+        body['avatar_url'] = avatarUrl;
+      }
+
       final response = await api.put('/users/me/profile', body);
       if (!mounted) return;
-      final auth = context.read<AuthProvider>();
+
       if (response['data'] != null) {
         final updated = AppUser.fromJson(response['data'] as Map<String, dynamic>);
-        auth.updateUser(updated);
+        context.read<AuthProvider>().updateUser(updated);
       }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.editProfileSaved)),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.editProfileSaveError)),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -78,6 +172,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = context.watch<AuthProvider>().user;
     final loc = AppLocalizations.of(context)!;
 
+    final displayAvatarUrl = _uploadedAvatarUrl;
+    final displayAvatarPath = _selectedAvatarPath;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.editProfileTitle),
@@ -85,50 +182,65 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(Spacings.lg),
         children: [
-          SizedBox(
-            width: 88,
-            height: 88,
-            child: Stack(
-              children: [
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: AppColors.curry,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.curry.withValues(alpha: 0.35),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      (user?.name ?? '?').substring(0, 1).toUpperCase(),
-                      style: textTheme.displaySmall?.copyWith(
-                        color: colors.background,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 30,
-                    height: 30,
+          GestureDetector(
+            onTap: _isUploadingImage ? null : _showImagePickerSheet,
+            child: SizedBox(
+              width: 88,
+              height: 88,
+              child: Stack(
+                children: [
+                  Container(
+                    width: 88,
+                    height: 88,
                     decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: colors.surfaceAlt, width: 2.5),
+                      color: AppColors.curry,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.curry.withValues(alpha: 0.35),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.muted),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: displayAvatarPath != null
+                          ? Image.file(File(displayAvatarPath), fit: BoxFit.cover)
+                          : displayAvatarUrl != null
+                              ? Image.network(ApiConfig.resolveUrl(displayAvatarUrl), fit: BoxFit.cover)
+                              : Center(
+                                  child: Text(
+                                    ((user?.name ?? '?').isEmpty ? '?' : user!.name).substring(0, 1).toUpperCase(),
+                                    style: textTheme.displaySmall?.copyWith(
+                                      color: colors.background,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                    ),
                   ),
-                ),
-              ],
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: colors.surfaceAlt, width: 2.5),
+                      ),
+                      child: _isUploadingImage
+                          ? const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.muted),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 32),

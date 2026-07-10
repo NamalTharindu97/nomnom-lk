@@ -31,7 +31,7 @@ class NotificationProvider extends ChangeNotifier {
         _notifications.map((n) => n.toJson()).toList(),
       );
     } catch (e) {
-      _error = 'Failed to load notifications.';
+      _error = 'failedLoadPullRetry';
       debugPrint('Failed to load notifications: $e');
       final cached = _notificationStore.getNotifications();
       if (cached != null) {

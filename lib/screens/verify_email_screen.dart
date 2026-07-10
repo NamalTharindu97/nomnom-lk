@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -62,6 +64,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
 
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _animCtrl.dispose();
     _codeController.dispose();
     super.dispose();
@@ -103,30 +106,35 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
     }
   }
 
+  Timer? _cooldownTimer;
+
   Future<void> _resend() async {
     setState(() => _resendCooldown = 30);
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _resendCooldown = _resendCooldown - 1;
+        if (_resendCooldown <= 0) {
+          timer.cancel();
+        }
+      });
+    });
 
     try {
       await context.read<AuthProvider>().sendVerificationCode(widget.email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.verifyCodeResent)),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.verifyCodeResent)),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_parseError(e))),
-        );
-      }
-    }
-
-    if (mounted) {
-      for (var i = 29; i >= 0; i--) {
-        await Future.delayed(const Duration(seconds: 1));
-        if (!mounted) return;
-        setState(() => _resendCooldown = i);
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_parseError(e))),
+      );
     }
   }
 

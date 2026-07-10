@@ -9,6 +9,7 @@ import (
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
+	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/pkg/locale"
 	"github.com/nomnom-lk/backend/pkg/pagination"
@@ -19,13 +20,15 @@ type DashboardHandler struct {
 	dashboardService *services.DashboardService
 	sseService       *services.SSEService
 	auditService     *services.AuditService
+	bannerRepo       *repository.BannerRepo
 }
 
-func NewDashboardHandler(dashboardService *services.DashboardService, sseService *services.SSEService, auditService *services.AuditService) *DashboardHandler {
+func NewDashboardHandler(dashboardService *services.DashboardService, sseService *services.SSEService, auditService *services.AuditService, bannerRepo *repository.BannerRepo) *DashboardHandler {
 	return &DashboardHandler{
 		dashboardService: dashboardService,
 		sseService:       sseService,
 		auditService:     auditService,
+		bannerRepo:       bannerRepo,
 	}
 }
 
@@ -309,6 +312,8 @@ func (h *DashboardHandler) DeleteOffer(c *gin.Context) {
 		response.Error(c, http.StatusForbidden, "FORBIDDEN", err.Error())
 		return
 	}
+
+	_ = h.bannerRepo.DeactivateByOfferID(id)
 
 	if userID, ok := middleware.GetUserID(c); ok {
 		userName, _ := middleware.GetUserName(c)

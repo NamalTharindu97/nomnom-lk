@@ -468,4 +468,45 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get allLabel => 'அனைத்தும்';
+
+  @override
+  String get editProfileSaveError => 'சுயவிவரத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get uploadFailed => 'படத்தைப் பதிவேற்ற முடியவில்லை';
+
+  @override
+  String get featuredLabel => 'சிறப்பு';
+
+  @override
+  String sponsoredBy(String name) => '$name ஆல் விளம்பரப்படுத்தப்பட்டது';
+
+  @override
+  String get languageLabel => 'மொழி';
+
+  @override
+  String get retryLabel => 'மீண்டும் முயற்சிக்கவும்';
+
+  @override
+  String offerShareText(String restaurant, String deal, String title, String description) {
+    return '$restaurant இல் இந்த ஒப்பந்தத்தைப் பாருங்கள்!\n$title இல் $deal\n\n$description\n\nதினசரி உணவு ஒப்பந்தங்களுக்கு பயன்பாட்டைப் பதிவிறக்கவும்!';
+  }
+
+  @override
+  String get generalSearchFailedTryAgain => 'தேடல் தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get generalLoadingFailedPullToRestart => 'ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்க கீழே இழுக்கவும்.';
+
+  @override
+  String get generalNoInternetConnection => 'இணைய இணைப்பு இல்லை';
+
+  @override
+  String notificationsMinutesAgo(int count) => '$count நிமிடங்களுக்கு முன்';
+
+  @override
+  String notificationsHoursAgo(int count) => '$count மணி நேரத்திற்கு முன்';
+
+  @override
+  String notificationsDaysAgo(int count) => '$count நாட்களுக்கு முன்';
 }

@@ -67,13 +67,13 @@ class RestaurantProvider extends ChangeNotifier {
         _total = result.total;
         await _restaurantStore.saveRestaurantsByPage(_currentPage, _restaurants);
       } catch (e) {
-        _error = 'Failed to load restaurants.';
+        _error = 'failedLoadPullRetry';
         debugPrint('Failed to load restaurants: $e');
       }
     }
 
     if (_restaurants.isEmpty && !_isOnline) {
-      _error ??= 'No internet connection';
+      _error ??= 'noInternet';
     }
 
     _setLoading(false);
@@ -116,7 +116,7 @@ class RestaurantProvider extends ChangeNotifier {
       final result = await _service.fetchRestaurants(query: query);
       _searchResults = result.data;
     } catch (_) {
-      _searchError = 'Search failed. Try again.';
+      _searchError = 'searchFailedTryAgain';
     }
     _isSearching = false;
     notifyListeners();

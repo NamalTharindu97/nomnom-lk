@@ -15,6 +15,19 @@ import '../widgets/offer_card.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/stagger_item.dart';
 
+String _resolveError(String token, AppLocalizations loc) {
+  switch (token) {
+    case 'searchFailedTryAgain':
+      return loc.generalSearchFailedTryAgain;
+    case 'failedLoadPullRetry':
+      return loc.generalLoadingFailedPullToRestart;
+    case 'noInternet':
+      return loc.generalNoInternetConnection;
+    default:
+      return loc.generalError;
+  }
+}
+
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -113,7 +126,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     key: const ValueKey('search-field'),
                     controller: _controller,
                     focusNode: _focusNode,
-                    autofocus: false,
+                    autofocus: true,
                     textInputAction: TextInputAction.search,
                     onChanged: _onSearchChanged,
                     onSubmitted: (value) {
@@ -158,15 +171,17 @@ class _SearchScreenState extends State<SearchScreen> {
                         }
 
                         if (hasError && offers.isEmpty && restaurants.isEmpty) {
+                          final loc = AppLocalizations.of(context)!;
+                          final errToken = offerProvider.searchError ??
+                              restProvider.searchError!;
                           return ListView(
                             children: [
                               SizedBox(
                                 height: MediaQuery.of(context).size.height * 0.3,
                                 child: EmptyState(
                                   icon: Icons.wifi_off_rounded,
-                                  title: AppLocalizations.of(context)!.searchFailed,
-                                  message: offerProvider.searchError ??
-                                      restProvider.searchError!,
+                                  title: loc.searchFailed,
+                                  message: _resolveError(errToken, loc),
                                   onRetry: _retrySearch,
                                 ),
                               ),

@@ -18,9 +18,24 @@ import (
 )
 
 const (
-	cropWidth  = 1024
-	cropHeight = 1024
+	cropWidth     = 1024
+	cropHeight    = 1024
+	avatarWidth   = 256
+	avatarHeight  = 256
+	bannerWidth   = 1024
+	bannerHeight  = 360
 )
+
+func cropSizeForFolder(folder string) (int, int) {
+	switch folder {
+	case "avatars":
+		return avatarWidth, avatarHeight
+	case "banners":
+		return bannerWidth, bannerHeight
+	default:
+		return cropWidth, cropHeight
+	}
+}
 
 type UploadService struct {
 	client *minio.Client
@@ -80,7 +95,8 @@ func (s *UploadService) UploadSingle(file *multipart.FileHeader, folder string) 
 	}
 
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	return s.uploadCropped(data, ext, folder)
+	w, h := cropSizeForFolder(folder)
+	return s.uploadCropped(data, ext, folder, w, h)
 }
 
 func (s *UploadService) UploadReader(reader io.Reader, size int64, filename, folder string) (string, error) {
@@ -90,10 +106,11 @@ func (s *UploadService) UploadReader(reader io.Reader, size int64, filename, fol
 	}
 
 	ext := strings.ToLower(filepath.Ext(filename))
-	return s.uploadCropped(data, ext, folder)
+	w, h := cropSizeForFolder(folder)
+	return s.uploadCropped(data, ext, folder, w, h)
 }
 
-func (s *UploadService) uploadCropped(data []byte, ext, folder string) (string, error) {
+func (s *UploadService) uploadCropped(data []byte, ext, folder string, cropW, cropH int) (string, error) {
 	objectKey := fmt.Sprintf("%s/%s/%s.jpg", s.prefix, folder, uuid.New().String())
 
 	var uploadData []byte
@@ -108,9 +125,9 @@ func (s *UploadService) uploadCropped(data []byte, ext, folder string) (string, 
 		if err != nil {
 			return "", fmt.Errorf("failed to decode image: %w", err)
 		}
-		cropped := imaging.Fill(img, cropWidth, cropHeight, imaging.Center, imaging.Lanczos)
+		cropped := imaging.Fill(img, cropW, cropH, imaging.Center, imaging.Lanczos)
 		buf := new(bytes.Buffer)
-		if err := imaging.Encode(buf, cropped, imaging.JPEG, imaging.JPEGQuality(85)); err != nil {
+		if err := imaging.Encode(buf, cropped, imaging.JPEG, imaging.JPEGQuality(60)); err != nil {
 			return "", fmt.Errorf("failed to encode image: %w", err)
 		}
 		uploadData = buf.Bytes()

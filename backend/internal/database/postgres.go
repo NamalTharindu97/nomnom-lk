@@ -39,6 +39,7 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 		&models.ScheduledNotification{},
 		&models.Coupon{},
 		&models.Category{},
+		&models.Banner{},
 	); err != nil {
 		log.Fatalf("Failed to auto-migrate: %v", err)
 	}

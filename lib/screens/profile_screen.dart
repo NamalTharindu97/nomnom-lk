@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../core/api_config.dart';
 import '../core/app_routes.dart';
+import '../core/app_store.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/app_user.dart';
@@ -95,14 +98,19 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    user.name.isEmpty ? '?' : user.name.substring(0, 1).toUpperCase(),
-                    style: textTheme.headlineMedium?.copyWith(
-                      color: colors.background,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: user.avatarUrl != null
+                      ? Image.network(ApiConfig.resolveUrl(user.avatarUrl!), fit: BoxFit.cover)
+                      : Center(
+                          child: Text(
+                            user.name.isEmpty ? '?' : user.name.substring(0, 1).toUpperCase(),
+                            style: textTheme.headlineMedium?.copyWith(
+                              color: colors.background,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               if (user.isLoggedIn)
@@ -309,14 +317,6 @@ class _MenuSection extends StatelessWidget {
                 : () => Navigator.of(context).pushNamed(AppRoutes.home, arguments: 2),
           ),
           _MenuDivider(),
-          _MenuTile(
-            icon: Icons.notifications_outlined,
-            iconColor: AppColors.curry,
-            title: AppLocalizations.of(context)!.profileNotificationPreferences,
-            subtitle: AppLocalizations.of(context)!.profileManageNotifications,
-            onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationPrefs),
-          ),
-          _MenuDivider(),
           _ThemeTile(),
           _MenuDivider(),
           _LanguageTile(),
@@ -334,7 +334,7 @@ class _MenuSection extends StatelessWidget {
             iconColor: AppColors.lime,
             title: AppLocalizations.of(context)!.profileShareApp,
             subtitle: AppLocalizations.of(context)!.profileShareAppSubtitle,
-            onTap: () => Share.share('${AppLocalizations.of(context)!.profileShareAppMessage}\nhttps://nomnom.lk'),
+            onTap: () => Share.share('${AppLocalizations.of(context)!.profileShareAppMessage}\n${AppStore.storeUrl}'),
           ),
           _MenuDivider(),
           _MenuTile(
@@ -342,6 +342,13 @@ class _MenuSection extends StatelessWidget {
             iconColor: AppColors.chili,
             title: AppLocalizations.of(context)!.profileRateApp,
             subtitle: AppLocalizations.of(context)!.profileRateAppSubtitle,
+            onTap: () async {
+              final uri = Uri.parse(AppStore.marketUri);
+              if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                final fallback = Uri.parse(AppStore.storeUrl);
+                await launchUrl(fallback, mode: LaunchMode.externalApplication);
+              }
+            },
           ),
           _MenuDivider(),
           _MenuTile(
@@ -446,7 +453,7 @@ class _LanguageTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Language',
+                  AppLocalizations.of(context)!.languageLabel,
                   style: textTheme.bodyLarge?.copyWith(
                     color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
