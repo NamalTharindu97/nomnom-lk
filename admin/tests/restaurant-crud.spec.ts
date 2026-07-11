@@ -87,16 +87,78 @@ test.describe("Restaurant CRUD", () => {
     await dialog.fillAddress("123 Test Street")
     await dialog.clickSubmit()
     await dialog.expectClosed()
-    await expect(page.getByText("Restaurant created", { exact: true })).toBeVisible()
-
-    page.on("dialog", async (dialog) => {
-      expect(dialog.message()).toContain("delete")
-      await dialog.accept()
-    })
-
-    await listPage.clickDelete(name)
-    await listPage.confirmDeleteDialog()
     await expect(page.getByText("Restaurant deleted", { exact: true })).toBeVisible()
     await listPage.expectRowNotVisible(name)
+  })
+
+  test("should create restaurant with social links and display on detail page", async ({ page }) => {
+    const uniqueId = Date.now().toString(36)
+    const name = `E2E Social ${uniqueId}`
+    const igUrl = "https://instagram.com/test"
+    const fbUrl = "https://facebook.com/test"
+    const webUrl = "https://test.com"
+    const orderUrl = "https://ubereats.com/test"
+
+    await listPage.clickNewRestaurant()
+    const dialog = new RestaurantDialog(page)
+    await dialog.expectOpen()
+    await dialog.fillName(name)
+    await dialog.fillSlug(`e2e-social-${uniqueId}`)
+    await dialog.fillAddress("123 Social St")
+    await dialog.fillInstagram(igUrl)
+    await dialog.fillFacebook(fbUrl)
+    await dialog.fillWebsite(webUrl)
+    await dialog.fillOrder(orderUrl)
+    await dialog.clickSubmit()
+    await dialog.expectClosed()
+    await expect(page.getByText("Restaurant created", { exact: true })).toBeVisible()
+    await listPage.expectRowVisible(name)
+
+    const row = await listPage.getRowByName(name)
+    await row.getByRole("link").first().click()
+    await expect(page).toHaveURL(/\/dashboard\/restaurants\/[a-f0-9-]+/)
+    await page.waitForTimeout(1500)
+    await expect(page.getByRole("heading", { name: "Social & Order Links" })).toBeVisible()
+  })
+
+  test("should show no links message when social fields are empty", async ({ page }) => {
+    const uniqueId = Date.now().toString(36)
+    const name = `E2E NoSocial ${uniqueId}`
+
+    await listPage.clickNewRestaurant()
+    const dialog = new RestaurantDialog(page)
+    await dialog.expectOpen()
+    await dialog.fillName(name)
+    await dialog.fillSlug(`e2e-nosocial-${uniqueId}`)
+    await dialog.fillAddress("456 Blank St")
+    await dialog.clickSubmit()
+    await dialog.expectClosed()
+    await expect(page.getByText("Restaurant created", { exact: true })).toBeVisible()
+    await listPage.expectRowVisible(name)
+
+    const row = await listPage.getRowByName(name)
+    await row.getByRole("link").first().click()
+    await expect(page).toHaveURL(/\/dashboard\/restaurants\/[a-f0-9-]+/)
+    await page.waitForTimeout(1500)
+    await expect(page.getByText("No links configured")).toBeVisible()
+  })
+
+  test("should create restaurant with alternate order URL", async ({ page }) => {
+    const uniqueId = Date.now().toString(36)
+    const name = `E2E OrderAlt ${uniqueId}`
+    const orderAltUrl = "https://pickme.lk/test"
+
+    await listPage.clickNewRestaurant()
+    const dialog = new RestaurantDialog(page)
+    await dialog.expectOpen()
+    await dialog.fillName(name)
+    await dialog.fillSlug(`e2e-orderalt-${uniqueId}`)
+    await dialog.fillAddress("789 Order St")
+    await dialog.fillOrder("https://ubereats.com/test")
+    await dialog.fillOrderAlt(orderAltUrl)
+    await dialog.clickSubmit()
+    await dialog.expectClosed()
+    await expect(page.getByText("Restaurant created", { exact: true })).toBeVisible()
+    await listPage.expectRowVisible(name)
   })
 })

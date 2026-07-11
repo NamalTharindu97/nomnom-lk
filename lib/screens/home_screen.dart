@@ -320,8 +320,8 @@ class _SectionDivider extends StatelessWidget {
 class _HotOffersSection extends StatelessWidget {
   const _HotOffersSection();
 
-  static const _cardScale = 0.52;
-  static const _cardAspect = 9 / 16;
+  static const _cardScale = 0.48;
+  static const _cardAspect = 3 / 2;
 
   @override
   Widget build(BuildContext context) {
@@ -434,13 +434,8 @@ class _HotOffersSection extends StatelessWidget {
   double _cardWidth(BuildContext context) =>
       MediaQuery.of(context).size.width * _cardScale;
 
-  double _cardHeight(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-    final labelSize = theme.labelLarge?.fontSize ?? 14;
-    final labelLineHeight = labelSize * 1.6;
-    final padding = (Spacings.sm - 2) * 2;
-    return _cardWidth(context) * _cardAspect + padding + labelLineHeight + 4;
-  }
+  double _cardHeight(BuildContext context) =>
+      _cardWidth(context) * _cardAspect;
 
   int _endPad(int count) => count > 1 ? 1 : 0;
 }

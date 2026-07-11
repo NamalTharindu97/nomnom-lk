@@ -336,8 +336,13 @@ func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context) gin.H {
 		"description":  r.Description,
 		"contact_phone": r.ContactPhone,
 		"cuisine_tags": r.CuisineTags,
-		"cover_image":  r.CoverImage,
-		"status":       r.Status,
+		"cover_image":   r.CoverImage,
+		"instagram_url": r.InstagramURL,
+		"facebook_url":  r.FacebookURL,
+		"website_url":   r.WebsiteURL,
+		"order_url":     r.OrderURL,
+		"order_url_alt": r.OrderURLAlt,
+		"status":        r.Status,
 	}
 
 	if r.Translations != nil {
@@ -364,6 +369,11 @@ func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context) gin.H 
 		"contact_phone": r.ContactPhone,
 		"cuisine_tags":  r.CuisineTags,
 		"cover_image":   r.CoverImage,
+		"instagram_url": r.InstagramURL,
+		"facebook_url":  r.FacebookURL,
+		"website_url":   r.WebsiteURL,
+		"order_url":     r.OrderURL,
+		"order_url_alt": r.OrderURLAlt,
 		"status":        r.Status,
 		"created_at":    r.CreatedAt,
 	}
@@ -383,6 +393,11 @@ func dashboardOfferToMap(o *models.Offer, c *gin.Context) gin.H {
 		restaurant["name"] = o.Restaurant.Name
 		restaurant["slug"] = o.Restaurant.Slug
 		restaurant["address"] = o.Restaurant.Address
+		restaurant["instagram_url"] = o.Restaurant.InstagramURL
+		restaurant["facebook_url"] = o.Restaurant.FacebookURL
+		restaurant["website_url"] = o.Restaurant.WebsiteURL
+		restaurant["order_url"] = o.Restaurant.OrderURL
+		restaurant["order_url_alt"] = o.Restaurant.OrderURLAlt
 	}
 
 	m := gin.H{

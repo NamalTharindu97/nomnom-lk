@@ -21,6 +21,11 @@ interface Restaurant {
   contact_phone: string
   cuisine_tags: string[]
   cover_image: string
+  instagram_url: string | null
+  facebook_url: string | null
+  website_url: string | null
+  order_url: string | null
+  order_url_alt: string | null
   status: string
   created_at: string
 }
@@ -167,6 +172,56 @@ export default function RestaurantDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Social & Order Links</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {restaurant.instagram_url ? (
+              <div>
+                <span className="text-sm text-muted-foreground">Instagram</span>
+                <p className="font-medium">
+                  <a href={restaurant.instagram_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.instagram_url}</a>
+                </p>
+              </div>
+            ) : restaurant.facebook_url || restaurant.website_url || restaurant.order_url ? null : (
+              <p className="text-sm text-muted-foreground">No links configured</p>
+            )}
+            {restaurant.facebook_url && (
+              <div>
+                <span className="text-sm text-muted-foreground">Facebook</span>
+                <p className="font-medium">
+                  <a href={restaurant.facebook_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.facebook_url}</a>
+                </p>
+              </div>
+            )}
+            {restaurant.website_url && (
+              <div>
+                <span className="text-sm text-muted-foreground">Website</span>
+                <p className="font-medium">
+                  <a href={restaurant.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.website_url}</a>
+                </p>
+              </div>
+            )}
+            {restaurant.order_url && (
+              <div>
+                <span className="text-sm text-muted-foreground">Order URL</span>
+                <p className="font-medium">
+                  <a href={restaurant.order_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.order_url}</a>
+                </p>
+              </div>
+            )}
+            {restaurant.order_url_alt && (
+              <div>
+                <span className="text-sm text-muted-foreground">Alternate Order URL</span>
+                <p className="font-medium">
+                  <a href={restaurant.order_url_alt} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.order_url_alt}</a>
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

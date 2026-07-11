@@ -203,6 +203,34 @@ func TestIntegration_DashboardRestaurants_OwnerSeesScoped(t *testing.T) {
 	assert.Contains(t, resp, "data")
 }
 
+func TestIntegration_OfferDetail_HasSocialLinks(t *testing.T) {
+	engine, _, err := testutil.Setup()
+	require.NoError(t, err)
+
+	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/offers?per_page=1", nil, "")
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var listResp map[string]interface{}
+	err = testutil.ParseResponse(w, &listResp)
+	require.NoError(t, err)
+
+	items, ok := listResp["data"].([]interface{})
+	require.True(t, ok)
+	require.Greater(t, len(items), 0)
+
+	firstItem, ok := items[0].(map[string]interface{})
+	require.True(t, ok)
+
+	restaurant, ok := firstItem["restaurant"].(map[string]interface{})
+	require.True(t, ok)
+
+	assert.Contains(t, restaurant, "instagram_url")
+	assert.Contains(t, restaurant, "facebook_url")
+	assert.Contains(t, restaurant, "website_url")
+	assert.Contains(t, restaurant, "order_url")
+	assert.Contains(t, restaurant, "order_url_alt")
+}
+
 func TestIntegration_CreateOffer_WithUserToken(t *testing.T) {
 	engine, _, err := testutil.Setup()
 	require.NoError(t, err)

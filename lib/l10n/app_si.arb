@@ -155,5 +155,16 @@
   "generalFailedToLoad": "පූරණය අසාර්ථකයි",
   "favoriteAdd": "ප්‍රියතමයට එක් කරන්න",
   "favoriteRemove": "ප්‍රියතමයෙන් ඉවත් කරන්න",
-  "allLabel": "සියල්ල"
+  "allLabel": "සියල්ල",
+  "offerOrderNow": "දැන් ඇණවුම් කරන්න",
+  "offerOrderVia": "වෙළඳසැල හරහා ඇණවුම් කරන්න",
+  "offerFollow": "අනුගමනය කරන්න",
+  "offerVisitInstagram": "Instagram",
+  "offerVisitFacebook": "Facebook",
+  "offerVisitWebsite": "වෙබ් අඩවිය",
+  "offerOrderUberEats": "Uber Eats හරහා ඇණවුම් කරන්න",
+  "offerOrderPickMe": "PickMe හරහා ඇණවුම් කරන්න",
+  "offerEndsIn": "තව දින {days} කින් අවසන් වේ",
+  "@offerEndsIn": {"placeholders": {"days": {"type": "String"}}},
+  "offerEndsToday": "අද අවසන් වේ"
 }

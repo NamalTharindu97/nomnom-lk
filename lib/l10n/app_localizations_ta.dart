@@ -470,43 +470,83 @@ class AppLocalizationsTa extends AppLocalizations {
   String get allLabel => 'அனைத்தும்';
 
   @override
-  String get editProfileSaveError => 'சுயவிவரத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get editProfileSaveError => 'Could not save profile. Please try again.';
 
   @override
-  String get uploadFailed => 'படத்தைப் பதிவேற்ற முடியவில்லை';
+  String get uploadFailed => 'Failed to upload image';
 
   @override
-  String get featuredLabel => 'சிறப்பு';
+  String get featuredLabel => 'Featured';
 
   @override
-  String sponsoredBy(String name) => '$name ஆல் விளம்பரப்படுத்தப்பட்டது';
-
-  @override
-  String get languageLabel => 'மொழி';
-
-  @override
-  String get retryLabel => 'மீண்டும் முயற்சிக்கவும்';
-
-  @override
-  String offerShareText(String restaurant, String deal, String title, String description) {
-    return '$restaurant இல் இந்த ஒப்பந்தத்தைப் பாருங்கள்!\n$title இல் $deal\n\n$description\n\nதினசரி உணவு ஒப்பந்தங்களுக்கு பயன்பாட்டைப் பதிவிறக்கவும்!';
+  String sponsoredBy(String name) {
+    return 'Sponsored by $name';
   }
 
   @override
-  String get generalSearchFailedTryAgain => 'தேடல் தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.';
+  String get languageLabel => 'Language';
 
   @override
-  String get generalLoadingFailedPullToRestart => 'ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்க கீழே இழுக்கவும்.';
+  String get retryLabel => 'Retry';
 
   @override
-  String get generalNoInternetConnection => 'இணைய இணைப்பு இல்லை';
+  String offerShareText(String restaurant, String deal, String title, String description) {
+    return 'Check out this deal at $restaurant!\n$deal on $title\n\n$description\n\nDownload the app for daily food deals in Sri Lanka!';
+  }
 
   @override
-  String notificationsMinutesAgo(int count) => '$count நிமிடங்களுக்கு முன்';
+  String get generalSearchFailedTryAgain => 'Search failed. Try again.';
 
   @override
-  String notificationsHoursAgo(int count) => '$count மணி நேரத்திற்கு முன்';
+  String get generalLoadingFailedPullToRestart => 'Failed to load. Pull to retry.';
 
   @override
-  String notificationsDaysAgo(int count) => '$count நாட்களுக்கு முன்';
+  String get generalNoInternetConnection => 'No internet connection';
+
+  @override
+  String notificationsMinutesAgo(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String notificationsHoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String notificationsDaysAgo(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String get offerOrderNow => 'இப்போது ஆர்டர் செய்ய';
+
+  @override
+  String get offerOrderVia => 'கடை மூலம் ஆர்டர் செய்ய';
+
+  @override
+  String get offerFollow => 'பின்தொடர';
+
+  @override
+  String get offerVisitInstagram => 'Instagram';
+
+  @override
+  String get offerVisitFacebook => 'Facebook';
+
+  @override
+  String get offerVisitWebsite => 'இணையதளம்';
+
+  @override
+  String get offerOrderUberEats => 'Uber Eats மூலம் ஆர்டர் செய்யுங்கள்';
+
+  @override
+  String get offerOrderPickMe => 'PickMe மூலம் ஆர்டர் செய்யுங்கள்';
+
+  @override
+  String offerEndsIn(String days) {
+    return '$days நாட்களில் முடிவடைகிறது';
+  }
+
+  @override
+  String get offerEndsToday => 'இன்று முடிவடைகிறது';
 }

@@ -479,7 +479,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get featuredLabel => 'Featured';
 
   @override
-  String sponsoredBy(String name) => 'Sponsored by $name';
+  String sponsoredBy(String name) {
+    return 'Sponsored by $name';
+  }
 
   @override
   String get languageLabel => 'Language';
@@ -502,11 +504,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generalNoInternetConnection => 'No internet connection';
 
   @override
-  String notificationsMinutesAgo(int count) => '${count}m ago';
+  String notificationsMinutesAgo(int count) {
+    return '${count}m ago';
+  }
 
   @override
-  String notificationsHoursAgo(int count) => '${count}h ago';
+  String notificationsHoursAgo(int count) {
+    return '${count}h ago';
+  }
 
   @override
-  String notificationsDaysAgo(int count) => '${count}d ago';
+  String notificationsDaysAgo(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String get offerOrderNow => 'Order Now';
+
+  @override
+  String get offerOrderVia => 'Order via Store';
+
+  @override
+  String get offerFollow => 'Follow';
+
+  @override
+  String get offerVisitInstagram => 'Instagram';
+
+  @override
+  String get offerVisitFacebook => 'Facebook';
+
+  @override
+  String get offerVisitWebsite => 'Website';
+
+  @override
+  String get offerOrderUberEats => 'Order via Uber Eats';
+
+  @override
+  String get offerOrderPickMe => 'Order via PickMe';
+
+  @override
+  String offerEndsIn(String days) {
+    return 'Ends in $days days';
+  }
+
+  @override
+  String get offerEndsToday => 'Ends today';
 }
