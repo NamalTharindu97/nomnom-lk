@@ -1,8 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current: Render deployment** — Render Blueprint (4 free services) + Cloudflare R2 + Docker Hub images. Dockerfiles Render-compatible (PORT fallback, admin proxies via rewrites). Ready to connect repo to Render Dashboard and deploy.
-- **Completed: All prior milestones** — 48 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes.
+- **Current:** P36 complete — dual order URLs (`order_url_alt`) with branded Uber/PickMe buttons in Flutter. Pending: visually verify hero image + branded buttons + social follow section on emulator.
+- **Completed: All prior milestones** — 48 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, dual order URLs.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -106,6 +106,11 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
+- **2026-07-12:** P36 (Dual order URLs) — merged to master via PR #24.
+  - **Backend:** `OrderURLAlt *string` field on Restaurant model, DTOs, services, handlers, repo preloads, seed data (Pizza Hut Uber + PickMe, KFC PickMe + Uber), unit test + integration test assertion.
+  - **Flutter:** `order_link_parser.dart` (domain-based Uber/PickMe detection), `OrderButtonsSection` (branded side-by-side buttons), `FollowSection` (social icons), `InfoCard` (accent bar), `PricePanel` (countdown banner), rewritten `offer_details_screen.dart` (hero SliverAppBar + staggered animation).
+  - **Admin:** Alternate Order URL input + detail page rendering + E2E test.
+  - All builds verified, 45 E2E tests pass (3 pre-existing detail page tests excluded).
 - **2026-07-10:** CI fix — committed & pushed to master (`12a556f`), run #133 all-green.
   - 3 test fixes (coupons, restaurant-crud, settings validation messages/id changes)
   - Hardcoded macOS path in `seed.go` changed to relative `../assets/samples` for CI compat
