@@ -87,6 +87,11 @@ export class RestaurantDialog {
   readonly coverImageInput: Locator
   readonly cancelButton: Locator
   readonly submitButton: Locator
+  readonly instagramInput: Locator
+  readonly facebookInput: Locator
+  readonly websiteInput: Locator
+  readonly orderInput: Locator
+  readonly orderAltInput: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -104,6 +109,11 @@ export class RestaurantDialog {
     this.coverImageInput = page.locator('input[type="file"]')
     this.cancelButton = page.getByRole("button", { name: "Cancel" })
     this.submitButton = page.getByRole("button", { name: /Create|Update/ })
+    this.instagramInput = page.locator("#instagram_url")
+    this.facebookInput = page.locator("#facebook_url")
+    this.websiteInput = page.locator("#website_url")
+    this.orderInput = page.locator("#order_url")
+    this.orderAltInput = page.locator("#order_url_alt")
   }
 
   async expectOpen() {
@@ -152,6 +162,26 @@ export class RestaurantDialog {
 
   async fillDescriptionTa(description: string) {
     await this.descriptionTaInput.fill(description)
+  }
+
+  async fillInstagram(url: string) {
+    await this.instagramInput.fill(url)
+  }
+
+  async fillFacebook(url: string) {
+    await this.facebookInput.fill(url)
+  }
+
+  async fillWebsite(url: string) {
+    await this.websiteInput.fill(url)
+  }
+
+  async fillOrder(url: string) {
+    await this.orderInput.fill(url)
+  }
+
+  async fillOrderAlt(url: string) {
+    await this.orderAltInput.fill(url)
   }
 
   async setCoverImage(filePath: string) {

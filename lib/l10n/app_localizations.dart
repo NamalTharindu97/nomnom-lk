@@ -19,7 +19,7 @@ import 'app_localizations_ta.dart';
 /// `supportedLocales` list. For example:
 ///
 /// ```dart
-/// import 'l10n/app_localizations.dart';
+/// import 'gen_l10n/app_localizations.dart';
 ///
 /// return MaterialApp(
 ///   localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -106,7 +106,7 @@ abstract class AppLocalizations {
   /// No description provided for @splashTagline.
   ///
   /// In en, this message translates to:
-  /// **'Discover Sri Lanka\'s Best Food Deals'**
+  /// **'Discover Sri Lanka\'s Daily Best Food Deals'**
   String get splashTagline;
 
   /// No description provided for @loginTitle.
@@ -238,25 +238,25 @@ abstract class AppLocalizations {
   /// No description provided for @homeBestDeals.
   ///
   /// In en, this message translates to:
-  /// **'Best deals near you'**
+  /// **'Today\'s Deals'**
   String get homeBestDeals;
 
   /// No description provided for @homeBestDealsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Discover the best food deals from your favorite local spots.'**
+  /// **'Fresh daily offers from your favorite spots'**
   String get homeBestDealsSubtitle;
 
   /// No description provided for @homeNoDeals.
   ///
   /// In en, this message translates to:
-  /// **'No deals yet'**
+  /// **'No daily deals yet'**
   String get homeNoDeals;
 
   /// No description provided for @homeNoDealsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Check back for new offers from your favorite eateries.'**
+  /// **'Check back tomorrow for fresh daily offers'**
   String get homeNoDealsSubtitle;
 
   /// No description provided for @homeRestaurants.
@@ -268,19 +268,19 @@ abstract class AppLocalizations {
   /// No description provided for @homeSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search kottu, hoppers, restaurants...'**
+  /// **'Search today\'s deals'**
   String get homeSearchHint;
 
   /// No description provided for @homeDealCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} deals'**
+  /// **'{count} daily deals'**
   String homeDealCount(int count);
 
   /// No description provided for @searchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search for dishes, restaurants, or cuisines...'**
+  /// **'Search daily deals, dishes, restaurants...'**
   String get searchHint;
 
   /// No description provided for @searchEmptyTitle.
@@ -292,19 +292,19 @@ abstract class AppLocalizations {
   /// No description provided for @searchEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Search for dishes, restaurants, or cuisines.'**
+  /// **'Search today\'s deals or your favorite restaurants'**
   String get searchEmptySubtitle;
 
   /// No description provided for @searchNoResults.
   ///
   /// In en, this message translates to:
-  /// **'No deals found'**
+  /// **'No daily deals found'**
   String get searchNoResults;
 
   /// No description provided for @searchNoResultsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Try another dish or restaurant name.'**
+  /// **'Try searching for another dish or restaurant'**
   String get searchNoResultsSubtitle;
 
   /// No description provided for @searchRestaurantsTab.
@@ -316,7 +316,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchOffersTab.
   ///
   /// In en, this message translates to:
-  /// **'Offers'**
+  /// **'Daily Offers'**
   String get searchOffersTab;
 
   /// No description provided for @searchRecent.
@@ -346,13 +346,13 @@ abstract class AppLocalizations {
   /// No description provided for @favoritesEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Tap the heart on any deal to save it here.'**
+  /// **'Tap the heart on any daily deal to save it here'**
   String get favoritesEmpty;
 
   /// No description provided for @favoritesNoSavedDeals.
   ///
   /// In en, this message translates to:
-  /// **'No saved deals'**
+  /// **'No saved daily deals'**
   String get favoritesNoSavedDeals;
 
   /// No description provided for @restaurantsTitle.
@@ -508,7 +508,7 @@ abstract class AppLocalizations {
   /// No description provided for @offerNotFoundSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'This deal may have been removed.'**
+  /// **'This daily deal may have expired'**
   String get offerNotFoundSubtitle;
 
   /// No description provided for @offerRestaurantLabel.
@@ -526,7 +526,7 @@ abstract class AppLocalizations {
   /// No description provided for @offerDealPriceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Deal price'**
+  /// **'Today\'s price'**
   String get offerDealPriceLabel;
 
   /// No description provided for @offerSaveAmount.
@@ -802,7 +802,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileShareAppMessage.
   ///
   /// In en, this message translates to:
-  /// **'Check out NomNom LK - Sri Lanka\'s best food deals app!'**
+  /// **'Check out NomNom LK - Sri Lanka\'s daily food deals app!'**
   String get profileShareAppMessage;
 
   /// No description provided for @profileRateApp.
@@ -880,7 +880,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifPrefsNewOffersDesc.
   ///
   /// In en, this message translates to:
-  /// **'New offers from your favorite restaurants'**
+  /// **'Daily offers from your favorite restaurants'**
   String get notifPrefsNewOffersDesc;
 
   /// No description provided for @notifPrefsPriceDrops.
@@ -892,7 +892,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifPrefsPriceDropsDesc.
   ///
   /// In en, this message translates to:
-  /// **'When prices drop on saved deals'**
+  /// **'When prices drop on saved daily deals'**
   String get notifPrefsPriceDropsDesc;
 
   /// No description provided for @notifPrefsOpenings.
@@ -992,43 +992,142 @@ abstract class AppLocalizations {
   String get allLabel;
 
   /// No description provided for @editProfileSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save profile. Please try again.'**
   String get editProfileSaveError;
 
   /// No description provided for @uploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload image'**
   String get uploadFailed;
 
   /// No description provided for @featuredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
   String get featuredLabel;
 
   /// No description provided for @sponsoredBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sponsored by {name}'**
   String sponsoredBy(String name);
 
   /// No description provided for @languageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
   String get languageLabel;
 
   /// No description provided for @retryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
   String get retryLabel;
 
   /// No description provided for @offerShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out this deal at {restaurant}!\n{deal} on {title}\n\n{description}\n\nDownload the app for daily food deals in Sri Lanka!'**
   String offerShareText(String restaurant, String deal, String title, String description);
 
   /// No description provided for @generalSearchFailedTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Try again.'**
   String get generalSearchFailedTryAgain;
 
   /// No description provided for @generalLoadingFailedPullToRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load. Pull to retry.'**
   String get generalLoadingFailedPullToRestart;
 
   /// No description provided for @generalNoInternetConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection'**
   String get generalNoInternetConnection;
 
   /// No description provided for @notificationsMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m ago'**
   String notificationsMinutesAgo(int count);
 
   /// No description provided for @notificationsHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
   String notificationsHoursAgo(int count);
 
   /// No description provided for @notificationsDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
   String notificationsDaysAgo(int count);
+
+  /// No description provided for @offerOrderNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Now'**
+  String get offerOrderNow;
+
+  /// No description provided for @offerOrderVia.
+  ///
+  /// In en, this message translates to:
+  /// **'Order via Store'**
+  String get offerOrderVia;
+
+  /// No description provided for @offerFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get offerFollow;
+
+  /// No description provided for @offerVisitInstagram.
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram'**
+  String get offerVisitInstagram;
+
+  /// No description provided for @offerVisitFacebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Facebook'**
+  String get offerVisitFacebook;
+
+  /// No description provided for @offerVisitWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get offerVisitWebsite;
+
+  /// No description provided for @offerOrderUberEats.
+  ///
+  /// In en, this message translates to:
+  /// **'Order via Uber Eats'**
+  String get offerOrderUberEats;
+
+  /// No description provided for @offerOrderPickMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Order via PickMe'**
+  String get offerOrderPickMe;
+
+  /// No description provided for @offerEndsIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends in {days} days'**
+  String offerEndsIn(String days);
+
+  /// No description provided for @offerEndsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends today'**
+  String get offerEndsToday;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

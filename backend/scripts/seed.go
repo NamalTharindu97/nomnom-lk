@@ -31,18 +31,23 @@ type ownerSeed struct {
 }
 
 type restaurantSeed struct {
-	Name        string
-	NameSi      string
-	NameTa      string
-	Description string
-	DescSi      string
-	DescTa      string
-	Address     string
-	Latitude    float64
-	Longitude   float64
-	CuisineTags []string
-	ImageSeed   string
-	OwnerEmail  string
+	Name         string
+	NameSi       string
+	NameTa       string
+	Description  string
+	DescSi       string
+	DescTa       string
+	Address      string
+	Latitude     float64
+	Longitude    float64
+	CuisineTags  []string
+	ImageSeed    string
+	OwnerEmail   string
+	InstagramURL string
+	FacebookURL  string
+	WebsiteURL   string
+	OrderURL     string
+	OrderURLAlt  string
 }
 
 type offerSeed struct {
@@ -114,66 +119,100 @@ func main() {
 			Description: "Delicious pizzas, pasta, and Italian dishes", DescSi: "රසවත් පිස්සා, පැස්ටා, සහ ඉතාලි කෑම", DescTa: "சுவையான பிஸ்ஸா, பாஸ்தா, மற்றும் இத்தாலிய உணவுகள்",
 			Address: "55 Galle Road, Colombo 03", Latitude: 6.9020, Longitude: 79.8612,
 			CuisineTags: []string{"Pizza", "Italian", "Fast Food"}, ImageSeed: "pizza-hut", OwnerEmail: "owner@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/pizzahut_srilanka/",
+			FacebookURL: "https://www.facebook.com/PizzaHutSriLanka/",
+			WebsiteURL: "https://www.pizzahut.lk/",
+			OrderURL: "https://www.ubereats.com/store/pizza-hut",
+			OrderURLAlt: "https://pickme.lk/food/pizza-hut",
 		},
 		{
 			Name: "KFC", NameSi: "කේඑෆ්සී", NameTa: "கேஎப்சி",
 			Description: "Fried chicken, burgers, and crispy treats", DescSi: "ෆ්‍රයිඩ් චිකන්, බර්ගර්, සහ හැපෙනසුළු කෑම", DescTa: "வறுத்த கோழி, பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
 			Address: "100 Galle Road, Colombo 04", Latitude: 6.8930, Longitude: 79.8560,
 			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "kfc", OwnerEmail: "kfc@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/kfc_srilanka/",
+			FacebookURL: "https://www.facebook.com/KFCSriLanka/",
+			WebsiteURL: "https://www.kfc.lk/",
+			OrderURL: "https://pickme.lk/food/kfc",
+			OrderURLAlt: "https://www.ubereats.com/store/kfc",
 		},
 		{
 			Name: "Bread Talk", NameSi: "බ්‍රෙඩ් ටෝක්", NameTa: "பிரெட் டாக்",
 			Description: "Freshly baked breads, cakes, and pastries", DescSi: "නැවුම් බේක් කළ පාන්, කේක්, සහ පේස්ට්‍රි", DescTa: "புதிதாக சுடப்பட்ட ரொட்டிகள், கேக்குகள், மற்றும் பேஸ்ட்ரிகள்",
 			Address: "22 Union Place, Colombo 02", Latitude: 6.9180, Longitude: 79.8540,
 			CuisineTags: []string{"Bakery", "Cakes", "Pastries"}, ImageSeed: "bread-talk", OwnerEmail: "breadtalk@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/breadtalk_srilanka/",
+			FacebookURL: "https://www.facebook.com/BreadTalkSriLanka/",
+			WebsiteURL: "https://www.breadtalk.lk/",
 		},
 		{
 			Name: "Keells", NameSi: "කීල්ස්", NameTa: "கீல்ஸ்",
 			Description: "Quick bites, burgers, and crispy snacks", DescSi: "ඉක්මන් කෑම, බර්ගර්, සහ හැපෙනසුළු ස්නැක්ස්", DescTa: "விரைவு உணவுகள், பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
 			Address: "77 Havelock Road, Colombo 05", Latitude: 6.8780, Longitude: 79.8680,
 			CuisineTags: []string{"Fast Food", "Burgers", "Snacks"}, ImageSeed: "keells", OwnerEmail: "keells@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/keells_srilanka/",
+			FacebookURL: "https://www.facebook.com/KeellsSriLanka/",
+			WebsiteURL: "https://www.keells.lk/",
 		},
 		{
 			Name: "Fab", NameSi: "ෆැබ්", NameTa: "ஃபேப்",
 			Description: "Cakes, pastries, and sweet treats", DescSi: "කේක්, පේස්ට්‍රි, සහ පැණි රස කෑම", DescTa: "கேக்குகள், பேஸ்ட்ரிகள், மற்றும் இனிப்பு தின்பண்டங்கள்",
 			Address: "45 Nawala Road, Nugegoda", Latitude: 6.8720, Longitude: 79.8920,
 			CuisineTags: []string{"Bakery", "Cakes", "Desserts"}, ImageSeed: "fab", OwnerEmail: "fab@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/fab_srilanka/",
+			FacebookURL: "https://www.facebook.com/FabSriLanka/",
 		},
 		{
 			Name: "Popeyes", NameSi: "පොප්අයිස්", NameTa: "பாப்ஐஸ்",
 			Description: "Louisiana-style fried chicken and burgers", DescSi: "ලුසියානා විලාසිතාවේ ෆ්‍රයිඩ් චිකන් සහ බර්ගර්", DescTa: "லூசியானா பாணி வறுத்த கோழி மற்றும் பர்கர்கள்",
 			Address: "200 Galle Road, Dehiwala", Latitude: 6.8570, Longitude: 79.8640,
 			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "popeyes", OwnerEmail: "popeyes@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/popeyes_srilanka/",
+			FacebookURL: "https://www.facebook.com/PopeyesSriLanka/",
+			WebsiteURL: "https://www.popeyes.lk/",
+			OrderURL: "https://www.ubereats.com/store/popeyes",
 		},
 		{
 			Name: "Solo Bowl", NameSi: "සොලෝ බෝල්", NameTa: "சோலோ பௌல்",
 			Description: "Rice bowls, noodles, and Asian fusion", DescSi: "බත් බෝල, නූඩ්ල්ස්, සහ ආසියානු ෆියුෂන්", DescTa: "சாதம் பௌல்கள், நூடுல்ஸ், மற்றும் ஆசிய கலப்பு உணவுகள்",
 			Address: "33 Horton Place, Colombo 07", Latitude: 6.9120, Longitude: 79.8710,
 			CuisineTags: []string{"Rice Bowls", "Asian", "Noodles"}, ImageSeed: "solo-bowl", OwnerEmail: "solobowl@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/solobowl_lk/",
+			FacebookURL: "https://www.facebook.com/SoloBowlLK/",
 		},
 		{
 			Name: "Spar", NameSi: "ස්පාර්", NameTa: "ஸ்பார்",
 			Description: "Desserts, cakes, and sweet delights", DescSi: "අතුරුපස, කේක්, සහ පැණි රස", DescTa: "இனிப்புகள், கேக்குகள், மற்றும் இனிப்பு விருந்துகள்",
 			Address: "15 Station Road, Colombo 10", Latitude: 6.9300, Longitude: 79.8650,
 			CuisineTags: []string{"Desserts", "Cakes", "Sweets"}, ImageSeed: "spar", OwnerEmail: "spar@nomnom.lk",
+			FacebookURL: "https://www.facebook.com/SparSriLanka/",
 		},
 		{
 			Name: "Street Burger", NameSi: "ස්ට්‍රීට් බර්ගර්", NameTa: "ஸ்ட்ரீட் பர்கர்",
 			Description: "Gourmet burgers, fries, and American comfort food", DescSi: "ගවර්මෙට් බර්ගර්, ෆ්‍රයිස්, සහ ඇමරිකානු සැනසිලි කෑම", DescTa: "கார்மெட் பர்கர்கள், பொரியல்கள், மற்றும் அமெரிக்க இதமான உணவுகள்",
 			Address: "88 Galle Road, Bambalapitiya", Latitude: 6.8850, Longitude: 79.8600,
 			CuisineTags: []string{"Burgers", "American", "Fast Food"}, ImageSeed: "street-burger", OwnerEmail: "streetburger@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/streetburgerlk/",
+			FacebookURL: "https://www.facebook.com/StreetBurgerLK/",
+			OrderURL: "https://pickme.lk/food/street-burger",
 		},
 		{
 			Name: "Subway", NameSi: "සබ්වේ", NameTa: "சப்வே",
 			Description: "Fresh submarine sandwiches and salads", DescSi: "නැවුම් සබ්මැරීන් සැන්ඩ්විච් සහ සලාද", DescTa: "புதிய சப்மரைன் சாண்ட்விச்கள் மற்றும் சாலடுகள்",
 			Address: "60 Galle Road, Colombo 03", Latitude: 6.9060, Longitude: 79.8580,
 			CuisineTags: []string{"Sandwiches", "Healthy", "Fast Food"}, ImageSeed: "subway", OwnerEmail: "subway@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/subway_srilanka/",
+			FacebookURL: "https://www.facebook.com/SubwaySriLanka/",
+			WebsiteURL: "https://www.subway.lk/",
 		},
 		{
 			Name: "Taco Bell", NameSi: "ටැකෝ බෙල්", NameTa: "டாகோ பெல்",
 			Description: "Mexican-inspired tacos, burritos, and quesadillas", DescSi: "මෙක්සිකානු ආභාසයෙන් ටැකෝ, බුරිටෝ, සහ ක්වෙසාඩිලා", DescTa: "மெக்சிகன் பாணி டாகோஸ், புரிட்டோஸ், மற்றும் குவெசடிலாஸ்",
 			Address: "120 Galle Road, Colombo 04", Latitude: 6.8950, Longitude: 79.8550,
 			CuisineTags: []string{"Mexican", "Tacos", "Fast Food"}, ImageSeed: "taco-bell", OwnerEmail: "tacbell@nomnom.lk",
+			InstagramURL: "https://www.instagram.com/tacobell_srilanka/",
+			FacebookURL: "https://www.facebook.com/TacoBellSriLanka/",
+			OrderURL: "https://www.ubereats.com/store/taco-bell",
 		},
 	}
 
@@ -270,17 +309,32 @@ func main() {
 		translations := buildTranslations(r.NameSi, r.NameTa, r.DescSi, r.DescTa, "name", "description")
 
 		rest := models.Restaurant{
-			Name:        r.Name,
-			Description: &r.Description,
-			Address:     r.Address,
-			Latitude:    &r.Latitude,
-			Longitude:   &r.Longitude,
-			CuisineTags: r.CuisineTags,
-			CoverImage:  &coverImage,
-			OwnerID:     &ownerID,
-			Status:      models.RestaurantApproved,
-			IsFeatured:  i < 4,
+			Name:         r.Name,
+			Description:  &r.Description,
+			Address:      r.Address,
+			Latitude:     &r.Latitude,
+			Longitude:    &r.Longitude,
+			CuisineTags:  r.CuisineTags,
+			CoverImage:   &coverImage,
+			OwnerID:      &ownerID,
+			Status:       models.RestaurantApproved,
+			IsFeatured:   i < 4,
 			Translations: translations,
+		}
+		if r.InstagramURL != "" {
+			rest.InstagramURL = &r.InstagramURL
+		}
+		if r.FacebookURL != "" {
+			rest.FacebookURL = &r.FacebookURL
+		}
+		if r.WebsiteURL != "" {
+			rest.WebsiteURL = &r.WebsiteURL
+		}
+		if r.OrderURL != "" {
+			rest.OrderURL = &r.OrderURL
+		}
+		if r.OrderURLAlt != "" {
+			rest.OrderURLAlt = &r.OrderURLAlt
 		}
 		if err := db.Create(&rest).Error; err != nil {
 			fmt.Printf("  ❌ Failed to create restaurant %s: %v\n", r.Name, err)

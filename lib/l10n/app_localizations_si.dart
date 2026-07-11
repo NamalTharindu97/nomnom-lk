@@ -470,43 +470,83 @@ class AppLocalizationsSi extends AppLocalizations {
   String get allLabel => 'සියල්ල';
 
   @override
-  String get editProfileSaveError => 'පැතිකඩ සුරැකීමට නොහැකි විය. නැවත උත්සාහ කරන්න.';
+  String get editProfileSaveError => 'Could not save profile. Please try again.';
 
   @override
-  String get uploadFailed => 'රූපය උඩුගත කිරීමට අසමත් විය';
+  String get uploadFailed => 'Failed to upload image';
 
   @override
-  String get featuredLabel => 'විශේෂාංග';
+  String get featuredLabel => 'Featured';
 
   @override
-  String sponsoredBy(String name) => '$name විසින් අනුග්‍රහය දක්වන ලදී';
-
-  @override
-  String get languageLabel => 'භාෂාව';
-
-  @override
-  String get retryLabel => 'නැවත උත්සාහ කරන්න';
-
-  @override
-  String offerShareText(String restaurant, String deal, String title, String description) {
-    return '$restaurant හි මෙම දීමනාව බලන්න!\n$title මත $deal\n\n$description\n\nදිනපතා ආහාර දීමනා සඳහා යෙදුම බාගන්න!';
+  String sponsoredBy(String name) {
+    return 'Sponsored by $name';
   }
 
   @override
-  String get generalSearchFailedTryAgain => 'සෙවීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.';
+  String get languageLabel => 'Language';
 
   @override
-  String get generalLoadingFailedPullToRestart => 'පූරණය කිරීමට අසමත් විය. නැවත උත්සාහ කිරීමට පහළට අදින්න.';
+  String get retryLabel => 'Retry';
 
   @override
-  String get generalNoInternetConnection => 'අන්තර්ජාල සම්බන්ධතාවක් නොමැත';
+  String offerShareText(String restaurant, String deal, String title, String description) {
+    return 'Check out this deal at $restaurant!\n$deal on $title\n\n$description\n\nDownload the app for daily food deals in Sri Lanka!';
+  }
 
   @override
-  String notificationsMinutesAgo(int count) => 'මිනිත්තු $countකට පෙර';
+  String get generalSearchFailedTryAgain => 'Search failed. Try again.';
 
   @override
-  String notificationsHoursAgo(int count) => 'පැය $countකට පෙර';
+  String get generalLoadingFailedPullToRestart => 'Failed to load. Pull to retry.';
 
   @override
-  String notificationsDaysAgo(int count) => 'දින $countකට පෙර';
+  String get generalNoInternetConnection => 'No internet connection';
+
+  @override
+  String notificationsMinutesAgo(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String notificationsHoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String notificationsDaysAgo(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String get offerOrderNow => 'දැන් ඇණවුම් කරන්න';
+
+  @override
+  String get offerOrderVia => 'වෙළඳසැල හරහා ඇණවුම් කරන්න';
+
+  @override
+  String get offerFollow => 'අනුගමනය කරන්න';
+
+  @override
+  String get offerVisitInstagram => 'Instagram';
+
+  @override
+  String get offerVisitFacebook => 'Facebook';
+
+  @override
+  String get offerVisitWebsite => 'වෙබ් අඩවිය';
+
+  @override
+  String get offerOrderUberEats => 'Uber Eats හරහා ඇණවුම් කරන්න';
+
+  @override
+  String get offerOrderPickMe => 'PickMe හරහා ඇණවුම් කරන්න';
+
+  @override
+  String offerEndsIn(String days) {
+    return 'තව දින $days කින් අවසන් වේ';
+  }
+
+  @override
+  String get offerEndsToday => 'අද අවසන් වේ';
 }

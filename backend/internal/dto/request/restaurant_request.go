@@ -16,6 +16,11 @@ type CreateRestaurantRequest struct {
 	CuisineTags   models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    string                 `json:"cover_image,omitempty"`
 	OwnerID       *string                `json:"owner_id,omitempty"`
+	InstagramURL  string                 `json:"instagram_url,omitempty"`
+	FacebookURL   string                 `json:"facebook_url,omitempty"`
+	WebsiteURL    string                 `json:"website_url,omitempty"`
+	OrderURL      string                 `json:"order_url,omitempty"`
+	OrderURLAlt   string                 `json:"order_url_alt,omitempty"`
 }
 
 type UpdateRestaurantRequest struct {
@@ -32,6 +37,11 @@ type UpdateRestaurantRequest struct {
 	CuisineTags   *models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    *string                 `json:"cover_image,omitempty"`
 	OwnerID       *string                 `json:"owner_id,omitempty"`
+	InstagramURL  *string                 `json:"instagram_url,omitempty"`
+	FacebookURL   *string                 `json:"facebook_url,omitempty"`
+	WebsiteURL    *string                 `json:"website_url,omitempty"`
+	OrderURL      *string                 `json:"order_url,omitempty"`
+	OrderURLAlt   *string                 `json:"order_url_alt,omitempty"`
 }
 
 type ApproveRejectRequest struct {

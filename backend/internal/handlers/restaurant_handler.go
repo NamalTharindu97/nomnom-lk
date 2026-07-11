@@ -229,8 +229,13 @@ func (h *RestaurantHandler) restaurantToMap(r *models.Restaurant, c *gin.Context
 		"description":      r.Description,
 		"contact_phone":    r.ContactPhone,
 		"cuisine_tags":     r.CuisineTags,
-		"cover_image":      r.CoverImage,
-		"status":           r.Status,
+		"cover_image":       r.CoverImage,
+		"instagram_url":     r.InstagramURL,
+		"facebook_url":      r.FacebookURL,
+		"website_url":       r.WebsiteURL,
+		"order_url":         r.OrderURL,
+		"order_url_alt":     r.OrderURLAlt,
+		"status":            r.Status,
 		"active_offer_count": len(r.Offers),
 	}
 
@@ -258,6 +263,11 @@ func (h *RestaurantHandler) restaurantDetailToMap(r *models.Restaurant, c *gin.C
 		"contact_phone": r.ContactPhone,
 		"cuisine_tags":  r.CuisineTags,
 		"cover_image":   r.CoverImage,
+		"instagram_url": r.InstagramURL,
+		"facebook_url":  r.FacebookURL,
+		"website_url":   r.WebsiteURL,
+		"order_url":     r.OrderURL,
+		"order_url_alt": r.OrderURLAlt,
 		"status":        r.Status,
 		"created_at":    r.CreatedAt,
 	}

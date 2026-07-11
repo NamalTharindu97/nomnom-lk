@@ -12,7 +12,11 @@ import '../utils/currency_formatter.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/favorite_button.dart';
+import '../widgets/follow_section.dart';
+import '../widgets/info_card.dart';
 import '../widgets/offer_image.dart';
+import '../widgets/order_buttons.dart';
+import '../widgets/price_panel.dart';
 
 class _StaggeredFadeSlide extends StatelessWidget {
   final Animation<double> animation;
@@ -144,6 +148,8 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
+  final _scrollController = ScrollController();
+  bool _showTitle = false;
 
   @override
   void initState() {
@@ -157,11 +163,21 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
       curve: Curves.easeOut,
     );
     _controller.forward();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final show = _scrollController.offset > 260;
+    if (show != _showTitle) {
+      setState(() => _showTitle = show);
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -171,224 +187,170 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
     final offer = widget.offer;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          offer.restaurantName,
-          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(Spacings.lg, Spacings.xl, Spacings.lg, Spacings.xxl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 0,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        offer.localizedTitle(Localizations.localeOf(context).languageCode),
-                        style: textTheme.headlineSmall?.copyWith(
-                          color: context.colors.textPrimary,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    _DiscountPill(label: offer.discountLabelLocalized(Localizations.localeOf(context).languageCode)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 1,
-                child: Text(
-                  offer.localizedDescription(Localizations.localeOf(context).languageCode),
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: context.colors.textSecondary,
-                    height: 1.45,
-                  ),
-                ),
-              ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 2,
-                child: AspectRatio(
-                  aspectRatio: 1 / 1,
-                  child: OfferImage(
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 300,
+            pinned: true,
+            backgroundColor: context.colors.background,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              title: _showTitle
+                  ? Text(
+                      offer.restaurantName,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    )
+                  : const SizedBox.shrink(),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  OfferImage(
                     imageUrl: offer.primaryImage,
                     heroTag: 'offer-image-${offer.id}',
                   ),
-                ),
-              ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 3,
-                child: _PricePanel(offer: offer),
-              ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 4,
-                child: _InfoRow(
-                  icon: Icons.storefront_rounded,
-                  title: AppLocalizations.of(context)!.offerRestaurantLabel,
-                  value: offer.restaurantName,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 5,
-                child: _InfoRow(
-                  icon: Icons.location_on_rounded,
-                  title: AppLocalizations.of(context)!.offerLocation,
-                  value: offer.location,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 6,
-                child: _InfoRow(
-                  icon: Icons.local_offer_rounded,
-                  title: AppLocalizations.of(context)!.offerDiscountLabel,
-                  value: offer.discountLabelLocalized(Localizations.localeOf(context).languageCode),
-                ),
-              ),
-              const SizedBox(height: Spacings.xxl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 7,
-                child: FavoriteButton(offerId: offer.id, showLabel: true),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PricePanel extends StatelessWidget {
-  const _PricePanel({required this.offer});
-
-  final Offer offer;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(Spacings.md),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.06)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.offerDealPriceLabel,
-                  style: textTheme.labelLarge?.copyWith(
-                    color: context.colors.muted,
-                    fontWeight: FontWeight.w700,
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.6),
+                            Colors.transparent,
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  CurrencyFormatter.lkr(offer.offerPrice),
-                  style: textTheme.headlineSmall?.copyWith(
-                    color: AppColors.curry,
-                    fontWeight: FontWeight.w900,
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    right: 12,
+                    child: _DiscountPill(
+                      label: offer.discountLabelLocalized(
+                        Localizations.localeOf(context).languageCode,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          offer.restaurantName,
+                          style: textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          offer.localizedTitle(Localizations.localeOf(context).languageCode),
+                          style: textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                CurrencyFormatter.lkr(offer.originalPrice),
-                style: textTheme.bodyLarge?.copyWith(
-                  color: context.colors.muted,
-                  decoration: TextDecoration.lineThrough,
-                  decorationColor: context.colors.muted,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context)!.offerSaveAmount(CurrencyFormatter.lkr(offer.saving)),
-                style: textTheme.labelLarge?.copyWith(
-                  color: AppColors.lime,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(Spacings.md),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.ocean),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: context.colors.muted,
-                    fontWeight: FontWeight.w700,
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Spacings.lg, Spacings.xl, Spacings.lg, Spacings.xxl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 0,
+                    child: PricePanel(offer: offer),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: context.colors.textPrimary,
-                    fontWeight: FontWeight.w800,
+                  const SizedBox(height: Spacings.xl),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 1,
+                    child: Text(
+                      offer.localizedDescription(Localizations.localeOf(context).languageCode),
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: context.colors.textSecondary,
+                        height: 1.45,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: Spacings.xl),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 2,
+                    child: InfoCard(
+                      icon: Icons.storefront_rounded,
+                      title: AppLocalizations.of(context)!.offerRestaurantLabel,
+                      value: offer.restaurantName,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 3,
+                    child: InfoCard(
+                      icon: Icons.location_on_rounded,
+                      title: AppLocalizations.of(context)!.offerLocation,
+                      value: offer.location,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 4,
+                    child: InfoCard(
+                      icon: Icons.local_offer_rounded,
+                      title: AppLocalizations.of(context)!.offerDiscountLabel,
+                      value: offer.discountLabelLocalized(
+                        Localizations.localeOf(context).languageCode,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Spacings.xxl),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 5,
+                    child: FollowSection(
+                      instagramUrl: offer.instagramUrl,
+                      facebookUrl: offer.facebookUrl,
+                      websiteUrl: offer.websiteUrl,
+                    ),
+                  ),
+                  if (offer.instagramUrl != null ||
+                      offer.facebookUrl != null ||
+                      offer.websiteUrl != null)
+                    const SizedBox(height: Spacings.xl),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 6,
+                    child: OrderButtonsSection(
+                      orderUrl: offer.orderUrl,
+                      orderUrlAlt: offer.orderUrlAlt,
+                    ),
+                  ),
+                  const SizedBox(height: Spacings.xl),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 7,
+                    child: FavoriteButton(offerId: offer.id, showLabel: true),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -398,9 +360,9 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _DiscountPill extends StatelessWidget {
-  const _DiscountPill({required this.label});
-
   final String label;
+
+  const _DiscountPill({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -413,7 +375,7 @@ class _DiscountPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: context.colors.background,
+              color: Colors.white,
               fontWeight: FontWeight.w900,
             ),
       ),

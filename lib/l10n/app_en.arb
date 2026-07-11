@@ -174,5 +174,16 @@
   "notificationsHoursAgo": "{count}h ago",
   "@notificationsHoursAgo": {"placeholders": {"count": {"type": "int"}}},
   "notificationsDaysAgo": "{count}d ago",
-  "@notificationsDaysAgo": {"placeholders": {"count": {"type": "int"}}}
+  "@notificationsDaysAgo": {"placeholders": {"count": {"type": "int"}}},
+  "offerOrderNow": "Order Now",
+  "offerOrderVia": "Order via Store",
+  "offerFollow": "Follow",
+  "offerVisitInstagram": "Instagram",
+  "offerVisitFacebook": "Facebook",
+  "offerVisitWebsite": "Website",
+  "offerOrderUberEats": "Order via Uber Eats",
+  "offerOrderPickMe": "Order via PickMe",
+  "offerEndsIn": "Ends in {days} days",
+  "@offerEndsIn": {"placeholders": {"days": {"type": "String"}}},
+  "offerEndsToday": "Ends today"
 }

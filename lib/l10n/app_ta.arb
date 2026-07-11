@@ -155,5 +155,16 @@
   "generalFailedToLoad": "ஏற்ற முடியவில்லை",
   "favoriteAdd": "பிடித்தவையில் சேர்க்க",
   "favoriteRemove": "பிடித்தவையிலிருந்து அகற்ற",
-  "allLabel": "அனைத்தும்"
+  "allLabel": "அனைத்தும்",
+  "offerOrderNow": "இப்போது ஆர்டர் செய்ய",
+  "offerOrderVia": "கடை மூலம் ஆர்டர் செய்ய",
+  "offerFollow": "பின்தொடர",
+  "offerVisitInstagram": "Instagram",
+  "offerVisitFacebook": "Facebook",
+  "offerVisitWebsite": "இணையதளம்",
+  "offerOrderUberEats": "Uber Eats மூலம் ஆர்டர் செய்யுங்கள்",
+  "offerOrderPickMe": "PickMe மூலம் ஆர்டர் செய்யுங்கள்",
+  "offerEndsIn": "{days} நாட்களில் முடிவடைகிறது",
+  "@offerEndsIn": {"placeholders": {"days": {"type": "String"}}},
+  "offerEndsToday": "இன்று முடிவடைகிறது"
 }

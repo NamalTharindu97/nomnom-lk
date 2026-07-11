@@ -12,6 +12,11 @@ class Restaurant {
     required this.cuisineTags,
     required this.status,
     this.coverImage,
+    this.instagramUrl,
+    this.facebookUrl,
+    this.websiteUrl,
+    this.orderUrl,
+    this.orderUrlAlt,
   });
 
   final String id;
@@ -23,6 +28,11 @@ class Restaurant {
   final List<String> cuisineTags;
   final String status;
   final String? coverImage;
+  final String? instagramUrl;
+  final String? facebookUrl;
+  final String? websiteUrl;
+  final String? orderUrl;
+  final String? orderUrlAlt;
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     return Restaurant(
@@ -36,6 +46,11 @@ class Restaurant {
           (json['cuisine_tags'] as List?)?.cast<String>() ?? [],
       status: json['status'] as String? ?? 'approved',
       coverImage: json['cover_image'] as String?,
+      instagramUrl: json['instagram_url'] as String?,
+      facebookUrl: json['facebook_url'] as String?,
+      websiteUrl: json['website_url'] as String?,
+      orderUrl: json['order_url'] as String?,
+      orderUrlAlt: json['order_url_alt'] as String?,
     );
   }
 
@@ -50,6 +65,11 @@ class Restaurant {
       'cuisine_tags': cuisineTags,
       'status': status,
       'cover_image': coverImage,
+      'instagram_url': instagramUrl,
+      'facebook_url': facebookUrl,
+      'website_url': websiteUrl,
+      'order_url': orderUrl,
+      'order_url_alt': orderUrlAlt,
     };
   }
 
@@ -63,6 +83,11 @@ class Restaurant {
     List<String>? cuisineTags,
     String? status,
     String? coverImage,
+    String? instagramUrl,
+    String? facebookUrl,
+    String? websiteUrl,
+    String? orderUrl,
+    String? orderUrlAlt,
   }) {
     return Restaurant(
       id: id ?? this.id,
@@ -74,6 +99,11 @@ class Restaurant {
       cuisineTags: cuisineTags ?? this.cuisineTags,
       status: status ?? this.status,
       coverImage: coverImage ?? this.coverImage,
+      instagramUrl: instagramUrl ?? this.instagramUrl,
+      facebookUrl: facebookUrl ?? this.facebookUrl,
+      websiteUrl: websiteUrl ?? this.websiteUrl,
+      orderUrl: orderUrl ?? this.orderUrl,
+      orderUrlAlt: orderUrlAlt ?? this.orderUrlAlt,
     );
   }
 }

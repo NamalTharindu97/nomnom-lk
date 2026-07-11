@@ -21,6 +21,11 @@ class Offer {
     this.cuisineTags = const [],
     this.isFavorite = false,
     this.distanceKm,
+    this.instagramUrl,
+    this.facebookUrl,
+    this.websiteUrl,
+    this.orderUrl,
+    this.orderUrlAlt,
   });
 
   final String id;
@@ -41,6 +46,11 @@ class Offer {
   final List<String> cuisineTags;
   final bool isFavorite;
   final double? distanceKm;
+  final String? instagramUrl;
+  final String? facebookUrl;
+  final String? websiteUrl;
+  final String? orderUrl;
+  final String? orderUrlAlt;
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
   double get saving => originalPrice - offerPrice;
@@ -94,6 +104,11 @@ class Offer {
       endDate: DateTime.parse(json['end_date'] as String),
       isFavorite: json['is_favorited'] as bool? ?? false,
       distanceKm: (json['distance_km'] as num?)?.toDouble(),
+      instagramUrl: (json['restaurant'] as Map<String, dynamic>?)?['instagram_url'] as String?,
+      facebookUrl: (json['restaurant'] as Map<String, dynamic>?)?['facebook_url'] as String?,
+      websiteUrl: (json['restaurant'] as Map<String, dynamic>?)?['website_url'] as String?,
+      orderUrl: (json['restaurant'] as Map<String, dynamic>?)?['order_url'] as String?,
+      orderUrlAlt: (json['restaurant'] as Map<String, dynamic>?)?['order_url_alt'] as String?,
     );
   }
 
@@ -118,6 +133,11 @@ class Offer {
         'slug': restaurantSlug,
         'cuisine_tags': cuisineTags,
         'address': location,
+        'instagram_url': instagramUrl,
+        'facebook_url': facebookUrl,
+        'website_url': websiteUrl,
+        'order_url': orderUrl,
+        'order_url_alt': orderUrlAlt,
       },
     };
   }
@@ -141,6 +161,11 @@ class Offer {
     DateTime? endDate,
     bool? isFavorite,
     double? distanceKm,
+    String? instagramUrl,
+    String? facebookUrl,
+    String? websiteUrl,
+    String? orderUrl,
+    String? orderUrlAlt,
   }) {
     return Offer(
       id: id ?? this.id,
@@ -161,6 +186,11 @@ class Offer {
       endDate: endDate ?? this.endDate,
       isFavorite: isFavorite ?? this.isFavorite,
       distanceKm: distanceKm ?? this.distanceKm,
+      instagramUrl: instagramUrl ?? this.instagramUrl,
+      facebookUrl: facebookUrl ?? this.facebookUrl,
+      websiteUrl: websiteUrl ?? this.websiteUrl,
+      orderUrl: orderUrl ?? this.orderUrl,
+      orderUrlAlt: orderUrlAlt ?? this.orderUrlAlt,
     );
   }
 }

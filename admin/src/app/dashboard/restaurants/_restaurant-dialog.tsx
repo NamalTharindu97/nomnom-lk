@@ -26,6 +26,11 @@ const restaurantSchema = z.object({
   name_ta: z.string().optional(),
   description_si: z.string().optional(),
   description_ta: z.string().optional(),
+  instagram_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
+  facebook_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
+  website_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
+  order_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
+  order_url_alt: z.string().url("Invalid URL").or(z.literal("")).optional(),
 })
 
 type FormData = z.infer<typeof restaurantSchema>
@@ -64,6 +69,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       name: "", slug: "", address: "", cuisine_tags: "", description: "",
       contact_phone: "", owner_id: "", name_si: "", name_ta: "",
       description_si: "", description_ta: "",
+      instagram_url: "", facebook_url: "", website_url: "", order_url: "", order_url_alt: "",
     },
   })
 
@@ -89,6 +95,11 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         name_ta: restaurant.name_ta || "",
         description_si: restaurant.description_si || "",
         description_ta: restaurant.description_ta || "",
+        instagram_url: restaurant.instagram_url || "",
+        facebook_url: restaurant.facebook_url || "",
+        website_url: restaurant.website_url || "",
+        order_url: restaurant.order_url || "",
+        order_url_alt: restaurant.order_url_alt || "",
       })
       setCoverPreview(restaurant.cover_image || null)
     } else {
@@ -240,6 +251,32 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                   <img src={coverPreview} alt="Cover preview" className="h-32 w-full object-cover" />
                 </div>
               )}
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-3">Social & Order Links</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="instagram_url">Instagram URL</Label>
+                  <Input id="instagram_url" placeholder="https://instagram.com/..." {...register("instagram_url")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="facebook_url">Facebook URL</Label>
+                  <Input id="facebook_url" placeholder="https://facebook.com/..." {...register("facebook_url")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="website_url">Website URL</Label>
+                  <Input id="website_url" placeholder="https://..." {...register("website_url")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="order_url">Order URL (Uber Eats / PickMe)</Label>
+                  <Input id="order_url" placeholder="https://ubereats.com/..." {...register("order_url")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="order_url_alt">Alternate Order URL</Label>
+                  <Input id="order_url_alt" placeholder="https://pickme.lk/..." {...register("order_url_alt")} />
+                </div>
+              </div>
             </div>
 
             <div className="border-t pt-4">

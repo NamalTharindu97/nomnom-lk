@@ -203,7 +203,7 @@ class _BannerTileState extends State<_BannerTile> {
                     ),
                   ),
                 ),
-                if (banner.title != null || banner.sponsorName != null)
+                if (banner.title != null)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -223,30 +223,14 @@ class _BannerTileState extends State<_BannerTile> {
                           ],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (banner.title != null)
-                            Text(
-                              banner.title!,
-                              style: textTheme.titleSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          if (banner.sponsorName != null)
-                            Text(
-                              AppLocalizations.of(context)!.sponsoredBy(banner.sponsorName!),
-                              style: textTheme.labelSmall?.copyWith(
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
+                      child: Text(
+                        banner.title!,
+                        style: textTheme.titleSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
