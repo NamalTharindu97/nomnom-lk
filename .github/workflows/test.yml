@@ -469,6 +469,7 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [backend, admin]
     steps:
       - uses: actions/checkout@v4
         with:
