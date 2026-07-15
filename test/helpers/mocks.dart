@@ -1,6 +1,8 @@
+import '../../lib/models/banner.dart';
 import '../../lib/models/offer.dart';
 import '../../lib/models/paginated_response.dart';
 import '../../lib/models/restaurant.dart';
+import '../../lib/services/api_banner_service.dart';
 import '../../lib/services/api_favorites_service.dart';
 import '../../lib/services/api_offer_service.dart';
 import '../../lib/services/api_restaurant_service.dart';
@@ -195,4 +197,12 @@ class MockApiRestaurantService implements ApiRestaurantService {
   Future<Restaurant> getRestaurant(String id) async {
     return restaurants.firstWhere((r) => r.id == id);
   }
+}
+
+class MockApiBannerService implements ApiBannerService {
+  @override
+  Future<List<FeaturedBanner>> fetchActiveBanners() async => [];
+
+  @override
+  Future<void> trackClick(String bannerId) async {}
 }

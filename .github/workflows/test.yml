@@ -107,6 +107,7 @@ jobs:
           flags: backend
 
       - name: Upload coverage artifact for SonarCloud
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
@@ -359,6 +360,7 @@ jobs:
           retention-days: 3
 
       - name: Upload admin coverage to Codecov
+        if: always()
         uses: codecov/codecov-action@v5
         with:
           directory: admin
@@ -366,6 +368,7 @@ jobs:
           flags: admin
 
       - name: Upload coverage artifact for SonarCloud
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: admin-coverage

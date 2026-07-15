@@ -3,16 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:nomnom_lk/l10n/app_localizations.dart';
+import '../../lib/providers/banner_provider.dart';
 import '../../lib/providers/offer_provider.dart';
 import '../../lib/screens/home_screen.dart';
 import '../helpers/mocks.dart';
 
 Widget buildTestApp(OfferProvider provider) {
+  final bannerProvider = BannerProvider(MockApiBannerService());
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: ChangeNotifierProvider<OfferProvider>.value(
-      value: provider,
+    home: MultiProvider(
+      providers: [
+        ChangeNotifierProvider<OfferProvider>.value(value: provider),
+        ChangeNotifierProvider<BannerProvider>.value(value: bannerProvider),
+      ],
       child: const HomeScreen(onSearchTap: _noop),
     ),
   );

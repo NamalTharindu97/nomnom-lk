@@ -87,8 +87,8 @@ test.describe("Restaurant CRUD", () => {
     await dialog.fillAddress("123 Test Street")
     await dialog.clickSubmit()
     await dialog.expectClosed()
-    await expect(page.getByText("Restaurant deleted", { exact: true })).toBeVisible()
-    await listPage.expectRowNotVisible(name)
+    await expect(page.getByText("Restaurant created", { exact: true })).toBeVisible()
+    await listPage.expectRowVisible(name)
   })
 
   test("should create restaurant with social links and display on detail page", async ({ page }) => {
@@ -117,8 +117,8 @@ test.describe("Restaurant CRUD", () => {
     const row = await listPage.getRowByName(name)
     await row.getByRole("link").first().click()
     await expect(page).toHaveURL(/\/dashboard\/restaurants\/[a-f0-9-]+/)
-    await page.waitForTimeout(1500)
-    await expect(page.getByRole("heading", { name: "Social & Order Links" })).toBeVisible()
+    await page.waitForSelector("text=Social & Order Links", { timeout: 10000 })
+    await expect(page.getByText("Social & Order Links")).toBeVisible()
   })
 
   test("should show no links message when social fields are empty", async ({ page }) => {
@@ -139,8 +139,7 @@ test.describe("Restaurant CRUD", () => {
     const row = await listPage.getRowByName(name)
     await row.getByRole("link").first().click()
     await expect(page).toHaveURL(/\/dashboard\/restaurants\/[a-f0-9-]+/)
-    await page.waitForTimeout(1500)
-    await expect(page.getByText("No links configured")).toBeVisible()
+    await page.waitForSelector("text=No links configured", { timeout: 10000 })
   })
 
   test("should create restaurant with alternate order URL", async ({ page }) => {
