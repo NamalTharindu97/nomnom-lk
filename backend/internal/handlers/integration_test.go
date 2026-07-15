@@ -207,6 +207,15 @@ func TestIntegration_OfferDetail_HasSocialLinks(t *testing.T) {
 	engine, _, err := testutil.Setup()
 	require.NoError(t, err)
 
+	db := testutil.GetTestDB()
+	require.NotNil(t, db)
+
+	db.Exec(`INSERT INTO restaurants (id, name, slug, status, address, instagram_url, facebook_url, website_url, order_url, order_url_alt, created_at, updated_at)
+		VALUES (gen_random_uuid(), 'Social Test Restaurant', 'social-test', 'approved', '123 Test St', 'https://instagram.com/test', 'https://facebook.com/test', 'https://test.com', 'https://ubereats.com/test', 'https://pickme.lk/test', NOW(), NOW())`)
+
+	db.Exec(`INSERT INTO offers (id, title, description, original_price, offer_price, status, restaurant_id, start_date, end_date, created_at, updated_at)
+		VALUES (gen_random_uuid(), 'Social Test Offer', 'desc', 1000, 700, 'approved', (SELECT id FROM restaurants WHERE slug = 'social-test'), NOW(), NOW() + INTERVAL '7 days', NOW(), NOW())`)
+
 	w := testutil.PerformRequest(engine, http.MethodGet, "/api/v1/offers?per_page=1", nil, "")
 	require.Equal(t, http.StatusOK, w.Code)
 
@@ -224,11 +233,17 @@ func TestIntegration_OfferDetail_HasSocialLinks(t *testing.T) {
 	restaurant, ok := firstItem["restaurant"].(map[string]interface{})
 	require.True(t, ok)
 
-	assert.Contains(t, restaurant, "instagram_url")
-	assert.Contains(t, restaurant, "facebook_url")
-	assert.Contains(t, restaurant, "website_url")
-	assert.Contains(t, restaurant, "order_url")
-	assert.Contains(t, restaurant, "order_url_alt")
+	ig, _ := restaurant["instagram_url"].(string)
+	fb, _ := restaurant["facebook_url"].(string)
+	web, _ := restaurant["website_url"].(string)
+	ord, _ := restaurant["order_url"].(string)
+	alt, _ := restaurant["order_url_alt"].(string)
+
+	assert.Equal(t, "https://instagram.com/test", ig)
+	assert.Equal(t, "https://facebook.com/test", fb)
+	assert.Equal(t, "https://test.com", web)
+	assert.Equal(t, "https://ubereats.com/test", ord)
+	assert.Equal(t, "https://pickme.lk/test", alt)
 }
 
 func TestIntegration_CreateOffer_WithUserToken(t *testing.T) {

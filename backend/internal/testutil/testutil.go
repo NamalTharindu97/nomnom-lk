@@ -148,6 +148,10 @@ func generateAdminTestToken() string {
 	return s
 }
 
+func GetTestDB() *gorm.DB {
+	return initDB
+}
+
 func SeedTestData(db *gorm.DB) error {
 	type Restaurant struct {
 		Name string
