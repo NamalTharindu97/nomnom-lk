@@ -82,9 +82,11 @@ void main() {
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
-      // HotOfferCard shows discount badge with percentage
+      // Card width = 800*0.48 = 384px, viewport fits ~2 cards, scroll to see third
       expect(find.text('55%'), findsOneWidget);
       expect(find.text('40%'), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(-400, 0));
+      await tester.pumpAndSettle();
       expect(find.text('10%'), findsOneWidget);
     });
 
@@ -94,8 +96,11 @@ void main() {
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
+      // Card width = 800*0.48 = 384px, viewport fits ~2 cards, scroll to see third
       expect(find.text('Premium Burger'), findsOneWidget);
       expect(find.text('Chicken Curry'), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(-400, 0));
+      await tester.pumpAndSettle();
       expect(find.text('Veggie Bowl'), findsOneWidget);
       expect(find.text('Rs. 900'), findsNWidgets(3));
     });
@@ -106,6 +111,9 @@ void main() {
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
+      // Only 2 of 3 cards visible in viewport; scroll to see third card's icon
+      await tester.drag(find.byType(ListView), const Offset(-400, 0));
+      await tester.pumpAndSettle();
       expect(find.byIcon(Icons.favorite_border_rounded), findsNWidgets(3));
     });
 
