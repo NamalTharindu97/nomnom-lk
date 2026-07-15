@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Image from "next/image"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { EmptyState } from "@/components/empty-state"
@@ -263,7 +264,6 @@ export default function BannersPage() {
         </div>
 
         {/* Create/Edit Dialog */}
-        {(editing || editing === null) && (image || title || editing !== null) && false ? null : null}
         <Card className={editing || image || title ? "hidden" : "block"}>
           {/* For simplicity, we use a modal-like approach with state */}
         </Card>
@@ -401,7 +401,7 @@ export default function BannersPage() {
                     <TableRow key={b.id}>
                       <TableCell>
                         <div className="size-12 rounded overflow-hidden bg-muted">
-                          {b.image ? <img src={b.image} alt="" className="size-full object-cover" /> : <div className="size-full flex items-center justify-center text-muted-foreground/30"><ImageIcon className="size-5" /></div>}
+                          {b.image ? <Image src={b.image} alt="" fill className="object-cover" /> : <div className="size-full flex items-center justify-center text-muted-foreground/30"><ImageIcon className="size-5" /></div>}
                         </div>
                       </TableCell>
                       <TableCell className="font-medium max-w-40 truncate">{b.title || "-"}</TableCell>
