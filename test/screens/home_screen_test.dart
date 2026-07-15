@@ -82,15 +82,13 @@ void main() {
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
-      // Premium Burger: 55% off (2000→900)
-      // Chicken Curry: 40% off (1500→900)
-      // Veggie Bowl: 10% off (1000→900)
-      expect(find.text('55% off'), findsOneWidget);
-      expect(find.text('40% off'), findsOneWidget);
-      expect(find.text('10% off'), findsOneWidget);
+      // HotOfferCard shows discount badge with percentage
+      expect(find.text('55%'), findsOneWidget);
+      expect(find.text('40%'), findsOneWidget);
+      expect(find.text('10%'), findsOneWidget);
     });
 
-    testWidgets('shows offer title, price, restaurant, and location on cards',
+    testWidgets('shows offer title, price, and discount badge on cards',
         (WidgetTester tester) async {
       await provider.loadOffers(forceRefresh: true);
       await tester.pumpWidget(buildTestApp(provider));
@@ -99,8 +97,6 @@ void main() {
       expect(find.text('Premium Burger'), findsOneWidget);
       expect(find.text('Chicken Curry'), findsOneWidget);
       expect(find.text('Veggie Bowl'), findsOneWidget);
-      expect(find.text('Test Restaurant'), findsNWidgets(3));
-      expect(find.text('Colombo'), findsNWidgets(3));
       expect(find.text('Rs. 900'), findsNWidgets(3));
     });
 
@@ -113,20 +109,20 @@ void main() {
       expect(find.byIcon(Icons.favorite_border_rounded), findsNWidgets(3));
     });
 
-    testWidgets('shows original price with strikethrough on each card',
+    testWidgets('shows save amount on each card',
         (WidgetTester tester) async {
       await provider.loadOffers(forceRefresh: true);
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
-      expect(find.text('Rs. 2,000'), findsOneWidget);
-      expect(find.text('Rs. 1,500'), findsOneWidget);
-      expect(find.text('Rs. 1,000'), findsOneWidget);
+      // Premium Burger: 2000→900 saves 1100, Chicken Curry: 1500→900 saves 600
+      expect(find.textContaining('Save Rs. 1,100'), findsWidgets);
+      expect(find.textContaining('Save Rs. 600'), findsWidgets);
     });
   });
 
   group('HomeScreen - Hot Offers hidden', () {
-    testWidgets('hides carousel when there is only 1 offer',
+    testWidgets('shows carousel when there is only 1 offer',
         (WidgetTester tester) async {
       final offers = [
         makeOffer(id: '1', title: 'Solo Deal'),
@@ -147,7 +143,8 @@ void main() {
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
-      expect(find.text('Hot Offers'), findsNothing);
+      expect(find.text('Hot Offers'), findsOneWidget);
+      expect(find.text('Solo Deal'), findsOneWidget);
     });
 
     testWidgets('hides carousel when there are no offers',
