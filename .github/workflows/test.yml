@@ -99,12 +99,19 @@ jobs:
           TEST_MINIO_ACCESS_KEY: minioadmin
           TEST_MINIO_SECRET: minioadmin
 
-      - name: Upload Go coverage
+      - name: Upload Go coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           directory: backend
           files: coverage.out
           flags: backend
+
+      - name: Upload coverage artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.out
+          retention-days: 1
 
   admin:
     name: Admin (Next.js + Playwright)
@@ -351,12 +358,19 @@ jobs:
           path: admin/test-results/
           retention-days: 3
 
-      - name: Upload admin coverage
+      - name: Upload admin coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           directory: admin
           files: coverage/lcov.info
           flags: admin
+
+      - name: Upload coverage artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-coverage
+          path: admin/coverage/lcov.info
+          retention-days: 1
 
   flutter:
     name: Flutter Unit + Widget Tests
@@ -447,4 +461,31 @@ jobs:
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [backend, admin]
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/
+
+      - name: Download admin coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-coverage
+          path: admin/coverage/
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
