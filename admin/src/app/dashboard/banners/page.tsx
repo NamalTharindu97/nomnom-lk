@@ -51,6 +51,7 @@ export default function BannersPage() {
   const [banners, setBanners] = useState<Banner[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Banner | null>(null)
+  const [showForm, setShowForm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -104,11 +105,13 @@ export default function BannersPage() {
 
   function startCreate() {
     setEditing(null)
+    setShowForm(true)
     resetForm()
   }
 
   function startEdit(b: Banner) {
     setEditing(b)
+    setShowForm(true)
     setImage(b.image)
     setLinkType(b.link_type)
     setLinkValue(b.link_value)
@@ -268,7 +271,7 @@ export default function BannersPage() {
           {/* For simplicity, we use a modal-like approach with state */}
         </Card>
 
-        {(editing || editing === null) && (
+        {(editing || showForm) && (
           <Card className="border-primary/20">
             <CardContent className="pt-6 space-y-4">
               <h3 className="font-semibold">{editing ? "Edit Banner" : "New Banner"}</h3>
@@ -346,7 +349,7 @@ export default function BannersPage() {
                 <Button onClick={editing && !isAdmin ? handleOwnerUpdate : handleSave} disabled={saving}>
                   {saving ? "Saving..." : editing ? "Update" : isAdmin ? "Create" : "Submit for Approval"}
                 </Button>
-                {editing && <Button variant="outline" onClick={() => { setEditing(null); resetForm() }}>Cancel</Button>}
+                <Button variant="outline" onClick={() => { setEditing(null); setShowForm(false); resetForm() }}>Cancel</Button>
               </div>
 
               {editing && editing.owner_id && editing.status === "pending" && isAdmin && (

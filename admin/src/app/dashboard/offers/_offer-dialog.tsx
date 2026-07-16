@@ -106,6 +106,7 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
         offer_price: offer.offer_price || 0,
         start_date: offer.start_date ? offer.start_date.slice(0, 10) : "",
         end_date: offer.end_date ? offer.end_date.slice(0, 10) : "",
+        publish_at: offer.publish_at ? offer.publish_at.slice(0, 16) : "",
         restaurant_id: offer.restaurant_id || "",
         title_si: offer.title_si || "",
         title_ta: offer.title_ta || "",

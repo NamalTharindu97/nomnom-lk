@@ -93,7 +93,7 @@ export default function OffersPage() {
       await api.post(`/offers/${id}/${action}`)
       notify(`Offer ${action}d`, "success")
       load()
-    } catch {}
+    } catch { notify("Failed to approve/reject offer") }
   }
 
   async function expireOffer(id: string) {
@@ -101,7 +101,7 @@ export default function OffersPage() {
       await api.post(`/offers/${id}/expire`)
       notify("Offer expired", "success")
       load()
-    } catch {}
+    } catch { notify("Failed to expire offer") }
   }
 
   async function handleDelete() {
@@ -111,7 +111,7 @@ export default function OffersPage() {
       notify("Offer deleted", "success")
       setDeleteTarget(null)
       load()
-    } catch {}
+    } catch { notify("Failed to delete offer") }
   }
 
   async function handleBulk(action: string) {
@@ -121,7 +121,7 @@ export default function OffersPage() {
       notify(`${ids.length} offer(s) ${action}d`, "success")
       clear()
       load()
-    } catch {}
+    } catch { notify("Failed to bulk action offers") }
   }
 
   async function handleBulkDelete() {
@@ -131,7 +131,7 @@ export default function OffersPage() {
       notify(`${ids.length} offer(s) deleted`, "success")
       clear()
       load()
-    } catch {}
+    } catch { notify("Failed to bulk delete offers") }
   }
 
   const statusBadge = (status: string) => {

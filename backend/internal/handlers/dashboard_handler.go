@@ -342,6 +342,7 @@ func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context) gin.H {
 		"website_url":   r.WebsiteURL,
 		"order_url":     r.OrderURL,
 		"order_url_alt": r.OrderURLAlt,
+		"owner_id":      r.OwnerID,
 		"status":        r.Status,
 	}
 
@@ -374,6 +375,7 @@ func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context) gin.H 
 		"website_url":   r.WebsiteURL,
 		"order_url":     r.OrderURL,
 		"order_url_alt": r.OrderURLAlt,
+		"owner_id":      r.OwnerID,
 		"status":        r.Status,
 		"created_at":    r.CreatedAt,
 	}
@@ -404,6 +406,7 @@ func dashboardOfferToMap(o *models.Offer, c *gin.Context) gin.H {
 		"id":               o.ID,
 		"restaurant":       restaurant,
 		"restaurant_id":    o.RestaurantID,
+		"restaurant_name":  func() string { if o.Restaurant != nil { return o.Restaurant.Name }; return "" }(),
 		"title":            o.Title,
 		"description":      o.Description,
 		"original_price":   o.OriginalPrice,

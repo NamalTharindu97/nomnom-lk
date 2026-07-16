@@ -87,7 +87,7 @@ export default function NotificationTemplatesPage() {
       }
       startCreate()
       load()
-    } catch {}
+    } catch { notify("Failed to save template") }
     setSaving(false)
   }
 
@@ -98,7 +98,7 @@ export default function NotificationTemplatesPage() {
       notify("Template deleted", "success")
       setDeleteTarget(null)
       load()
-    } catch {}
+    } catch { notify("Failed to delete template") }
   }
 
   return (

@@ -59,14 +59,14 @@ export default function CategoriesPage() {
         notify("Category created", "success")
       }
       startCreate(); load()
-    } catch {}
+    } catch { notify("Failed to save category") }
     setSaving(false)
   }
 
   async function handleDelete() {
     if (!deleteTarget) return
     try { await api.delete(`/admin/categories/${deleteTarget.id}`); notify("Category deleted", "success"); setDeleteTarget(null); load() }
-    catch {}
+    catch { notify("Failed to delete category") }
   }
 
   return (

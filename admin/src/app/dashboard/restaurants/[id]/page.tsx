@@ -97,10 +97,12 @@ export default function RestaurantDetailPage() {
             <ArrowLeft className="mr-2 size-4" />
             Back to Restaurants
           </Button>
-          <Button variant="outline" onClick={() => router.push("/dashboard/restaurants")}>
-            <Pencil className="mr-2 size-4" />
-            Edit
-          </Button>
+          <a href={`/dashboard/restaurants?edit=${params.id}`}>
+            <Button variant="outline">
+              <Pencil className="mr-2 size-4" />
+              Edit
+            </Button>
+          </a>
         </div>
 
         {restaurant.cover_image && (

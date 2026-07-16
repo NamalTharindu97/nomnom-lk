@@ -57,8 +57,9 @@ func (h *UserHandler) List(c *gin.Context) {
 	params := pagination.Extract(c)
 	email := c.Query("email")
 	role := c.Query("role")
+	status := c.DefaultQuery("status", "active")
 
-	users, total, err := h.repo.FindAll(params.Page, params.PerPage, email, role)
+	users, total, err := h.repo.FindAll(params.Page, params.PerPage, email, role, status)
 	if err != nil {
 		response.InternalError(c, "failed to list users")
 		return

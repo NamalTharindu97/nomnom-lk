@@ -38,10 +38,12 @@ function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [timeline, setTimeline] = useState<TimelineData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [days, setDays] = useState(14)
 
   useEffect(() => {
     setLoading(true)
+    setError(false)
     Promise.all([
       api.get<{ data: Stats }>("/admin/stats"),
       api.get<{ data: TimelineData }>(`/admin/stats/timeline?days=${days}`),
@@ -50,7 +52,7 @@ function AdminDashboard() {
         setStats(statsRes.data)
         setTimeline(timelineRes.data)
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [days])
 
@@ -60,6 +62,10 @@ function AdminDashboard() {
     { title: "Total Users", value: stats?.total_users ?? 0, icon: Users },
     { title: "Pending Reviews", value: (stats?.pending_restaurants ?? 0) + (stats?.pending_offers ?? 0), icon: Bell },
   ]
+
+  if (error && !loading) {
+    return <Card className="p-6 text-center text-muted-foreground">Failed to load dashboard stats</Card>
+  }
 
   return (
     <>
@@ -187,11 +193,12 @@ function AdminDashboard() {
 function OwnerDashboard() {
   const [stats, setStats] = useState<{ total_restaurants: number; total_offers: number; pending_restaurants: number; pending_offers: number } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     api.get<{ data: typeof stats }>("/dashboard/stats")
       .then((res) => setStats(res.data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -201,6 +208,10 @@ function OwnerDashboard() {
     { title: "Pending Restaurants", value: stats?.pending_restaurants ?? 0, icon: Bell },
     { title: "Pending Offers", value: stats?.pending_offers ?? 0, icon: Bell },
   ]
+
+  if (error && !loading) {
+    return <Card className="p-6 text-center text-muted-foreground">Failed to load dashboard stats</Card>
+  }
 
   return (
     <>

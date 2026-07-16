@@ -43,6 +43,7 @@ export default function UserDialog({ open, onClose, onSaved, user }: UserDialogP
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(userSchema),
@@ -108,7 +109,7 @@ export default function UserDialog({ open, onClose, onSaved, user }: UserDialogP
             <div className="grid gap-2">
               <Label htmlFor="role">Role</Label>
               <Select
-                defaultValue="user"
+                value={watch ? watch("role") : "user"}
                 onValueChange={(v) => reset((prev) => ({ ...prev, role: v as "user" | "restaurant_owner" | "admin" }))}
               >
                 <SelectTrigger id="role">
