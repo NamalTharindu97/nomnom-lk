@@ -1087,6 +1087,12 @@ abstract class AppLocalizations {
   /// **'Follow'**
   String get offerFollow;
 
+  /// No description provided for @offerFollowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow or order directly via their social pages'**
+  String get offerFollowHint;
+
   /// No description provided for @offerVisitInstagram.
   ///
   /// In en, this message translates to:
