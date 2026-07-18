@@ -148,11 +148,18 @@ func (r *UserRepo) CountByDate(days int) ([]map[string]interface{}, error) {
 	return filled, nil
 }
 
-func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter string) ([]models.User, int64, error) {
+func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter, statusFilter string) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
-	query := r.db.Model(&models.User{}).Where("is_active = ?", true)
+	query := r.db.Model(&models.User{})
+	if statusFilter == "inactive" {
+		query = query.Where("is_active = ?", false)
+	} else if statusFilter == "all" {
+		// no filter — include both active and inactive
+	} else {
+		query = query.Where("is_active = ?", true)
+	}
 	if emailFilter != "" {
 		query = query.Where("email ILIKE ?", "%"+emailFilter+"%")
 	}

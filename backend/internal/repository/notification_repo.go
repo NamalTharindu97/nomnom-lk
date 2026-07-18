@@ -84,3 +84,9 @@ func (r *NotificationRepo) DeleteByOfferIDs(offerIDs []uuid.UUID) error {
 	}
 	return r.db.Where("offer_id IN ?", offerIDs).Delete(&models.Notification{}).Error
 }
+
+func (r *NotificationRepo) CountAll() (int64, error) {
+	var count int64
+	err := r.db.Model(&models.Notification{}).Count(&count).Error
+	return count, err
+}

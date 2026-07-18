@@ -1,0 +1,4 @@
+-keep class com.nomnomlk.nomnom_lk.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn io.flutter.embedding.**
+-dontwarn com.google.android.gms.**

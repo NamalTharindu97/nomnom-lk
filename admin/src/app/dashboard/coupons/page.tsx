@@ -120,7 +120,7 @@ export default function CouponsPage() {
         notify("Coupon created", "success")
       }
       startCreate(); load()
-    } catch {}
+    } catch { notify("Failed to save coupon") }
     setSaving(false)
   }
 
@@ -129,13 +129,13 @@ export default function CouponsPage() {
       await api.post(`/admin/coupons/${c.id}/${c.is_active ? "deactivate" : "activate"}`)
       notify(`Coupon ${c.is_active ? "deactivated" : "activated"}`, "success")
       load()
-    } catch {}
+    } catch { notify("Failed to toggle coupon") }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return
     try { await api.delete(`/admin/coupons/${deleteTarget.id}`); notify("Coupon deleted", "success"); setDeleteTarget(null); load() }
-    catch {}
+    catch { notify("Failed to delete coupon") }
   }
 
   return (

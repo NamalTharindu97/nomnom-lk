@@ -1,7 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** P36 complete — dual order URLs (`order_url_alt`) with branded Uber/PickMe buttons in Flutter. Pending: visually verify hero image + branded buttons + social follow section on emulator.
+- **Current:** P37 complete — admin dashboard fixes (11 issues: catch blocks, carrier fields, filter gaps). Backend `go build ./...` ✓, Admin `next build` ✓, tests ✓.
 - **Completed: All prior milestones** — 48 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, dual order URLs.
 
 ## Constraints & Preferences
@@ -106,11 +106,23 @@
 - `lib/core/` — api_config, app_routes
 
 ## Recent Work
-- **2026-07-12:** P36 (Dual order URLs) — merged to master via PR #24.
-  - **Backend:** `OrderURLAlt *string` field on Restaurant model, DTOs, services, handlers, repo preloads, seed data (Pizza Hut Uber + PickMe, KFC PickMe + Uber), unit test + integration test assertion.
-  - **Flutter:** `order_link_parser.dart` (domain-based Uber/PickMe detection), `OrderButtonsSection` (branded side-by-side buttons), `FollowSection` (social icons), `InfoCard` (accent bar), `PricePanel` (countdown banner), rewritten `offer_details_screen.dart` (hero SliverAppBar + staggered animation).
-  - **Admin:** Alternate Order URL input + detail page rendering + E2E test.
-  - All builds verified, 45 E2E tests pass (3 pre-existing detail page tests excluded).
+- **2026-07-15:** P37 (Admin dashboard fixes — 11 issues) — completed, committing to `phase/P37-admin-fixes`.
+  - **Backend:**
+    - `offer_handler.go:277` — Added `restaurant_name` flat field to public offer endpoint
+    - `dashboard_handler.go:345,380` — Added `owner_id` to dashboard restaurant list + detail responses
+    - `dashboard_handler.go:409` — Added `restaurant_name` flat field to dashboard offer response
+    - `user_handler.go:62` — Added `status` query param (active/inactive/all)
+    - `user_repo.go` — `FindAll` accepts `statusFilter` param: `"inactive"` → `is_active=false`, `"all"` → no filter
+  - **Admin:**
+    - `offers/_offer-dialog.tsx` — Added `publish_at` to `reset()` on edit
+    - `users/_user-dialog.tsx` — Added `watch` to useForm, Select uses controlled `value`
+    - `users/page.tsx` — Added `statusFilter` state + dropdown (Active/Inactive/All)
+    - `banners/page.tsx` — Added `showForm` state, Cancel button hides form
+    - 6 dashboard pages — Replaced 20 silent `catch {}` with `notify()` error feedback
+    - `restaurants/[id]/page.tsx` — Edit button navigates with `?edit=id`
+    - `dashboard/page.tsx` — Error state on stats API failure
+    - `next.config.ts` — Added `images.remotePatterns` for MinIO + https
+  - Backend `go build ./...` ✓, Admin `next build` ✓, Backend tests ✓
 - **2026-07-10:** CI fix — committed & pushed to master (`12a556f`), run #133 all-green.
   - 3 test fixes (coupons, restaurant-crud, settings validation messages/id changes)
   - Hardcoded macOS path in `seed.go` changed to relative `../assets/samples` for CI compat

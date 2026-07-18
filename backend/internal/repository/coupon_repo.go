@@ -50,3 +50,12 @@ func (r *CouponRepo) Activate(id uuid.UUID) error {
 func (r *CouponRepo) Deactivate(id uuid.UUID) error {
 	return r.db.Model(&models.Coupon{}).Where("id = ?", id).Update("is_active", false).Error
 }
+
+func (r *CouponRepo) CountStats() (active int64, totalRedemptions int64, err error) {
+	err = r.db.Model(&models.Coupon{}).Where("is_active = ?", true).Count(&active).Error
+	if err != nil {
+		return
+	}
+	err = r.db.Model(&models.Coupon{}).Select("COALESCE(SUM(current_uses), 0)").Row().Scan(&totalRedemptions)
+	return
+}

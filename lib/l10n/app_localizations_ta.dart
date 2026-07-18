@@ -528,6 +528,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get offerFollow => 'பின்தொடர';
 
   @override
+  String get offerFollowHint => 'அவர்களின் சமூகப் பக்கங்கள் மூலம் நேரடியாகப் பின்தொடரவும் அல்லது ஆர்டர் செய்யவும்';
+
+  @override
   String get offerVisitInstagram => 'Instagram';
 
   @override

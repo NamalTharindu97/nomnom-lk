@@ -24,6 +24,11 @@ backend/coverage.html
 .env
 backend/config/firebase-credentials.json
 
+# Android signing
+android/key.properties
+*.keystore
+*.jks
+
 # Build outputs
 build/
 *.exe

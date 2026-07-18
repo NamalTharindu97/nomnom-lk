@@ -262,6 +262,7 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 	m := gin.H{
 		"id": o.ID,
+		"restaurant_name": o.Restaurant.Name,
 		"restaurant": gin.H{
 			"id":             o.RestaurantID,
 			"name":           o.Restaurant.Name,

@@ -22,7 +22,6 @@ import {
   Monitor,
   ScrollText,
   Settings,
-  BarChart3,
   FileText,
   Ticket,
   Folder,
@@ -41,7 +40,6 @@ const adminNavItems = [
   { href: "/dashboard/notification-templates", label: "Templates", icon: FileText },
   { href: "/dashboard/coupons", label: "Coupons", icon: Ticket },
   { href: "/dashboard/categories", label: "Categories", icon: Folder },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/banners", label: "Banners", icon: ImageIcon },
   { href: "/dashboard/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -173,7 +171,6 @@ const adminOnlyPaths = [
   "/dashboard/notification-templates",
   "/dashboard/coupons",
   "/dashboard/categories",
-  "/dashboard/analytics",
   "/dashboard/audit-log",
 ]
 

@@ -24,6 +24,10 @@ type AdminHandler struct {
 	offerRepo        *repository.OfferRepo
 	userRepo         *repository.UserRepo
 	notificationRepo *repository.NotificationRepo
+	bannerRepo       *repository.BannerRepo
+	couponRepo       *repository.CouponRepo
+	deviceTokenRepo  *repository.DeviceTokenRepo
+	auditLogRepo     *repository.AuditLogRepo
 	auditService     *services.AuditService
 }
 
@@ -32,6 +36,10 @@ func NewAdminHandler(
 	offerRepo *repository.OfferRepo,
 	userRepo *repository.UserRepo,
 	notificationRepo *repository.NotificationRepo,
+	bannerRepo *repository.BannerRepo,
+	couponRepo *repository.CouponRepo,
+	deviceTokenRepo *repository.DeviceTokenRepo,
+	auditLogRepo *repository.AuditLogRepo,
 	auditService *services.AuditService,
 ) *AdminHandler {
 	return &AdminHandler{
@@ -39,6 +47,10 @@ func NewAdminHandler(
 		offerRepo:        offerRepo,
 		userRepo:         userRepo,
 		notificationRepo: notificationRepo,
+		bannerRepo:       bannerRepo,
+		couponRepo:       couponRepo,
+		deviceTokenRepo:  deviceTokenRepo,
+		auditLogRepo:     auditLogRepo,
 		auditService:     auditService,
 	}
 }
@@ -52,12 +64,22 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 	h.restaurantRepo.CountByStatus("pending", &pendingRestaurants)
 	h.offerRepo.CountByStatus("pending", &pendingOffers)
 
+	bannerTotal, bannerPending, bannerClicks, _ := h.bannerRepo.CountStats()
+	activeCoupons, totalRedemptions, _ := h.couponRepo.CountStats()
+	notifTotal, _ := h.notificationRepo.CountAll()
+
 	response.Success(c, gin.H{
-		"total_restaurants":   totalRestaurants,
-		"total_offers":        totalOffers,
-		"total_users":         totalUsers,
-		"pending_restaurants": pendingRestaurants,
-		"pending_offers":      pendingOffers,
+		"total_restaurants":      totalRestaurants,
+		"total_offers":           totalOffers,
+		"total_users":            totalUsers,
+		"pending_restaurants":    pendingRestaurants,
+		"pending_offers":         pendingOffers,
+		"total_banners":          bannerTotal,
+		"pending_banners":        bannerPending,
+		"total_banner_clicks":    bannerClicks,
+		"active_coupons":         activeCoupons,
+		"total_coupon_redemptions": totalRedemptions,
+		"total_notifications":    notifTotal,
 	})
 }
 
@@ -332,4 +354,66 @@ func (h *AdminHandler) BulkUsers(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"affected": len(req.IDs)})
+}
+
+func (h *AdminHandler) AnalyticsExpiringOffers(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "7")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days < 1 || days > 30 {
+		days = 7
+	}
+
+	offers, err := h.offerRepo.FindExpiringOffers(days)
+	if err != nil {
+		response.InternalError(c, "failed to get expiring offers")
+		return
+	}
+
+	data := make([]gin.H, len(offers))
+	for i, o := range offers {
+		restaurantName := ""
+		if o.Restaurant != nil {
+			restaurantName = o.Restaurant.Name
+		}
+		data[i] = gin.H{
+			"offer_id":       o.ID,
+			"title":          o.Title,
+			"restaurant_name": restaurantName,
+			"end_date":       o.EndDate,
+		}
+	}
+	response.Success(c, data)
+}
+
+func (h *AdminHandler) AnalyticsDeviceStats(c *gin.Context) {
+	counts, err := h.deviceTokenRepo.CountByPlatform()
+	if err != nil {
+		response.InternalError(c, "failed to get device stats")
+		return
+	}
+	response.Success(c, gin.H{
+		"ios":     counts["ios"],
+		"android": counts["android"],
+	})
+}
+
+func (h *AdminHandler) AnalyticsRecentActivity(c *gin.Context) {
+	logs, _, err := h.auditLogRepo.FindAll(1, 5)
+	if err != nil {
+		response.InternalError(c, "failed to get recent activity")
+		return
+	}
+
+	data := make([]gin.H, len(logs))
+	for i, l := range logs {
+		data[i] = gin.H{
+			"id":         l.ID,
+			"admin_name": l.AdminName,
+			"action":     l.Action,
+			"entity_type": l.EntityType,
+			"details":    l.Details,
+			"created_at": l.CreatedAt,
+		}
+	}
+	response.Success(c, data)
 }

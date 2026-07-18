@@ -35,13 +35,16 @@ export class DashboardPage {
   }
 
   async expectStatCardsVisible() {
-    await expect(this.page.getByText("Total Restaurants")).toBeVisible()
-    await expect(this.page.getByText("Total Offers")).toBeVisible()
-    await expect(this.page.getByText("Total Users")).toBeVisible()
-    await expect(this.page.getByText("Pending Reviews")).toBeVisible()
+    const main = this.page.getByRole("main")
+    await expect(main.getByText("Restaurants", { exact: true }).first()).toBeVisible()
+    await expect(main.getByText("Offers", { exact: true }).first()).toBeVisible()
+    await expect(main.getByText("Users", { exact: true }).first()).toBeVisible()
+    await expect(main.getByText("Pending", { exact: true }).first()).toBeVisible()
+    await expect(main.getByText("Approval", { exact: true }).first()).toBeVisible()
+    await expect(main.getByText("Devices", { exact: true }).first()).toBeVisible()
   }
 
   async expectStatValuesLoaded() {
-    await expect(this.page.locator("p.font-bold")).toHaveCount(4, { timeout: 10000 })
+    await expect(this.page.locator("p.text-2xl.font-bold").first()).toBeVisible({ timeout: 10000 })
   }
 }

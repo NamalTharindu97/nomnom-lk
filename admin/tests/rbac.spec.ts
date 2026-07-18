@@ -32,14 +32,14 @@ test.describe("RBAC", () => {
       await loginAs(page, "admin@nomnom.lk", "Admin@123")
     })
 
-    test("should see all 12 nav items", async ({ page }) => {
+    test("should see all 11 nav items", async ({ page }) => {
       await page.goto("/dashboard")
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
 
       const labels = [
         "Dashboard", "Restaurants", "Offers", "Users", "Owners",
         "Push Notifications", "Templates", "Coupons", "Categories",
-        "Analytics", "Audit Log", "Settings",
+        "Audit Log", "Settings",
       ]
       for (const label of labels) {
         await expect(page.locator("nav a", { hasText: label })).toBeVisible()
@@ -50,7 +50,6 @@ test.describe("RBAC", () => {
       const pages = [
         { path: "/dashboard/users", heading: "Users" },
         { path: "/dashboard/owners", heading: "Owners" },
-        { path: "/dashboard/analytics", heading: "Analytics" },
         { path: "/dashboard/audit-log", heading: "Audit Log" },
       ]
       for (const { path, heading } of pages) {
@@ -75,13 +74,12 @@ test.describe("RBAC", () => {
         await expect(page.locator("nav a", { hasText: label })).toBeVisible()
       }
 
-      const hidden = ["Users", "Owners", "Templates", "Coupons", "Categories", "Analytics", "Audit Log"]
+      const hidden = ["Users", "Owners", "Templates", "Coupons", "Categories", "Audit Log"]
       await expect(page.locator("nav a", { hasText: "Users" })).not.toBeVisible()
       await expect(page.locator("nav a", { hasText: "Owners" })).not.toBeVisible()
       await expect(page.locator("nav a", { hasText: "Templates" })).not.toBeVisible()
       await expect(page.locator("nav a", { hasText: "Coupons" })).not.toBeVisible()
       await expect(page.locator("nav a", { hasText: "Categories" })).not.toBeVisible()
-      await expect(page.locator("nav a", { hasText: "Analytics" })).not.toBeVisible()
       await expect(page.locator("nav a", { hasText: "Audit Log" })).not.toBeVisible()
     })
 
@@ -89,7 +87,6 @@ test.describe("RBAC", () => {
       const adminOnlyPaths = [
         "/dashboard/users",
         "/dashboard/owners",
-        "/dashboard/analytics",
         "/dashboard/audit-log",
         "/dashboard/coupons",
         "/dashboard/categories",

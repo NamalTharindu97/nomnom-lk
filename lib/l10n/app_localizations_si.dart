@@ -528,6 +528,9 @@ class AppLocalizationsSi extends AppLocalizations {
   String get offerFollow => 'අනුගමනය කරන්න';
 
   @override
+  String get offerFollowHint => 'ඔවුන්ගේ සමාජ පිටු හරහා සෘජුවම අනුගමනය කරන්න හෝ ඇණවුම් කරන්න';
+
+  @override
   String get offerVisitInstagram => 'Instagram';
 
   @override

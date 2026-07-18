@@ -8,7 +8,6 @@ import '../providers/offer_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../services/api_offer_service.dart';
-import '../utils/currency_formatter.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/favorite_button.dart';
@@ -321,10 +320,20 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                       ),
                     ),
                   ),
-                  const SizedBox(height: Spacings.xxl),
+                  if (offer.orderUrl != null || offer.orderUrlAlt != null)
+                      const SizedBox(height: Spacings.xxl),
                   _StaggeredFadeSlide(
                     animation: _animation,
                     index: 5,
+                    child: OrderButtonsSection(
+                      orderUrl: offer.orderUrl,
+                      orderUrlAlt: offer.orderUrlAlt,
+                    ),
+                  ),
+                  const SizedBox(height: Spacings.xxl),
+                  _StaggeredFadeSlide(
+                    animation: _animation,
+                    index: 6,
                     child: FollowSection(
                       instagramUrl: offer.instagramUrl,
                       facebookUrl: offer.facebookUrl,
@@ -334,16 +343,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                   if (offer.instagramUrl != null ||
                       offer.facebookUrl != null ||
                       offer.websiteUrl != null)
-                    const SizedBox(height: Spacings.xl),
-                  _StaggeredFadeSlide(
-                    animation: _animation,
-                    index: 6,
-                    child: OrderButtonsSection(
-                      orderUrl: offer.orderUrl,
-                      orderUrlAlt: offer.orderUrlAlt,
-                    ),
-                  ),
-                  const SizedBox(height: Spacings.xl),
+                    const SizedBox(height: Spacings.xxl),
                   _StaggeredFadeSlide(
                     animation: _animation,
                     index: 7,

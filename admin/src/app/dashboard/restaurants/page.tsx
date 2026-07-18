@@ -89,7 +89,7 @@ export default function RestaurantsPage() {
       await api.post(`/restaurants/${id}/${action}`)
       notify(`Restaurant ${action}d`, "success")
       load()
-    } catch {}
+    } catch { notify("Failed to approve/reject restaurant") }
   }
 
   async function handleDelete() {
@@ -99,7 +99,7 @@ export default function RestaurantsPage() {
       notify("Restaurant deleted", "success")
       setDeleteTarget(null)
       load()
-    } catch {}
+    } catch { notify("Failed to delete restaurant") }
   }
 
   async function handleBulk(action: string) {
@@ -109,7 +109,7 @@ export default function RestaurantsPage() {
       notify(`${ids.length} restaurant(s) ${action}d`, "success")
       clear()
       load()
-    } catch {}
+    } catch { notify("Failed to bulk action restaurants") }
   }
 
   async function handleBulkDelete() {
@@ -119,7 +119,7 @@ export default function RestaurantsPage() {
       notify(`${ids.length} restaurant(s) deleted`, "success")
       clear()
       load()
-    } catch {}
+    } catch { notify("Failed to bulk delete restaurants") }
   }
 
   const statusBadge = (status: string) => {

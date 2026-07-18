@@ -52,6 +52,7 @@ export default function UsersPage() {
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("active")
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [showUserDialog, setShowUserDialog] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -66,6 +67,7 @@ export default function UsersPage() {
       })
       if (search.trim()) params.set("email", search.trim())
       if (roleFilter !== "all") params.set("role", roleFilter)
+      if (statusFilter !== "active") params.set("status", statusFilter)
       const res = await api.get<{ data: User[]; pagination: { total: number } }>(
         `/users?${params}`
       )
@@ -86,7 +88,7 @@ export default function UsersPage() {
       await api.put(`/users/${userId}`, { role: newRole })
       notify("User role updated", "success")
       load()
-    } catch {}
+    } catch { notify("Failed to update user role") }
   }
 
   async function handleDelete() {
@@ -96,7 +98,7 @@ export default function UsersPage() {
       notify("User deleted", "success")
       setDeleteTarget(null)
       load()
-    } catch {}
+    } catch { notify("Failed to delete user") }
   }
 
   async function handleBulk(action: string) {
@@ -106,7 +108,7 @@ export default function UsersPage() {
       notify(`${ids.length} user(s) ${action}d`, "success")
       clear()
       load()
-    } catch {}
+    } catch { notify("Failed to bulk action users") }
   }
 
   async function handleBulkDelete() {
@@ -116,7 +118,7 @@ export default function UsersPage() {
       notify(`${ids.length} user(s) deleted`, "success")
       clear()
       load()
-    } catch {}
+    } catch { notify("Failed to bulk delete users") }
   }
 
   const roleBadge = (role: string) => {
@@ -170,6 +172,16 @@ export default function UsersPage() {
                     {ROLE_FILTERS.map((r) => (
                       <SelectItem key={r} value={r}>{r === "all" ? "All Roles" : r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

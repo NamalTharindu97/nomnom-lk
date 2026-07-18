@@ -250,3 +250,16 @@ func (r *OfferRepo) TopByViews(limit int) ([]models.Offer, error) {
 	err := r.db.Where("view_count > 0").Order("view_count DESC").Limit(limit).Find(&offers).Error
 	return offers, err
 }
+
+func (r *OfferRepo) FindExpiringOffers(days int) ([]models.Offer, error) {
+	var offers []models.Offer
+	err := r.db.
+		Preload("Restaurant", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, name")
+		}).
+		Where("end_date IS NOT NULL AND end_date > NOW() AND end_date < NOW() + INTERVAL '1 day' * ? AND status = ?", days, models.OfferApproved).
+		Order("end_date ASC").
+		Limit(10).
+		Find(&offers).Error
+	return offers, err
+}

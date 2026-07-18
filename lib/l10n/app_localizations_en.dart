@@ -528,6 +528,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offerFollow => 'Follow';
 
   @override
+  String get offerFollowHint => 'Follow or order directly via their social pages';
+
+  @override
   String get offerVisitInstagram => 'Instagram';
 
   @override
