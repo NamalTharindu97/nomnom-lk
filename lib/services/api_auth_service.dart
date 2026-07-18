@@ -118,7 +118,8 @@ class ApiAuthService {
     try {
       final response = await _client.get('/users/me');
       return AppUser.fromJson(response['data'] as Map<String, dynamic>);
-    } catch (_) {
+    } catch (e) {
+      // Token refresh may have failed — auth interceptor handles token wipe
       return null;
     }
   }

@@ -36,8 +36,12 @@ class AuthInterceptor extends Interceptor {
           final retryResponse = await _dio.fetch(retryOptions);
           handler.resolve(retryResponse);
           return;
+        } on DioException catch (e) {
+          if (e.response?.statusCode == 401) {
+            await _storage.deleteAll();
+          }
         } catch (_) {
-          await _storage.deleteAll();
+          // Non-network errors (parse, cast) — don't wipe tokens
         }
       }
     }
