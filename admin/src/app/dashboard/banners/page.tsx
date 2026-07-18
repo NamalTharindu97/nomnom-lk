@@ -43,6 +43,12 @@ interface Banner {
 interface Offer {
   id: string
   title: string
+  restaurant_name?: string
+}
+
+interface Restaurant {
+  id: string
+  name: string
 }
 
 export default function BannersPage() {
@@ -67,6 +73,8 @@ export default function BannersPage() {
 
   const [myOffers, setMyOffers] = useState<Offer[]>([])
   const [selectedOffer, setSelectedOffer] = useState("")
+  const [adminOffers, setAdminOffers] = useState<Offer[]>([])
+  const [adminRestaurants, setAdminRestaurants] = useState<Restaurant[]>([])
 
   const endpoint = isAdmin ? "/admin/banners" : "/dashboard/banners"
 
@@ -88,8 +96,21 @@ export default function BannersPage() {
     } catch { setMyOffers([]) }
   }, [isAdmin])
 
+  const loadAdminData = useCallback(async () => {
+    if (!isAdmin) return
+    try {
+      const [offersRes, restaurantsRes] = await Promise.all([
+        api.get<{ data: Offer[] }>("/offers"),
+        api.get<{ data: Restaurant[] }>("/restaurants"),
+      ])
+      setAdminOffers(offersRes.data || [])
+      setAdminRestaurants(restaurantsRes.data || [])
+    } catch { /* ignore */ }
+  }, [isAdmin])
+
   useEffect(() => { loadBanners() }, [loadBanners])
   useEffect(() => { loadMyOffers() }, [loadMyOffers])
+  useEffect(() => { loadAdminData() }, [loadAdminData])
 
   function resetForm() {
     setImage("")
@@ -331,7 +352,7 @@ export default function BannersPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label>Link Type</Label>
-                      <Select value={linkType} onValueChange={setLinkType}>
+                      <Select value={linkType} onValueChange={v => { setLinkType(v); setLinkValue("") }}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="offer">Offer</SelectItem>
@@ -341,8 +362,28 @@ export default function BannersPage() {
                       </Select>
                     </div>
                     <div className="grid gap-2">
-                      <Label>Link Value</Label>
-                      <Input value={linkValue} onChange={e => setLinkValue(e.target.value)} placeholder={linkType === "external" ? "https://..." : "UUID"} />
+                      <Label>{linkType === "offer" ? "Offer" : linkType === "restaurant" ? "Restaurant" : "URL"}</Label>
+                      {linkType === "offer" ? (
+                        <Select value={linkValue} onValueChange={setLinkValue}>
+                          <SelectTrigger><SelectValue placeholder="Select an offer..." /></SelectTrigger>
+                          <SelectContent>
+                            {adminOffers.map(o => (
+                              <SelectItem key={o.id} value={o.id}>{o.title}{o.restaurant_name ? ` — ${o.restaurant_name}` : ""}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : linkType === "restaurant" ? (
+                        <Select value={linkValue} onValueChange={setLinkValue}>
+                          <SelectTrigger><SelectValue placeholder="Select a restaurant..." /></SelectTrigger>
+                          <SelectContent>
+                            {adminRestaurants.map(r => (
+                              <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input value={linkValue} onChange={e => setLinkValue(e.target.value)} placeholder="https://..." />
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
