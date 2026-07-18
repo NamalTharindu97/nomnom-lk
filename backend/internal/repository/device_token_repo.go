@@ -54,3 +54,23 @@ func (r *DeviceTokenRepo) FindAll() ([]models.DeviceToken, error) {
 	err := r.db.Find(&tokens).Error
 	return tokens, err
 }
+
+func (r *DeviceTokenRepo) CountByPlatform() (map[string]int64, error) {
+	type platformCount struct {
+		Platform string
+		Count    int64
+	}
+	var results []platformCount
+	err := r.db.Model(&models.DeviceToken{}).
+		Select("platform, COUNT(*) as count").
+		Group("platform").
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]int64{"ios": 0, "android": 0}
+	for _, r := range results {
+		out[r.Platform] = r.Count
+	}
+	return out, nil
+}

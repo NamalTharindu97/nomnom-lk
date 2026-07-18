@@ -85,3 +85,16 @@ func (r *BannerRepo) DeactivateByOfferID(offerID uuid.UUID) error {
 		Where("offer_id = ?", offerID).
 		Update("status", models.BannerRejected).Error
 }
+
+func (r *BannerRepo) CountStats() (total int64, pending int64, totalClicks int64, err error) {
+	err = r.db.Model(&models.Banner{}).Count(&total).Error
+	if err != nil {
+		return
+	}
+	err = r.db.Model(&models.Banner{}).Where("status = ?", models.BannerPending).Count(&pending).Error
+	if err != nil {
+		return
+	}
+	err = r.db.Model(&models.Banner{}).Select("COALESCE(SUM(click_count), 0)").Row().Scan(&totalClicks)
+	return
+}
