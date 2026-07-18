@@ -21,7 +21,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { Plus, Pencil, Trash2, Image as ImageIcon, CheckCircle, XCircle } from "lucide-react"
+import { Plus, Pencil, Trash2, Image as ImageIcon, CheckCircle, XCircle, ExternalLink, Tag, Store, Link2 } from "lucide-react"
 
 interface Banner {
   id: string
@@ -225,6 +225,29 @@ export default function BannersPage() {
     ? banners
     : banners.filter(b => b.status === statusFilter)
 
+  function linkTypeBadge(type: string) {
+    switch (type) {
+      case "offer": return <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200"><Tag className="size-3" />Offer</span>
+      case "restaurant": return <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200"><Store className="size-3" />Restaurant</span>
+      case "external": return <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900 dark:text-orange-200"><ExternalLink className="size-3" />External</span>
+      default: return <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-900 dark:text-gray-200"><Link2 className="size-3" />{type}</span>
+    }
+  }
+
+  function formatDate(dateStr: string | null) {
+    if (!dateStr) return null
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
+
+  function dateRange(b: Banner) {
+    const s = formatDate(b.start_date)
+    const e = formatDate(b.end_date)
+    if (s && e) return `${s} – ${e}`
+    if (s) return `${s} onward`
+    if (e) return `Until ${e}`
+    return "Always"
+  }
+
   function statusBadge(status: string) {
     switch (status) {
       case "approved": return <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">Approved</span>
@@ -380,63 +403,84 @@ export default function BannersPage() {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Image</TableHead>
-                  <TableHead>Title</TableHead>
-                  {isAdmin && <TableHead>Sponsor</TableHead>}
-                  {isAdmin && <TableHead>Owner</TableHead>}
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right w-20">Clicks</TableHead>
-                  <TableHead className="text-right w-32">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? <TableSkeleton columns={isAdmin ? 7 : 5} /> :
-                  filteredBanners.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={isAdmin ? 7 : 5} className="text-center py-8">
-                        <EmptyState icon={<ImageIcon className="size-10 text-muted-foreground/50" />} title="No banners" description="Create your first banner to get started." />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredBanners.map(b => (
-                    <TableRow key={b.id}>
-                      <TableCell>
-                        <div className="size-12 rounded overflow-hidden bg-muted">
-                          {b.image ? <Image src={b.image} alt="" fill className="object-cover" /> : <div className="size-full flex items-center justify-center text-muted-foreground/30"><ImageIcon className="size-5" /></div>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium max-w-40 truncate">{b.title || "-"}</TableCell>
-                      {isAdmin && <TableCell className="text-sm text-muted-foreground">{b.sponsor_name || "-"}</TableCell>}
-                      {isAdmin && <TableCell className="text-sm text-muted-foreground">{b.owner_id ? "Owner" : "Global"}</TableCell>}
-                      <TableCell>{statusBadge(b.status)}</TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">{b.click_count}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {isAdmin && b.status === "pending" && b.owner_id && (
-                            <>
-                              <Button size="icon" variant="ghost" onClick={() => handleApprove(b.id)} title="Approve"><CheckCircle className="size-4 text-green-600" /></Button>
-                              <Button size="icon" variant="ghost" onClick={() => handleReject(b.id)} title="Reject"><XCircle className="size-4 text-red-600" /></Button>
-                            </>
-                          )}
-                          <Button size="icon" variant="ghost" onClick={() => startEdit(b)} disabled={!isAdmin && b.status === "approved"}><Pencil className="size-4" /></Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild><Button size="icon" variant="ghost" onClick={() => setDeleteTarget(b)}><Trash2 className="size-4 text-destructive" /></Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>Delete Banner</AlertDialogTitle><AlertDialogDescription>Delete <strong>{b.title || "this banner"}</strong>? This cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-40">Banner</TableHead>
+                    <TableHead>Sponsor</TableHead>
+                    {isAdmin && <TableHead>Link</TableHead>}
+                    <TableHead>Schedule</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right w-20">Clicks</TableHead>
+                    <TableHead className="text-right w-32">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? <TableSkeleton columns={isAdmin ? 7 : 6} /> :
+                    filteredBanners.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8">
+                          <EmptyState icon={<ImageIcon className="size-10 text-muted-foreground/50" />} title="No banners" description="Create your first banner to get started." />
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredBanners.map(b => (
+                      <TableRow key={b.id} className="group">
+                        <TableCell>
+                          <div className="relative h-16 w-32 rounded-md overflow-hidden bg-muted group">
+                            {b.image ? (
+                              <Image src={b.image} alt={b.title || ""} fill className="object-cover" sizes="128px" loading="eager" />
+                            ) : (
+                              <div className="size-full flex items-center justify-center text-muted-foreground/30">
+                                <ImageIcon className="size-5" />
+                              </div>
+                            )}
+                            {/* Hover preview */}
+                            {b.image && (
+                              <div className="pointer-events-none absolute -top-2 left-full ml-2 z-50 hidden group-hover:block">
+                                <div className="relative h-36 w-64 rounded-lg overflow-hidden shadow-xl border border-border">
+                                  <Image src={b.image} alt={b.title || ""} fill className="object-cover" sizes="256px" loading="lazy" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium max-w-48 truncate">{b.title || "-"}</div>
+                            <div className="text-sm text-muted-foreground">{b.sponsor_name || "-"}</div>
+                          </div>
+                        </TableCell>
+                        {isAdmin && <TableCell>{linkTypeBadge(b.link_type)}</TableCell>}
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{dateRange(b)}</TableCell>
+                        <TableCell>{statusBadge(b.status)}</TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">{b.click_count}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {isAdmin && b.status === "pending" && b.owner_id && (
+                              <>
+                                <Button size="icon" variant="ghost" onClick={() => handleApprove(b.id)} title="Approve"><CheckCircle className="size-4 text-green-600" /></Button>
+                                <Button size="icon" variant="ghost" onClick={() => handleReject(b.id)} title="Reject"><XCircle className="size-4 text-red-600" /></Button>
+                              </>
+                            )}
+                            <Button size="icon" variant="ghost" onClick={() => startEdit(b)} disabled={!isAdmin && b.status === "approved"}><Pencil className="size-4" /></Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild><Button size="icon" variant="ghost" onClick={() => setDeleteTarget(b)}><Trash2 className="size-4 text-destructive" /></Button></AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Delete Banner</AlertDialogTitle><AlertDialogDescription>Delete <strong>{b.title || "this banner"}</strong>? This cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

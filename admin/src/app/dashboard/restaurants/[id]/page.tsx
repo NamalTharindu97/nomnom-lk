@@ -40,8 +40,8 @@ export default function RestaurantDetailPage() {
     const id = params.id as string
     if (!id) return
     setLoading(true)
-    api.get<Restaurant>(`/dashboard/restaurants/${id}`)
-      .then(setRestaurant)
+    api.get<{ data: Restaurant }>(`/dashboard/restaurants/${id}`)
+      .then((res) => setRestaurant(res.data))
       .catch(() => setRestaurant(null))
       .finally(() => setLoading(false))
   }, [params.id])

@@ -4,7 +4,7 @@ class AppStore {
   AppStore._();
 
   static const _androidId = 'com.nomnomlk.nomnom_lk';
-  static const _iosId = 'YOUR_APP_STORE_ID';
+  static const _iosId = '';
 
   static String get storeUrl {
     if (Platform.isAndroid) {
