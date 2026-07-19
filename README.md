@@ -483,3 +483,60 @@ cd admin && rm -rf .next && npm run build
 cd backend && go run ./cmd/server &
 cd admin && npx playwright test
 ```
+
+---
+
+## Obsidian Knowledge Base
+
+The project root is an Obsidian vault. Open it in Obsidian to browse and link documentation.
+
+### Setup
+
+```bash
+brew install --cask obsidian  # macOS
+# Or download from https://obsidian.md
+```
+
+1. Open Obsidian
+2. Select **Open folder as vault**
+3. Open the project root: `/Users/namal/dev/MobileApps/NomNom LK`
+4. Start from `docs/Home.md`
+
+### Structure
+
+| Path | Purpose |
+|------|---------|
+| `docs/Home.md` | Dashboard — start here |
+| `docs/Plans Index.md` | All implementation plans |
+| `docs/Decisions Index.md` | Architecture decisions |
+| `docs/Inbox.md` | Quick capture |
+| `docs/templates/` | Reusable templates |
+| `docs/decisions/` | Decision records |
+| `docs/notes/` | Research and investigations |
+| `AGENTS.md` | Current project status |
+| `README.md` | Commands and setup |
+| `ARCHITECTURE.md` | System design |
+| `plans/` | Implementation plans |
+
+### Templates
+
+| Template | Use for |
+|----------|---------|
+| Project Note | Feature work, research, investigations |
+| Decision | Architecture or technical choices |
+| Bug Investigation | Complex defect tracking |
+| Meeting Note | Meeting notes and action items |
+
+### Workflow
+
+1. Open `docs/Home.md` to navigate the project
+2. Capture quick ideas in `docs/Inbox.md`
+3. Use templates for structured documentation
+4. Move completed items to proper locations
+5. Keep `AGENTS.md` updated for official project status
+
+### Notes
+
+- `.obsidian/` is git-ignored (personal settings)
+- All notes use standard Markdown links (works in GitHub too)
+- Never commit secrets, tokens, or credentials
