@@ -75,6 +75,7 @@
   "offerNotFound": "දීමනාව හමු නොවීය",
   "offerNotFoundSubtitle": "මෙම දීමනාව ඉවත් කර තිබිය හැක.",
   "offerRestaurantLabel": "අවන්හල",
+  "offerDetailsLabel": "විස්තර",
   "offerDiscountLabel": "වට්ටම්",
   "offerDealPriceLabel": "දීමනා මිල",
   "offerSaveAmount": "{amount} ඉතිරි කරන්න",
@@ -167,5 +168,8 @@
   "offerOrderPickMe": "PickMe හරහා ඇණවුම් කරන්න",
   "offerEndsIn": "තව දින {days} කින් අවසන් වේ",
   "@offerEndsIn": {"placeholders": {"days": {"type": "String"}}},
-  "offerEndsToday": "අද අවසන් වේ"
+  "offerEndsToday": "අද අවසන් වේ",
+  "offerNoAppFound": "සුසංගත යෙදුමක් හමු නොවීය",
+  "editProfileCamera": "කැමරාව",
+  "editProfileGallery": "ගැලරිය"
 }

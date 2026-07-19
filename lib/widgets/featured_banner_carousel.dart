@@ -66,10 +66,7 @@ class _FeaturedBannerCarouselState extends State<FeaturedBannerCarousel> {
         );
       case 'restaurant':
         if (!context.mounted) return;
-        Navigator.of(context).pushNamed(
-          AppRoutes.restaurantDetail,
-          arguments: banner.linkValue,
-        );
+        Navigator.of(context).pushNamed(AppRoutes.restaurants);
       case 'external':
         final uri = Uri.tryParse(banner.linkValue);
         if (uri != null && await canLaunchUrl(uri)) {
@@ -84,7 +81,21 @@ class _FeaturedBannerCarouselState extends State<FeaturedBannerCarousel> {
       selector: (_, p) => p.banners,
       shouldRebuild: (prev, next) => prev != next,
       builder: (_, banners, __) {
-        if (banners.isEmpty) return const SizedBox.shrink();
+        if (banners.isEmpty) {
+          _currentPage = 0;
+          return const SizedBox.shrink();
+        }
+
+        if (_currentPage >= banners.length) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _currentPage = 0;
+            if (_pageController.hasClients) {
+              _pageController.jumpToPage(0);
+            }
+            setState(() {});
+          });
+        }
 
         final textTheme = Theme.of(context).textTheme;
 
@@ -94,7 +105,8 @@ class _FeaturedBannerCarouselState extends State<FeaturedBannerCarousel> {
               padding: const EdgeInsets.only(left: 16, bottom: 8),
               child: Row(
                 children: [
-                  const Icon(Icons.star_rounded, size: 16, color: AppColors.curry),
+                  const Icon(Icons.star_rounded,
+                      size: 16, color: AppColors.curry),
                   const SizedBox(width: 6),
                   Text(
                     AppLocalizations.of(context)!.featuredLabel,
@@ -106,21 +118,24 @@ class _FeaturedBannerCarouselState extends State<FeaturedBannerCarousel> {
                 ],
               ),
             ),
-            SizedBox(
-              height: 200,
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
-                },
-                itemCount: banners.length,
-                itemBuilder: (context, index) {
-                  final banner = banners[index];
-                  return _BannerTile(
-                    banner: banner,
-                    onTap: () => _onBannerTap(banner),
-                  );
-                },
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AspectRatio(
+                aspectRatio: 1024 / 360,
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() => _currentPage = index);
+                  },
+                  itemCount: banners.length,
+                  itemBuilder: (context, index) {
+                    final banner = banners[index];
+                    return _BannerTile(
+                      banner: banner,
+                      onTap: () => _onBannerTap(banner),
+                    );
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -169,73 +184,87 @@ class _BannerTileState extends State<_BannerTile> {
     final textTheme = Theme.of(context).textTheme;
     final banner = widget.banner;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _scale = 0.97),
-        onTapUp: (_) => setState(() => _scale = 1.0),
-        onTapCancel: () => setState(() => _scale = 1.0),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _scale,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CachedNetworkImage(
-                  imageUrl: ApiConfig.resolveUrl(banner.image),
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: context.colors.surfaceAlt,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _scale = 0.97),
+      onTapUp: (_) => setState(() => _scale = 1.0),
+      onTapCancel: () => setState(() => _scale = 1.0),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: ApiConfig.resolveUrl(banner.image),
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: context.colors.surfaceAlt,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: context.colors.surfaceAlt,
-                    child: Icon(
-                      Icons.broken_image_rounded,
-                      color: context.colors.muted,
-                      size: 32,
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: context.colors.surfaceAlt,
+                  child: Icon(
+                    Icons.broken_image_rounded,
+                    color: context.colors.muted,
+                    size: 32,
+                  ),
+                ),
+              ),
+              if (banner.title != null || banner.sponsorName != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.7),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (banner.title != null)
+                          Text(
+                            banner.title!,
+                            style: textTheme.titleSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        if (banner.sponsorName != null)
+                          Text(
+                            banner.sponsorName!,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
                   ),
                 ),
-                if (banner.title != null)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.7),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                      child: Text(
-                        banner.title!,
-                        style: textTheme.titleSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

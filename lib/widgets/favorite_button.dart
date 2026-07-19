@@ -41,7 +41,9 @@ class FavoriteButton extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => context.read<OfferProvider>().toggleFavorite(offerId),
               icon: icon,
-              label: Text(AppLocalizations.of(context)!.favoriteAdd),
+              label: Text(isFavorite
+                  ? AppLocalizations.of(context)!.favoriteRemove
+                  : AppLocalizations.of(context)!.favoriteAdd),
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     isFavorite ? AppColors.chili : AppColors.curry,

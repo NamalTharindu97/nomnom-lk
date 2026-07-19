@@ -31,23 +31,22 @@ type ownerSeed struct {
 }
 
 type restaurantSeed struct {
-	Name         string
-	NameSi       string
-	NameTa       string
-	Description  string
-	DescSi       string
-	DescTa       string
-	Address      string
-	Latitude     float64
-	Longitude    float64
-	CuisineTags  []string
-	ImageSeed    string
-	OwnerEmail   string
-	InstagramURL string
-	FacebookURL  string
-	WebsiteURL   string
-	OrderURL     string
-	OrderURLAlt  string
+	Name           string
+	NameSi         string
+	NameTa         string
+	Description    string
+	DescSi         string
+	DescTa         string
+	Address        string
+	Latitude       float64
+	Longitude      float64
+	CuisineTags    []string
+	ImageSeed      string
+	OwnerEmail     string
+	InstagramURL   string
+	FacebookURL    string
+	WebsiteURL     string
+	OrderPlatforms []string
 }
 
 type offerSeed struct {
@@ -120,10 +119,9 @@ func main() {
 			Address: "55 Galle Road, Colombo 03", Latitude: 6.9020, Longitude: 79.8612,
 			CuisineTags: []string{"Pizza", "Italian", "Fast Food"}, ImageSeed: "pizza-hut", OwnerEmail: "owner@nomnom.lk",
 			InstagramURL: "https://www.instagram.com/pizzahut_srilanka/",
-			FacebookURL: "https://www.facebook.com/PizzaHutSriLanka/",
-			WebsiteURL: "https://www.pizzahut.lk/",
-			OrderURL: "https://www.ubereats.com/store/pizza-hut",
-			OrderURLAlt: "https://pickme.lk/food/pizza-hut",
+			FacebookURL:  "https://www.facebook.com/PizzaHutSriLanka/",
+			WebsiteURL:   "https://www.pizzahut.lk/",
+			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "KFC", NameSi: "කේඑෆ්සී", NameTa: "கேஎப்சி",
@@ -131,10 +129,9 @@ func main() {
 			Address: "100 Galle Road, Colombo 04", Latitude: 6.8930, Longitude: 79.8560,
 			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "kfc", OwnerEmail: "kfc@nomnom.lk",
 			InstagramURL: "https://www.instagram.com/kfc_srilanka/",
-			FacebookURL: "https://www.facebook.com/KFCSriLanka/",
-			WebsiteURL: "https://www.kfc.lk/",
-			OrderURL: "https://pickme.lk/food/kfc",
-			OrderURLAlt: "https://www.ubereats.com/store/kfc",
+			FacebookURL:  "https://www.facebook.com/KFCSriLanka/",
+			WebsiteURL:   "https://www.kfc.lk/",
+			OrderPlatforms: []string{"pickme", "uber_eats"},
 		},
 		{
 			Name: "Bread Talk", NameSi: "බ්‍රෙඩ් ටෝක්", NameTa: "பிரெட் டாக்",
@@ -168,9 +165,9 @@ func main() {
 			Address: "200 Galle Road, Dehiwala", Latitude: 6.8570, Longitude: 79.8640,
 			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "popeyes", OwnerEmail: "popeyes@nomnom.lk",
 			InstagramURL: "https://www.instagram.com/popeyes_srilanka/",
-			FacebookURL: "https://www.facebook.com/PopeyesSriLanka/",
-			WebsiteURL: "https://www.popeyes.lk/",
-			OrderURL: "https://www.ubereats.com/store/popeyes",
+			FacebookURL:  "https://www.facebook.com/PopeyesSriLanka/",
+			WebsiteURL:   "https://www.popeyes.lk/",
+			OrderPlatforms: []string{"uber_eats"},
 		},
 		{
 			Name: "Solo Bowl", NameSi: "සොලෝ බෝල්", NameTa: "சோலோ பௌல்",
@@ -193,8 +190,8 @@ func main() {
 			Address: "88 Galle Road, Bambalapitiya", Latitude: 6.8850, Longitude: 79.8600,
 			CuisineTags: []string{"Burgers", "American", "Fast Food"}, ImageSeed: "street-burger", OwnerEmail: "streetburger@nomnom.lk",
 			InstagramURL: "https://www.instagram.com/streetburgerlk/",
-			FacebookURL: "https://www.facebook.com/StreetBurgerLK/",
-			OrderURL: "https://pickme.lk/food/street-burger",
+			FacebookURL:  "https://www.facebook.com/StreetBurgerLK/",
+			OrderPlatforms: []string{"pickme"},
 		},
 		{
 			Name: "Subway", NameSi: "සබ්වේ", NameTa: "சப்வே",
@@ -211,8 +208,8 @@ func main() {
 			Address: "120 Galle Road, Colombo 04", Latitude: 6.8950, Longitude: 79.8550,
 			CuisineTags: []string{"Mexican", "Tacos", "Fast Food"}, ImageSeed: "taco-bell", OwnerEmail: "tacbell@nomnom.lk",
 			InstagramURL: "https://www.instagram.com/tacobell_srilanka/",
-			FacebookURL: "https://www.facebook.com/TacoBellSriLanka/",
-			OrderURL: "https://www.ubereats.com/store/taco-bell",
+			FacebookURL:  "https://www.facebook.com/TacoBellSriLanka/",
+			OrderPlatforms: []string{"uber_eats"},
 		},
 	}
 
@@ -330,11 +327,8 @@ func main() {
 		if r.WebsiteURL != "" {
 			rest.WebsiteURL = &r.WebsiteURL
 		}
-		if r.OrderURL != "" {
-			rest.OrderURL = &r.OrderURL
-		}
-		if r.OrderURLAlt != "" {
-			rest.OrderURLAlt = &r.OrderURLAlt
+		if len(r.OrderPlatforms) > 0 {
+			rest.OrderPlatforms = r.OrderPlatforms
 		}
 		if err := db.Create(&rest).Error; err != nil {
 			fmt.Printf("  ❌ Failed to create restaurant %s: %v\n", r.Name, err)

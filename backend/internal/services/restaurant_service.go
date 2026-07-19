@@ -40,11 +40,8 @@ func (s *RestaurantService) Create(req *request.CreateRestaurantRequest, request
 	if req.WebsiteURL != "" {
 		restaurant.WebsiteURL = &req.WebsiteURL
 	}
-	if req.OrderURL != "" {
-		restaurant.OrderURL = &req.OrderURL
-	}
-	if req.OrderURLAlt != "" {
-		restaurant.OrderURLAlt = &req.OrderURLAlt
+	if len(req.OrderPlatforms) > 0 {
+		restaurant.OrderPlatforms = req.OrderPlatforms
 	}
 
 	switch {
@@ -132,11 +129,8 @@ func (s *RestaurantService) Update(id uuid.UUID, req *request.UpdateRestaurantRe
 	if req.WebsiteURL != nil {
 		restaurant.WebsiteURL = req.WebsiteURL
 	}
-	if req.OrderURL != nil {
-		restaurant.OrderURL = req.OrderURL
-	}
-	if req.OrderURLAlt != nil {
-		restaurant.OrderURLAlt = req.OrderURLAlt
+	if req.OrderPlatforms != nil {
+		restaurant.OrderPlatforms = *req.OrderPlatforms
 	}
 
 	if req.OwnerID != nil && isAdmin {

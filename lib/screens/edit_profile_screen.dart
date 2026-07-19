@@ -69,7 +69,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Camera'),
+                title: Text(AppLocalizations.of(context)!.editProfileCamera),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.camera);
@@ -77,7 +77,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Gallery'),
+                title: Text(AppLocalizations.of(context)!.editProfileGallery),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.gallery);
@@ -155,7 +155,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       Navigator.of(context).pop();
     } catch (e) {
-      if (!mounted) return;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.editProfileSaveError)),
@@ -236,7 +235,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               padding: EdgeInsets.all(6),
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.muted),
+                          : Icon(Icons.camera_alt_rounded, size: 16, color: context.colors.muted),
                     ),
                   ),
                 ],
@@ -283,10 +282,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 FilledButton.icon(
                   onPressed: _isSaving ? null : _save,
                   icon: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.background),
                         )
                       : const Icon(Icons.check_rounded),
                   label: Text(loc.editProfileSave),

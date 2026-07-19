@@ -124,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen>
               colors: [
                 context.colors.background,
                 context.colors.backgroundAlt,
-                const Color(0xFF24170C),
+                context.colors.surface,
               ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -180,7 +180,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Text(
                   AppLocalizations.of(context)!.splashTagline,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.muted,
+                    color: context.colors.muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

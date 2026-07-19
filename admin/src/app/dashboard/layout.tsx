@@ -50,7 +50,6 @@ const ownerNavItems = [
   { href: "/dashboard/restaurants", label: "My Restaurants", icon: Store },
   { href: "/dashboard/offers", label: "My Offers", icon: Tag },
   { href: "/dashboard/banners", label: "My Banners", icon: ImageIcon },
-  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
@@ -168,6 +167,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 const adminOnlyPaths = [
   "/dashboard/users",
   "/dashboard/owners",
+  "/dashboard/notifications",
   "/dashboard/notification-templates",
   "/dashboard/coupons",
   "/dashboard/categories",
@@ -179,6 +179,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const isForbiddenPath = Boolean(
+    user && user.role !== "admin" && adminOnlyPaths.some((p) => pathname.startsWith(p))
+  )
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -186,12 +189,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       return
     }
 
-    if (user && user.role !== "admin" && adminOnlyPaths.some((p) => pathname.startsWith(p))) {
-      router.push("/dashboard")
+    if (isForbiddenPath) {
+      router.replace("/dashboard")
     }
-  }, [user, isLoading, router, pathname])
+  }, [user, isLoading, router, isForbiddenPath])
 
-  if (isLoading || !user) return null
+  if (isLoading || !user || isForbiddenPath) return null
 
   return (
     <div className="flex min-h-screen">

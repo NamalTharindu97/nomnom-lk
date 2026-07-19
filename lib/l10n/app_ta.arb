@@ -75,6 +75,7 @@
   "offerNotFound": "சலுகை கிடைக்கவில்லை",
   "offerNotFoundSubtitle": "இந்த சலுகை அகற்றப்பட்டிருக்கலாம்.",
   "offerRestaurantLabel": "உணவகம்",
+  "offerDetailsLabel": "விவரங்கள்",
   "offerDiscountLabel": "தள்ளுபடி",
   "offerDealPriceLabel": "சலுகை விலை",
   "offerSaveAmount": "{amount} சேமிக்க",
@@ -167,5 +168,8 @@
   "offerOrderPickMe": "PickMe மூலம் ஆர்டர் செய்யுங்கள்",
   "offerEndsIn": "{days} நாட்களில் முடிவடைகிறது",
   "@offerEndsIn": {"placeholders": {"days": {"type": "String"}}},
-  "offerEndsToday": "இன்று முடிவடைகிறது"
+  "offerEndsToday": "இன்று முடிவடைகிறது",
+  "offerNoAppFound": "பொருத்தமான பயன்பாடு கிடைக்கவில்லை",
+  "editProfileCamera": "கேமரா",
+  "editProfileGallery": "கேலரி"
 }

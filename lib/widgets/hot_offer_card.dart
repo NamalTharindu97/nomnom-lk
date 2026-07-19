@@ -9,6 +9,7 @@ import '../utils/spacings.dart';
 import 'discount_badge.dart';
 import 'favorite_button.dart';
 import 'offer_image.dart';
+import 'package:nomnom_lk/l10n/app_localizations.dart';
 
 class HotOfferCard extends StatelessWidget {
   const HotOfferCard({
@@ -116,7 +117,7 @@ class HotOfferCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 3),
                               Text(
-                                'Save ${CurrencyFormatter.lkr(offer.saving)}',
+                                AppLocalizations.of(context)!.offerSaveAmount(CurrencyFormatter.lkr(offer.saving)),
                                 style: textTheme.labelSmall?.copyWith(
                                   color: AppColors.curry,
                                   fontWeight: FontWeight.w700,

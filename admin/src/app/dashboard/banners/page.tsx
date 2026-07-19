@@ -52,7 +52,7 @@ interface Restaurant {
 }
 
 export default function BannersPage() {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const isAdmin = user?.role === "admin"
   const [banners, setBanners] = useState<Banner[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,34 +79,35 @@ export default function BannersPage() {
   const endpoint = isAdmin ? "/admin/banners" : "/dashboard/banners"
 
   const loadBanners = useCallback(async () => {
+    if (authLoading || !user) return
     setLoading(true)
     try {
       const res = await api.get<{ data: Banner[] }>(endpoint)
       setBanners(res.data || [])
     } catch { setBanners([]) }
     finally { setLoading(false) }
-  }, [endpoint])
+  }, [endpoint, authLoading, user])
 
   const loadMyOffers = useCallback(async () => {
-    if (isAdmin) return
+    if (authLoading || !user || isAdmin) return
     try {
-      const res = await api.get<{ data: Offer[] }>("/dashboard/offers")
+      const res = await api.get<{ data: Offer[] }>("/dashboard/offers?per_page=100")
       const list = res.data || []
       setMyOffers(list)
     } catch { setMyOffers([]) }
-  }, [isAdmin])
+  }, [authLoading, isAdmin, user])
 
   const loadAdminData = useCallback(async () => {
-    if (!isAdmin) return
+    if (authLoading || !user || !isAdmin) return
     try {
       const [offersRes, restaurantsRes] = await Promise.all([
-        api.get<{ data: Offer[] }>("/offers"),
-        api.get<{ data: Restaurant[] }>("/restaurants"),
+        api.get<{ data: Offer[] }>("/offers?per_page=200&status=approved"),
+        api.get<{ data: Restaurant[] }>("/restaurants?per_page=200&status=approved"),
       ])
       setAdminOffers(offersRes.data || [])
       setAdminRestaurants(restaurantsRes.data || [])
     } catch { /* ignore */ }
-  }, [isAdmin])
+  }, [authLoading, isAdmin, user])
 
   useEffect(() => { loadBanners() }, [loadBanners])
   useEffect(() => { loadMyOffers() }, [loadMyOffers])
@@ -157,6 +158,16 @@ export default function BannersPage() {
       return
     }
 
+    if (isAdmin && !linkValue.trim()) {
+      notify("Please select a banner destination", "error")
+      return
+    }
+
+    if (startDate && endDate && endDate < startDate) {
+      notify("End date must be on or after start date", "error")
+      return
+    }
+
     setSaving(true)
     try {
       const body: Record<string, unknown> = {
@@ -169,7 +180,7 @@ export default function BannersPage() {
       }
       if (startDate) body.start_date = startDate
       if (endDate) body.end_date = endDate
-      if (selectedOffer) body.offer_id = selectedOffer
+      if (linkType === "offer") body.offer_id = linkValue
 
       if (editing) {
         await api.put(`/admin/banners/${editing.id}`, body)
@@ -178,8 +189,10 @@ export default function BannersPage() {
         await api.post("/admin/banners", body)
         notify("Banner created", "success")
       }
-      startCreate()
-      loadBanners()
+      setEditing(null)
+      setShowForm(false)
+      resetForm()
+      await loadBanners()
     } catch { notify("Failed to save banner", "error") }
     setSaving(false)
   }
@@ -193,8 +206,10 @@ export default function BannersPage() {
         title: title.trim(),
       })
       notify("Banner submitted for approval", "success")
-      startCreate()
-      loadBanners()
+      setEditing(null)
+      setShowForm(false)
+      resetForm()
+      await loadBanners()
     } catch { notify("Failed to create banner", "error") }
     setSaving(false)
   }
@@ -210,8 +225,9 @@ export default function BannersPage() {
       })
       notify("Banner updated", "success")
       setEditing(null)
+      setShowForm(false)
       resetForm()
-      loadBanners()
+      await loadBanners()
     } catch { notify("Failed to update banner", "error") }
     setSaving(false)
   }
@@ -352,7 +368,7 @@ export default function BannersPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label>Link Type</Label>
-                      <Select value={linkType} onValueChange={v => { setLinkType(v); setLinkValue("") }}>
+                      <Select value={linkType} onValueChange={v => { setLinkType(v); setLinkValue(""); setSelectedOffer("") }}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="offer">Offer</SelectItem>

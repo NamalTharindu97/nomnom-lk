@@ -145,11 +145,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+            gradient: LinearGradient(
             colors: [
               context.colors.background,
               context.colors.backgroundAlt,
-              const Color(0xFF24170C),
+              context.colors.surface,
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -211,7 +211,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                               AppLocalizations.of(context)!.verifyWeSentCodeTo,
                               textAlign: TextAlign.center,
                               style: textTheme.bodyMedium?.copyWith(
-                                color: AppColors.muted,
+                                color: context.colors.muted,
                               ),
                             ),
                           ),
@@ -247,7 +247,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                 color: context.colors.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.black.withValues(alpha: 0.06),
+                                  color: context.colors.border,
                                 ),
                               ),
                               padding: const EdgeInsets.all(Spacings.lg),
@@ -272,9 +272,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                 decoration: InputDecoration(
                                   hintText: '000000',
                                   hintStyle: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    fontSize: 28,
-                                    letterSpacing: 12,
+                              color: context.colors.muted,
+                              fontSize: 28,
+                              letterSpacing: 12,
                                   ),
                                   counterText: '',
                                   border: InputBorder.none,
@@ -334,7 +334,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                         : AppLocalizations.of(context)!.verifyResendCode,
                                     style: textTheme.bodySmall?.copyWith(
                                       color: _resendCooldown > 0
-                                          ? AppColors.muted
+                                          ? context.colors.muted
                                           : AppColors.curry,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -350,7 +350,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                   child: Text(
                                     AppLocalizations.of(context)!.verifyUseDifferentEmail,
                                     style: textTheme.bodySmall?.copyWith(
-                                      color: AppColors.muted,
+                                      color: context.colors.muted,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),

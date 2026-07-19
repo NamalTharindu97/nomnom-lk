@@ -517,6 +517,12 @@ abstract class AppLocalizations {
   /// **'Restaurant'**
   String get offerRestaurantLabel;
 
+  /// No description provided for @offerDetailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get offerDetailsLabel;
+
   /// No description provided for @offerDiscountLabel.
   ///
   /// In en, this message translates to:
@@ -1134,6 +1140,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ends today'**
   String get offerEndsToday;
+
+  /// No description provided for @offerNoAppFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No compatible app found'**
+  String get offerNoAppFound;
+
+  /// No description provided for @editProfileCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get editProfileCamera;
+
+  /// No description provided for @editProfileGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get editProfileGallery;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

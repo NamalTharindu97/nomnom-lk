@@ -54,11 +54,13 @@ void main() async {
   await themeProvider.load();
   final localeProvider = LocaleProvider();
   await localeProvider.initialize();
-  runApp(NomNomBootstrap(themeProvider: themeProvider, localeProvider: localeProvider));
+  runApp(NomNomBootstrap(
+      themeProvider: themeProvider, localeProvider: localeProvider));
 }
 
 class NomNomBootstrap extends StatelessWidget {
-  const NomNomBootstrap({super.key, required this.themeProvider, required this.localeProvider});
+  const NomNomBootstrap(
+      {super.key, required this.themeProvider, required this.localeProvider});
 
   final ThemeProvider themeProvider;
   final LocaleProvider localeProvider;
@@ -115,7 +117,8 @@ class NomNomBootstrap extends StatelessWidget {
           create: (_) => BannerProvider(ApiBannerService(apiClient)),
         ),
       ],
-      child: const _StoreInitializer(child: _FcmInitializer(child: NomNomApp())),
+      child:
+          const _StoreInitializer(child: _FcmInitializer(child: NomNomApp())),
     );
   }
 }
@@ -175,7 +178,8 @@ class _FcmInitializerState extends State<_FcmInitializer> {
       return;
     }
     // Direct offer ID (UUID)
-    final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+    final uuidRegex = RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
     if (uuidRegex.hasMatch(payload)) {
       nav.pushNamed('${AppRoutes.offerDetails}/$payload');
       return;
@@ -209,13 +213,15 @@ class _SseListener extends StatefulWidget {
   State<_SseListener> createState() => _SseListenerState();
 }
 
-class _SseListenerState extends State<_SseListener> with WidgetsBindingObserver {
+class _SseListenerState extends State<_SseListener>
+    with WidgetsBindingObserver {
   SSEService? _sseService;
   StreamSubscription<SSEEvent>? _subscription;
   Timer? _debounce;
   Timer? _pollTimer;
   bool _needsOfferRefresh = false;
   bool _needsRestaurantRefresh = false;
+  bool _needsBannerRefresh = false;
   bool _hasSseConnection = false;
 
   @override
@@ -233,10 +239,12 @@ class _SseListenerState extends State<_SseListener> with WidgetsBindingObserver 
   }
 
   void _refreshIfNeeded() {
+    final apiClient = context.read<ApiClient>();
+    apiClient.invalidateCache('/banners/active');
+    context.read<BannerProvider>().refreshBanners();
     if (_hasSseConnection) return;
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      final apiClient = context.read<ApiClient>();
       apiClient.invalidateCache('/offers');
       context.read<OfferProvider>().refreshOffers();
       apiClient.invalidateCache('/restaurants');
@@ -264,13 +272,23 @@ class _SseListenerState extends State<_SseListener> with WidgetsBindingObserver 
       case 'offer.approved':
       case 'offer.updated':
       case 'offer.deleted':
+      case 'offer.rejected':
+      case 'offer.expired':
         _needsOfferRefresh = true;
+        _needsBannerRefresh = true;
         break;
       case 'restaurant.created':
       case 'restaurant.approved':
       case 'restaurant.updated':
       case 'restaurant.deleted':
         _needsRestaurantRefresh = true;
+        break;
+      case 'banner.created':
+      case 'banner.updated':
+      case 'banner.approved':
+      case 'banner.rejected':
+      case 'banner.deleted':
+        _needsBannerRefresh = true;
         break;
     }
     _debounce?.cancel();
@@ -288,6 +306,11 @@ class _SseListenerState extends State<_SseListener> with WidgetsBindingObserver 
       apiClient.invalidateCache('/restaurants');
       context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
       _needsRestaurantRefresh = false;
+    }
+    if (_needsBannerRefresh) {
+      apiClient.invalidateCache('/banners/active');
+      context.read<BannerProvider>().refreshBanners();
+      _needsBannerRefresh = false;
     }
   }
 
@@ -354,7 +377,8 @@ class NomNomApp extends StatelessWidget {
       themeMode: themeMode,
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          data:
+              MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
           child: child!,
         );
       },

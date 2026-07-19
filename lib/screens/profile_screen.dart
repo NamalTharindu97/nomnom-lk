@@ -128,7 +128,7 @@ class _ProfileHeader extends StatelessWidget {
                     child: Icon(
                       Icons.edit_rounded,
                       size: 14,
-                      color: AppColors.muted,
+                      color: context.colors.muted,
                     ),
                   ),
                 ),
@@ -353,7 +353,7 @@ class _MenuSection extends StatelessWidget {
           _MenuDivider(),
           _MenuTile(
             icon: Icons.info_outline_rounded,
-            iconColor: AppColors.muted,
+            iconColor: context.colors.muted,
             title: AppLocalizations.of(context)!.profileAbout,
             subtitle: AppLocalizations.of(context)!.profileVersion,
           ),
@@ -404,7 +404,7 @@ class _ThemeTile extends StatelessWidget {
                   Text(
                     themeProvider.isDark ? AppLocalizations.of(context)!.profileDarkMode : AppLocalizations.of(context)!.profileLightMode,
                     style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
+                      color: context.colors.muted,
                     ),
                   ),
                 ],
@@ -459,11 +459,11 @@ class _LanguageTile extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                Text(
-                  '${localeProvider.flag} ${localeProvider.displayName}',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: AppColors.muted,
-                  ),
+                  Text(
+                    '${localeProvider.flag} ${localeProvider.displayName}',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: context.colors.muted,
+                    ),
                 ),
               ],
             ),
@@ -535,7 +535,7 @@ class _MenuTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
+                      color: context.colors.muted,
                     ),
                   ),
                 ],
@@ -544,7 +544,7 @@ class _MenuTile extends StatelessWidget {
             if (onTap != null)
               Icon(
                 Icons.chevron_right_rounded,
-                color: AppColors.muted,
+                color: context.colors.muted,
                 size: 20,
               ),
           ],

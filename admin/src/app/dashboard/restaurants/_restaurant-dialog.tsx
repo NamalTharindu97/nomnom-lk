@@ -13,6 +13,8 @@ import { Loader2, X } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/hooks/use-auth"
 
 const restaurantSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -29,8 +31,7 @@ const restaurantSchema = z.object({
   instagram_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
   facebook_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
   website_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
-  order_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
-  order_url_alt: z.string().url("Invalid URL").or(z.literal("")).optional(),
+  order_platforms: z.array(z.string()).optional(),
 })
 
 type FormData = z.infer<typeof restaurantSchema>
@@ -49,6 +50,7 @@ interface RestaurantDialogProps {
 }
 
 export default function RestaurantDialog({ open, onClose, onSaved, restaurant }: RestaurantDialogProps) {
+  const { isAdmin } = useAuth()
   const [saving, setSaving] = useState(false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
@@ -62,6 +64,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(restaurantSchema),
@@ -69,17 +72,17 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       name: "", slug: "", address: "", cuisine_tags: "", description: "",
       contact_phone: "", owner_id: "", name_si: "", name_ta: "",
       description_si: "", description_ta: "",
-      instagram_url: "", facebook_url: "", website_url: "", order_url: "", order_url_alt: "",
+      instagram_url: "", facebook_url: "", website_url: "", order_platforms: [],
     },
   })
 
   useEffect(() => {
-    if (open) {
+    if (open && isAdmin) {
       api.get<{ data: OwnerOption[] }>("/users?role=restaurant_owner&per_page=100")
         .then((res) => setOwners(res.data || []))
         .catch(() => {})
     }
-  }, [open])
+  }, [open, isAdmin])
 
   useEffect(() => {
     if (restaurant) {
@@ -98,8 +101,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         instagram_url: restaurant.instagram_url || "",
         facebook_url: restaurant.facebook_url || "",
         website_url: restaurant.website_url || "",
-        order_url: restaurant.order_url || "",
-        order_url_alt: restaurant.order_url_alt || "",
+        order_platforms: restaurant.order_platforms || [],
       })
       setCoverPreview(restaurant.cover_image || null)
     } else {
@@ -150,7 +152,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         ...data,
         cuisine_tags: data.cuisine_tags ? data.cuisine_tags.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
       }
-      if (data.owner_id && data.owner_id !== "__none") body.owner_id = data.owner_id
+      if (isAdmin && data.owner_id && data.owner_id !== "__none") body.owner_id = data.owner_id
       else delete body.owner_id
 
       if (coverImage) {
@@ -216,25 +218,27 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
               <Textarea id="description" className="min-h-[80px]" {...register("description")} />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="owner">Owner</Label>
-              <Select
-                defaultValue=""
-                onValueChange={(v) => setValue("owner_id", v)}
-              >
-                <SelectTrigger id="owner">
-                  <SelectValue placeholder="No owner (admin-managed)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">No owner</SelectItem>
-                  {owners.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.name} ({o.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {isAdmin && (
+              <div className="grid gap-2">
+                <Label htmlFor="owner">Owner</Label>
+                <Select
+                  defaultValue=""
+                  onValueChange={(v) => setValue("owner_id", v)}
+                >
+                  <SelectTrigger id="owner">
+                    <SelectValue placeholder="No owner (admin-managed)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">No owner</SelectItem>
+                    {owners.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.name} ({o.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid gap-2">
               <Label>Cover Image</Label>
@@ -269,12 +273,25 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                   <Input id="website_url" placeholder="https://..." {...register("website_url")} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="order_url">Order URL (Uber Eats / PickMe)</Label>
-                  <Input id="order_url" placeholder="https://ubereats.com/..." {...register("order_url")} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="order_url_alt">Alternate Order URL</Label>
-                  <Input id="order_url_alt" placeholder="https://pickme.lk/..." {...register("order_url_alt")} />
+                  <Label>Ordering Platforms</Label>
+                  <div className="flex items-center gap-6 pt-1">
+                    {["uber_eats", "pickme"].map((platform) => (
+                      <label key={platform} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={(watch("order_platforms") || []).includes(platform)}
+                          onCheckedChange={(checked) => {
+                            const current = watch("order_platforms") || []
+                            if (checked) {
+                              setValue("order_platforms", [...current, platform], { shouldDirty: true })
+                            } else {
+                              setValue("order_platforms", current.filter((p) => p !== platform), { shouldDirty: true })
+                            }
+                          }}
+                        />
+                        {platform === "uber_eats" ? "Uber Eats" : "PickMe"}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

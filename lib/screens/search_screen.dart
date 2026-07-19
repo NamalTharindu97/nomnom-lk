@@ -370,7 +370,7 @@ class _SearchRestaurantTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+            Icon(Icons.chevron_right_rounded, color: context.colors.muted),
           ],
         ),
       ),

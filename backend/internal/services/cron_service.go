@@ -49,6 +49,15 @@ func (s *CronService) MarkExpiredOffers() {
 			return
 		}
 		fmt.Printf("CRON: marked %d offers as expired\n", result.RowsAffected)
+		offerIDStrings := make([]string, len(expiredIDs))
+		for i, id := range expiredIDs {
+			offerIDStrings[i] = id.String()
+		}
+		if err := s.db.Model(&models.Banner{}).
+			Where("offer_id IN ? OR (link_type = 'offer' AND link_value IN ?)", expiredIDs, offerIDStrings).
+			Update("status", models.BannerRejected).Error; err != nil {
+			fmt.Printf("CRON: failed to deactivate banners for expired offers: %v\n", err)
+		}
 
 		if err := s.notificationRepo.DeleteByOfferIDs(expiredIDs); err != nil {
 			fmt.Printf("CRON: failed to delete notifications for expired offers: %v\n", err)

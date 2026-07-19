@@ -9,9 +9,6 @@ class AppRoutes {
   static const offerDetails = '/offer-details';
   static const restaurants = '/restaurants';
 
-  static const restaurantDetail = '/restaurant';
   static const editProfile = '/edit-profile';
   static const notificationPrefs = '/notification-prefs';
-
-  static String restaurantDetailPath(String id) => '$restaurantDetail/$id';
 }

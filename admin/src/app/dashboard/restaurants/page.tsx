@@ -140,12 +140,10 @@ export default function RestaurantsPage() {
             <p className="text-muted-foreground">{isOwner ? "Manage your restaurants" : "Manage restaurant listings"}</p>
           </div>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Address", "Cuisine", "Status"], restaurants.map(r => [r.name, r.address || "", (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
-                <Download className="mr-2 size-4" />
-                Export CSV
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Address", "Cuisine", "Status"], restaurants.map(r => [r.name, r.address || "", (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
+              <Download className="mr-2 size-4" />
+              Export CSV
+            </Button>
             <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
               <Plus className="mr-2 size-4" />
               {isOwner ? "New Restaurant" : "New Restaurant"}
@@ -167,18 +165,16 @@ export default function RestaurantsPage() {
                     className="w-48 pl-8"
                   />
                 </div>
-                {isAdmin && (
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((s) => (
-                        <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             {isAdmin && selected.size > 0 && (
@@ -198,12 +194,14 @@ export default function RestaurantsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={!loading && restaurants.length > 0 && selected.size === restaurants.length}
-                      onCheckedChange={() => toggleAll(restaurants.map((r) => r.id))}
-                    />
-                  </TableHead>
+                  {isAdmin && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={!loading && restaurants.length > 0 && selected.size === restaurants.length}
+                        onCheckedChange={() => toggleAll(restaurants.map((r) => r.id))}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Name</TableHead>
                   <TableHead>Cuisine</TableHead>
                   <TableHead>Status</TableHead>
@@ -212,7 +210,7 @@ export default function RestaurantsPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableSkeleton columns={5} />
+                  <TableSkeleton columns={isAdmin ? 5 : 4} />
                 ) : restaurants.length === 0 ? (
                   <EmptyState
                     icon={<Store className="size-10 text-muted-foreground/50" />}
@@ -230,12 +228,14 @@ export default function RestaurantsPage() {
                 ) : (
                   restaurants.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selected.has(r.id)}
-                          onCheckedChange={() => toggle(r.id)}
-                        />
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(r.id)}
+                            onCheckedChange={() => toggle(r.id)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Link href={`/dashboard/restaurants/${r.id}`} className="font-medium hover:text-primary transition-colors">
                           {r.name}

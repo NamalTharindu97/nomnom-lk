@@ -97,7 +97,6 @@ test.describe("Restaurant CRUD", () => {
     const igUrl = "https://instagram.com/test"
     const fbUrl = "https://facebook.com/test"
     const webUrl = "https://test.com"
-    const orderUrl = "https://ubereats.com/test"
 
     await listPage.clickNewRestaurant()
     const dialog = new RestaurantDialog(page)
@@ -108,7 +107,7 @@ test.describe("Restaurant CRUD", () => {
     await dialog.fillInstagram(igUrl)
     await dialog.fillFacebook(fbUrl)
     await dialog.fillWebsite(webUrl)
-    await dialog.fillOrder(orderUrl)
+    await dialog.selectUberEats()
     await dialog.clickSubmit()
     await dialog.expectClosed()
     await expect(page.getByText("Restaurant created", { exact: true })).toBeVisible()
@@ -119,6 +118,7 @@ test.describe("Restaurant CRUD", () => {
     await expect(page).toHaveURL(/\/dashboard\/restaurants\/[a-f0-9-]+/)
     await page.waitForSelector("text=Social & Order Links", { timeout: 10000 })
     await expect(page.getByText("Social & Order Links")).toBeVisible()
+    await expect(page.getByText("Uber Eats", { exact: true })).toBeVisible()
   })
 
   test("should show no links message when social fields are empty", async ({ page }) => {
@@ -142,10 +142,9 @@ test.describe("Restaurant CRUD", () => {
     await page.waitForSelector("text=No links configured", { timeout: 10000 })
   })
 
-  test("should create restaurant with alternate order URL", async ({ page }) => {
+  test("should create restaurant with both ordering platforms", async ({ page }) => {
     const uniqueId = Date.now().toString(36)
     const name = `E2E OrderAlt ${uniqueId}`
-    const orderAltUrl = "https://pickme.lk/test"
 
     await listPage.clickNewRestaurant()
     const dialog = new RestaurantDialog(page)
@@ -153,8 +152,8 @@ test.describe("Restaurant CRUD", () => {
     await dialog.fillName(name)
     await dialog.fillSlug(`e2e-orderalt-${uniqueId}`)
     await dialog.fillAddress("789 Order St")
-    await dialog.fillOrder("https://ubereats.com/test")
-    await dialog.fillOrderAlt(orderAltUrl)
+    await dialog.selectUberEats()
+    await dialog.selectPickMe()
     await dialog.clickSubmit()
     await dialog.expectClosed()
     await expect(page.getByText("Restaurant created", { exact: true })).toBeVisible()

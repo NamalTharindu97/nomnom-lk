@@ -92,7 +92,7 @@ export default function OfferDialog({ open, onClose, onSaved, offer }: OfferDial
   })
 
   useEffect(() => {
-    api.get<{ data: RestaurantOption[] }>("/dashboard/restaurants").then((res) => {
+    api.get<{ data: RestaurantOption[] }>("/dashboard/restaurants?per_page=100").then((res) => {
       setRestaurants(res.data || [])
     }).catch(() => {})
   }, [])

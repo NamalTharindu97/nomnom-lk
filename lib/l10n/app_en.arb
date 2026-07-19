@@ -76,6 +76,7 @@
   "offerNotFound": "Offer not found",
   "offerNotFoundSubtitle": "This daily deal may have expired",
   "offerRestaurantLabel": "Restaurant",
+  "offerDetailsLabel": "Details",
   "offerDiscountLabel": "Discount",
   "offerDealPriceLabel": "Today's price",
   "offerSaveAmount": "Save {amount}",
@@ -186,5 +187,8 @@
   "offerOrderPickMe": "Order via PickMe",
   "offerEndsIn": "Ends in {days} days",
   "@offerEndsIn": {"placeholders": {"days": {"type": "String"}}},
-  "offerEndsToday": "Ends today"
+  "offerEndsToday": "Ends today",
+  "offerNoAppFound": "No compatible app found",
+  "editProfileCamera": "Camera",
+  "editProfileGallery": "Gallery"
 }
