@@ -45,3 +45,6 @@ build/
 .playwright-mcp/
 backend/main
 devtools_options.yaml
+
+# Obsidian (personal settings)
+.obsidian/
