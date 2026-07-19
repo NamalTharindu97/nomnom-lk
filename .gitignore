@@ -48,3 +48,6 @@ devtools_options.yaml
 
 # Obsidian (personal settings)
 .obsidian/
+
+# OpenCode config (contains MCP tokens)
+opencode.json
