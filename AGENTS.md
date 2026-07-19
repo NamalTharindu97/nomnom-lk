@@ -1,8 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** P38 complete — banner lifecycle overhaul, order platforms migration, owner dashboard metrics, Flutter UX polish. Release prep phases 1-6 done (signing config, assets, API endpoint, placeholders, splash screen). Backend `go build ./...` ✓, Admin `next build` ✓, Flutter 20/20 ✓, Admin 53/53 E2E ✓.
-- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish.
+- **Current:** P38 complete + release prep phases 1-6 done. Obsidian knowledge base configured. Backend `go build ./...` ✓, Admin `next build` ✓, Flutter 20/20 ✓, Admin 53/53 E2E ✓.
+- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -105,7 +105,23 @@
 - `lib/main.dart` — `_FcmInitializer` + `_SseListener` widgets
 - `lib/core/` — api_config, app_routes
 
+## Deployment Strategy
+- **Phased approach:** Backend first → Admin dashboard → Flutter app → CI/CD enhancement
+- **Backend on Render:** Deploy backend API to Render free tier first, validate infrastructure
+- **Admin dashboard:** Connect after backend is stable (week 2)
+- **Flutter app:** Point to production API, build release AAB (week 3)
+- **CI/CD enhancement:** Add deploy.yml workflow, Render deploy hooks, smoke tests (ongoing)
+- **See:** `plans/p38-render-deploy.md` for full phased deployment plan
+- **See:** `plans/ci-cd-enhancement.md` for pipeline upgrades
+
 ## Recent Work
+- **2026-07-19:** Deployment planning — updated for phased Render deployment.
+  - Updated `plans/p38-render-deploy.md` with phased approach (backend first)
+  - Updated `plans/p43-release-plan.md` to reflect new order (Render deploy → Android signing)
+  - Created `plans/ci-cd-enhancement.md` for pipeline upgrades
+  - Backend code changes needed: R2 production config (Secure: true), auto-seed on first boot
+  - Manual steps: Cloudflare R2 bucket, Render Blueprint setup, Firebase credentials
+  - CI/CD: deploy.yml workflow triggers on master push, health check verification
 - **2026-07-15:** P37 (Admin dashboard fixes — 11 issues) — completed, committing to `phase/P37-admin-fixes`.
   - **Backend:**
     - `offer_handler.go:277` — Added `restaurant_name` flat field to public offer endpoint
