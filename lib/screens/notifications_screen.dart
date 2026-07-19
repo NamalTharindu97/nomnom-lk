@@ -142,7 +142,7 @@ class _NotificationTile extends StatelessWidget {
               : context.colors.surface.withValues(alpha: 0.5),
           border: Border(
             bottom: BorderSide(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: context.colors.surfaceAlt,
             ),
           ),
         ),

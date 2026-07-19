@@ -153,12 +153,10 @@ export default function OffersPage() {
             <p className="text-muted-foreground">{isOwner ? "Manage your offers" : "Manage food offers"}</p>
           </div>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Button variant="outline" onClick={() => csvExport("offers", ["Title", "Restaurant", "Original Price", "Offer Price", "Status", "End Date"], offers.map(o => [o.title, o.restaurant?.name || "", String(o.original_price), String(o.offer_price), o.status, o.end_date ? new Date(o.end_date).toLocaleDateString() : ""]))} disabled={offers.length === 0}>
-                <Download className="mr-2 size-4" />
-                Export CSV
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => csvExport("offers", ["Title", "Restaurant", "Original Price", "Offer Price", "Status", "End Date"], offers.map(o => [o.title, o.restaurant?.name || "", String(o.original_price), String(o.offer_price), o.status, o.end_date ? new Date(o.end_date).toLocaleDateString() : ""]))} disabled={offers.length === 0}>
+              <Download className="mr-2 size-4" />
+              Export CSV
+            </Button>
             <Button onClick={() => { setEditing(null); setShowDialog(true) }}>
               <Plus className="mr-2 size-4" />
               New Offer
@@ -180,18 +178,16 @@ export default function OffersPage() {
                     className="w-48 pl-8"
                   />
                 </div>
-                {isAdmin && (
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((s) => (
-                        <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             {isAdmin && selected.size > 0 && (
@@ -211,12 +207,14 @@ export default function OffersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={!loading && offers.length > 0 && selected.size === offers.length}
-                      onCheckedChange={() => toggleAll(offers.map((o) => o.id))}
-                    />
-                  </TableHead>
+                  {isAdmin && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={!loading && offers.length > 0 && selected.size === offers.length}
+                        onCheckedChange={() => toggleAll(offers.map((o) => o.id))}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Title</TableHead>
                   <TableHead>Restaurant</TableHead>
                   <TableHead>Price</TableHead>
@@ -227,7 +225,7 @@ export default function OffersPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableSkeleton columns={7} />
+                  <TableSkeleton columns={isAdmin ? 7 : 6} />
                 ) : offers.length === 0 ? (
                   <EmptyState
                     icon={<Tag className="size-10 text-muted-foreground/50" />}
@@ -245,12 +243,14 @@ export default function OffersPage() {
                 ) : (
                   offers.map((o) => (
                     <TableRow key={o.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selected.has(o.id)}
-                          onCheckedChange={() => toggle(o.id)}
-                        />
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(o.id)}
+                            onCheckedChange={() => toggle(o.id)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">{o.title}</TableCell>
                       <TableCell>{o.restaurant?.name}</TableCell>
                       <TableCell>

@@ -64,7 +64,8 @@ class MockRestaurantStore implements RestaurantStore {
   List<Restaurant>? getRestaurantsByPage(int page) => null;
 
   @override
-  Future<void> saveRestaurantsByPage(int page, List<Restaurant> restaurants) async {}
+  Future<void> saveRestaurantsByPage(
+      int page, List<Restaurant> restaurants) async {}
 
   @override
   Future<void> clear() async {}
@@ -117,12 +118,14 @@ class MockApiOfferService implements ApiOfferService {
   List<Offer> _results;
 
   @override
-  Future<PaginatedResponse<Offer>> fetchOffers({String? query, int page = 1}) async {
+  Future<PaginatedResponse<Offer>> fetchOffers(
+      {String? query, int page = 1}) async {
     return PaginatedResponse(
       data: query != null && query.isNotEmpty
-          ? offers.where((o) =>
-              o.title.toLowerCase().contains(query.toLowerCase()) ||
-              o.restaurantName.toLowerCase().contains(query.toLowerCase()))
+          ? offers
+              .where((o) =>
+                  o.title.toLowerCase().contains(query.toLowerCase()) ||
+                  o.restaurantName.toLowerCase().contains(query.toLowerCase()))
               .toList()
           : offers,
       page: page,
@@ -152,8 +155,9 @@ class MockApiOfferService implements ApiOfferService {
     double? lng,
     double? radiusKm,
   }) async {
-    _results = offers.where((o) =>
-      o.title.toLowerCase().contains(query.toLowerCase())).toList();
+    _results = offers
+        .where((o) => o.title.toLowerCase().contains(query.toLowerCase()))
+        .toList();
     return PaginatedResponse(
       data: _results,
       page: page,
@@ -183,7 +187,8 @@ class MockApiRestaurantService implements ApiRestaurantService {
   MockApiRestaurantService({this.restaurants = const []});
 
   @override
-  Future<PaginatedResponse<Restaurant>> fetchRestaurants({String? query, int page = 1}) async {
+  Future<PaginatedResponse<Restaurant>> fetchRestaurants(
+      {String? query, int page = 1}) async {
     return PaginatedResponse(
       data: restaurants,
       page: page,
@@ -200,8 +205,18 @@ class MockApiRestaurantService implements ApiRestaurantService {
 }
 
 class MockApiBannerService implements ApiBannerService {
+  MockApiBannerService({List<FeaturedBanner>? banners})
+      : banners = banners ?? <FeaturedBanner>[];
+
+  List<FeaturedBanner> banners;
+  bool lastForceRefresh = false;
+
   @override
-  Future<List<FeaturedBanner>> fetchActiveBanners() async => [];
+  Future<List<FeaturedBanner>> fetchActiveBanners(
+      {bool forceRefresh = false}) async {
+    lastForceRefresh = forceRefresh;
+    return List<FeaturedBanner>.from(banners);
+  }
 
   @override
   Future<void> trackClick(String bannerId) async {}

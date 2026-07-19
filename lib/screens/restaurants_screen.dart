@@ -114,7 +114,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                       return EmptyState(
                         icon: Icons.storefront_outlined,
                         title: AppLocalizations.of(context)!.restaurantsEmpty,
-                        message: AppLocalizations.of(context)!.restaurantsFailedToLoad,
+                        message: AppLocalizations.of(context)!.searchEmptySubtitle,
                       );
                     }
 

@@ -24,8 +24,7 @@ class Offer {
     this.instagramUrl,
     this.facebookUrl,
     this.websiteUrl,
-    this.orderUrl,
-    this.orderUrlAlt,
+    this.orderPlatforms = const [],
   });
 
   final String id;
@@ -49,8 +48,7 @@ class Offer {
   final String? instagramUrl;
   final String? facebookUrl;
   final String? websiteUrl;
-  final String? orderUrl;
-  final String? orderUrlAlt;
+  final List<String> orderPlatforms;
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
   double get saving => originalPrice - offerPrice;
@@ -107,8 +105,7 @@ class Offer {
       instagramUrl: (json['restaurant'] as Map<String, dynamic>?)?['instagram_url'] as String?,
       facebookUrl: (json['restaurant'] as Map<String, dynamic>?)?['facebook_url'] as String?,
       websiteUrl: (json['restaurant'] as Map<String, dynamic>?)?['website_url'] as String?,
-      orderUrl: (json['restaurant'] as Map<String, dynamic>?)?['order_url'] as String?,
-      orderUrlAlt: (json['restaurant'] as Map<String, dynamic>?)?['order_url_alt'] as String?,
+      orderPlatforms: (json['restaurant'] as Map<String, dynamic>?)?['order_platforms']?.cast<String>() ?? [],
     );
   }
 
@@ -136,8 +133,7 @@ class Offer {
         'instagram_url': instagramUrl,
         'facebook_url': facebookUrl,
         'website_url': websiteUrl,
-        'order_url': orderUrl,
-        'order_url_alt': orderUrlAlt,
+        'order_platforms': orderPlatforms,
       },
     };
   }
@@ -164,8 +160,7 @@ class Offer {
     String? instagramUrl,
     String? facebookUrl,
     String? websiteUrl,
-    String? orderUrl,
-    String? orderUrlAlt,
+    List<String>? orderPlatforms,
   }) {
     return Offer(
       id: id ?? this.id,
@@ -189,8 +184,7 @@ class Offer {
       instagramUrl: instagramUrl ?? this.instagramUrl,
       facebookUrl: facebookUrl ?? this.facebookUrl,
       websiteUrl: websiteUrl ?? this.websiteUrl,
-      orderUrl: orderUrl ?? this.orderUrl,
-      orderUrlAlt: orderUrlAlt ?? this.orderUrlAlt,
+      orderPlatforms: orderPlatforms ?? this.orderPlatforms,
     );
   }
 }

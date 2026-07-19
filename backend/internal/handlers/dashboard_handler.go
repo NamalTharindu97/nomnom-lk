@@ -231,8 +231,9 @@ func (h *DashboardHandler) CreateOffer(c *gin.Context) {
 	}
 
 	ownerID, _ := middleware.GetOwnerScopeID(c)
+	createdBy, _ := middleware.GetUserID(c)
 
-	offer, err := h.dashboardService.CreateOffer(&req, ownerID)
+	offer, err := h.dashboardService.CreateOffer(&req, ownerID, createdBy)
 	if err != nil {
 		response.InternalError(c, err.Error())
 		return
@@ -329,21 +330,20 @@ func (h *DashboardHandler) DeleteOffer(c *gin.Context) {
 func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 	m := gin.H{
-		"id":           r.ID,
-		"name":         r.Name,
-		"slug":         r.Slug,
-		"address":      r.Address,
-		"description":  r.Description,
-		"contact_phone": r.ContactPhone,
-		"cuisine_tags": r.CuisineTags,
-		"cover_image":   r.CoverImage,
-		"instagram_url": r.InstagramURL,
-		"facebook_url":  r.FacebookURL,
-		"website_url":   r.WebsiteURL,
-		"order_url":     r.OrderURL,
-		"order_url_alt": r.OrderURLAlt,
-		"owner_id":      r.OwnerID,
-		"status":        r.Status,
+		"id":              r.ID,
+		"name":            r.Name,
+		"slug":            r.Slug,
+		"address":         r.Address,
+		"description":     r.Description,
+		"contact_phone":   r.ContactPhone,
+		"cuisine_tags":    r.CuisineTags,
+		"cover_image":     r.CoverImage,
+		"instagram_url":   r.InstagramURL,
+		"facebook_url":    r.FacebookURL,
+		"website_url":     r.WebsiteURL,
+		"order_platforms": r.OrderPlatforms,
+		"owner_id":        r.OwnerID,
+		"status":          r.Status,
 	}
 
 	if r.Translations != nil {
@@ -360,24 +360,23 @@ func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context) gin.H {
 func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 	m := gin.H{
-		"id":            r.ID,
-		"name":          r.Name,
-		"slug":          r.Slug,
-		"description":   r.Description,
-		"address":       r.Address,
-		"latitude":      r.Latitude,
-		"longitude":     r.Longitude,
-		"contact_phone": r.ContactPhone,
-		"cuisine_tags":  r.CuisineTags,
-		"cover_image":   r.CoverImage,
-		"instagram_url": r.InstagramURL,
-		"facebook_url":  r.FacebookURL,
-		"website_url":   r.WebsiteURL,
-		"order_url":     r.OrderURL,
-		"order_url_alt": r.OrderURLAlt,
-		"owner_id":      r.OwnerID,
-		"status":        r.Status,
-		"created_at":    r.CreatedAt,
+		"id":              r.ID,
+		"name":            r.Name,
+		"slug":            r.Slug,
+		"description":     r.Description,
+		"address":         r.Address,
+		"latitude":        r.Latitude,
+		"longitude":       r.Longitude,
+		"contact_phone":   r.ContactPhone,
+		"cuisine_tags":    r.CuisineTags,
+		"cover_image":     r.CoverImage,
+		"instagram_url":   r.InstagramURL,
+		"facebook_url":    r.FacebookURL,
+		"website_url":     r.WebsiteURL,
+		"order_platforms": r.OrderPlatforms,
+		"owner_id":        r.OwnerID,
+		"status":          r.Status,
+		"created_at":      r.CreatedAt,
 	}
 
 	if r.Translations != nil {
@@ -398,15 +397,19 @@ func dashboardOfferToMap(o *models.Offer, c *gin.Context) gin.H {
 		restaurant["instagram_url"] = o.Restaurant.InstagramURL
 		restaurant["facebook_url"] = o.Restaurant.FacebookURL
 		restaurant["website_url"] = o.Restaurant.WebsiteURL
-		restaurant["order_url"] = o.Restaurant.OrderURL
-		restaurant["order_url_alt"] = o.Restaurant.OrderURLAlt
+		restaurant["order_platforms"] = o.Restaurant.OrderPlatforms
 	}
 
 	m := gin.H{
-		"id":               o.ID,
-		"restaurant":       restaurant,
-		"restaurant_id":    o.RestaurantID,
-		"restaurant_name":  func() string { if o.Restaurant != nil { return o.Restaurant.Name }; return "" }(),
+		"id":            o.ID,
+		"restaurant":    restaurant,
+		"restaurant_id": o.RestaurantID,
+		"restaurant_name": func() string {
+			if o.Restaurant != nil {
+				return o.Restaurant.Name
+			}
+			return ""
+		}(),
 		"title":            o.Title,
 		"description":      o.Description,
 		"original_price":   o.OriginalPrice,

@@ -6,6 +6,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
+import '../providers/banner_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/app_logo.dart';
@@ -28,7 +29,12 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: context.read<OfferProvider>().refreshOffers,
+        onRefresh: () async {
+          await Future.wait([
+            context.read<OfferProvider>().refreshOffers(),
+            context.read<BannerProvider>().refreshBanners(),
+          ]);
+        },
         color: context.colors.background,
         backgroundColor: AppColors.curry,
         child: NotificationListener<ScrollNotification>(
@@ -121,24 +127,24 @@ class _HomeBody extends StatelessWidget {
           );
         }
 
-            return SliverList.builder(
-              itemCount: offers.length + (state.isLoadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index >= offers.length) {
-                  return Padding(
-                    padding: Spacings.padAll,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2.4),
-                    ),
-                  );
-                }
-                return StaggerItem(
-                  key: ValueKey(offers[index].id),
-                  index: index,
-                  child: OfferCard(offer: offers[index]),
-                );
-              },
+        return SliverList.builder(
+          itemCount: offers.length + (state.isLoadingMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= offers.length) {
+              return Padding(
+                padding: Spacings.padAll,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                ),
+              );
+            }
+            return StaggerItem(
+              key: ValueKey(offers[index].id),
+              index: index,
+              child: OfferCard(offer: offers[index]),
             );
+          },
+        );
       },
     );
   }
@@ -167,7 +173,8 @@ class _BodyState {
           listEquals(offers, other.offers);
 
   @override
-  int get hashCode => Object.hash(error, isLoading, isLoadingMore, Object.hashAll(offers));
+  int get hashCode =>
+      Object.hash(error, isLoading, isLoadingMore, Object.hashAll(offers));
 }
 
 class _CuisineState {
@@ -206,7 +213,8 @@ class _HomeHeader extends StatelessWidget {
                 const AppLogo(compact: true),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: Spacings.xs, vertical: Spacings.xs),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Spacings.xs, vertical: Spacings.xs),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(8),
@@ -232,7 +240,8 @@ class _HomeHeader extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               t.homeBestDealsSubtitle,
-              style: textTheme.bodyMedium?.copyWith(color: context.colors.muted),
+              style:
+                  textTheme.bodyMedium?.copyWith(color: context.colors.muted),
             ),
             const SizedBox(height: 12),
             InkWell(
@@ -240,15 +249,19 @@ class _HomeHeader extends StatelessWidget {
               onTap: onSearchTap,
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2, vertical: Spacings.sm + 2),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Spacings.sm + 2, vertical: Spacings.sm + 2),
                 decoration: BoxDecoration(
                   color: context.colors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
+                  border: Border.all(
+                      color:
+                          context.colors.textPrimary.withValues(alpha: 0.08)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search_rounded, color: AppColors.muted, size: 18),
+                    Icon(Icons.search_rounded,
+                        color: context.colors.muted, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -259,7 +272,8 @@ class _HomeHeader extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_rounded, color: AppColors.curry, size: 18),
+                    const Icon(Icons.arrow_forward_rounded,
+                        color: AppColors.curry, size: 18),
                   ],
                 ),
               ),
@@ -279,7 +293,8 @@ class _AllOffersHeader extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.xs, Spacings.md, 0),
+      padding:
+          const EdgeInsets.fromLTRB(Spacings.md, Spacings.xs, Spacings.md, 0),
       child: Row(
         children: [
           Text(
@@ -347,12 +362,14 @@ class _HotOffersSection extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                left: Spacings.md, bottom: Spacings.sm, right: Spacings.md,
+                left: Spacings.md,
+                bottom: Spacings.sm,
+                right: Spacings.md,
               ),
               child: Row(
                 children: [
                   Icon(Icons.local_fire_department_rounded,
-                    color: AppColors.chili, size: 18),
+                      color: AppColors.chili, size: 18),
                   const SizedBox(width: 6),
                   Text(
                     AppLocalizations.of(context)!.homeHotOffers,
@@ -397,18 +414,19 @@ class _HotOffersSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: Spacings.md, bottom: Spacings.sm),
+          padding:
+              const EdgeInsets.only(left: Spacings.md, bottom: Spacings.sm),
           child: Row(
             children: [
               Icon(Icons.local_fire_department_rounded,
-                color: AppColors.chili, size: 18),
+                  color: AppColors.chili, size: 18),
               const SizedBox(width: 6),
               Text(
                 AppLocalizations.of(context)!.homeHotOffers,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: context.colors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                ),
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
               ),
             ],
           ),
@@ -434,8 +452,7 @@ class _HotOffersSection extends StatelessWidget {
   double _cardWidth(BuildContext context) =>
       MediaQuery.of(context).size.width * _cardScale;
 
-  double _cardHeight(BuildContext context) =>
-      _cardWidth(context) * _cardAspect;
+  double _cardHeight(BuildContext context) => _cardWidth(context) * _cardAspect;
 
   int _endPad(int count) => count > 1 ? 1 : 0;
 }
@@ -473,7 +490,10 @@ class _CuisineFilterChips extends StatelessWidget {
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(
-            Spacings.md, Spacings.sm, Spacings.md, Spacings.sm,
+            Spacings.md,
+            Spacings.sm,
+            Spacings.md,
+            Spacings.sm,
           ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -482,7 +502,8 @@ class _CuisineFilterChips extends StatelessWidget {
                 _FilterChip(
                   label: AppLocalizations.of(context)!.allLabel,
                   isSelected: state.selected == null,
-                  onTap: () => context.read<OfferProvider>().clearCuisineFilter(),
+                  onTap: () =>
+                      context.read<OfferProvider>().clearCuisineFilter(),
                 ),
                 ...state.tags.map(
                   (tag) => Padding(
@@ -519,7 +540,8 @@ class _FilterChip extends StatefulWidget {
   State<_FilterChip> createState() => _FilterChipState();
 }
 
-class _FilterChipState extends State<_FilterChip> with SingleTickerProviderStateMixin {
+class _FilterChipState extends State<_FilterChip>
+    with SingleTickerProviderStateMixin {
   double _scale = 1.0;
 
   @override
@@ -536,18 +558,23 @@ class _FilterChipState extends State<_FilterChip> with SingleTickerProviderState
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2, vertical: Spacings.xs),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacings.sm + 2, vertical: Spacings.xs),
           decoration: BoxDecoration(
-            color: widget.isSelected ? AppColors.curry : context.colors.surfaceAlt,
+            color:
+                widget.isSelected ? AppColors.curry : context.colors.surfaceAlt,
             borderRadius: BorderRadius.circular(20),
             border: widget.isSelected
                 ? null
-                : Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
+                : Border.all(
+                    color: context.colors.textPrimary.withValues(alpha: 0.08)),
           ),
           child: Text(
             widget.label,
             style: textTheme.labelMedium?.copyWith(
-              color: widget.isSelected ? context.colors.background : context.colors.textSecondary,
+              color: widget.isSelected
+                  ? context.colors.background
+                  : context.colors.textSecondary,
               fontWeight: FontWeight.w700,
             ),
           ),

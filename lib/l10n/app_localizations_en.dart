@@ -229,6 +229,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offerRestaurantLabel => 'Restaurant';
 
   @override
+  String get offerDetailsLabel => 'Details';
+
+  @override
   String get offerDiscountLabel => 'Discount';
 
   @override
@@ -552,4 +555,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offerEndsToday => 'Ends today';
+
+  @override
+  String get offerNoAppFound => 'No compatible app found';
+
+  @override
+  String get editProfileCamera => 'Camera';
+
+  @override
+  String get editProfileGallery => 'Gallery';
 }

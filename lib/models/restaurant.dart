@@ -15,8 +15,7 @@ class Restaurant {
     this.instagramUrl,
     this.facebookUrl,
     this.websiteUrl,
-    this.orderUrl,
-    this.orderUrlAlt,
+    this.orderPlatforms = const [],
   });
 
   final String id;
@@ -31,8 +30,7 @@ class Restaurant {
   final String? instagramUrl;
   final String? facebookUrl;
   final String? websiteUrl;
-  final String? orderUrl;
-  final String? orderUrlAlt;
+  final List<String> orderPlatforms;
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     return Restaurant(
@@ -49,8 +47,7 @@ class Restaurant {
       instagramUrl: json['instagram_url'] as String?,
       facebookUrl: json['facebook_url'] as String?,
       websiteUrl: json['website_url'] as String?,
-      orderUrl: json['order_url'] as String?,
-      orderUrlAlt: json['order_url_alt'] as String?,
+      orderPlatforms: (json['order_platforms'] as List?)?.cast<String>() ?? [],
     );
   }
 
@@ -68,8 +65,7 @@ class Restaurant {
       'instagram_url': instagramUrl,
       'facebook_url': facebookUrl,
       'website_url': websiteUrl,
-      'order_url': orderUrl,
-      'order_url_alt': orderUrlAlt,
+      'order_platforms': orderPlatforms,
     };
   }
 
@@ -86,8 +82,7 @@ class Restaurant {
     String? instagramUrl,
     String? facebookUrl,
     String? websiteUrl,
-    String? orderUrl,
-    String? orderUrlAlt,
+    List<String>? orderPlatforms,
   }) {
     return Restaurant(
       id: id ?? this.id,
@@ -102,8 +97,7 @@ class Restaurant {
       instagramUrl: instagramUrl ?? this.instagramUrl,
       facebookUrl: facebookUrl ?? this.facebookUrl,
       websiteUrl: websiteUrl ?? this.websiteUrl,
-      orderUrl: orderUrl ?? this.orderUrl,
-      orderUrlAlt: orderUrlAlt ?? this.orderUrlAlt,
+      orderPlatforms: orderPlatforms ?? this.orderPlatforms,
     );
   }
 }

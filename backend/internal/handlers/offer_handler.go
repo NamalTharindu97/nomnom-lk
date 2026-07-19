@@ -218,8 +218,10 @@ func (h *OfferHandler) Reject(c *gin.Context) {
 		response.InternalError(c, err.Error())
 		return
 	}
+	_ = h.bannerRepo.DeactivateByOfferID(id)
 
 	h.sseService.Emit("offer.rejected", gin.H{"id": offer.ID})
+	h.sseService.Emit("banner.updated", gin.H{"offer_id": offer.ID})
 
 	if userID, ok := middleware.GetUserID(c); ok {
 		userName, _ := middleware.GetUserName(c)
@@ -245,8 +247,10 @@ func (h *OfferHandler) Expire(c *gin.Context) {
 		response.InternalError(c, err.Error())
 		return
 	}
+	_ = h.bannerRepo.DeactivateByOfferID(id)
 
 	h.sseService.Emit("offer.expired", gin.H{"id": id})
+	h.sseService.Emit("banner.updated", gin.H{"offer_id": id})
 
 	if userID, ok := middleware.GetUserID(c); ok {
 		userName, _ := middleware.GetUserName(c)
@@ -261,18 +265,17 @@ func (h *OfferHandler) Expire(c *gin.Context) {
 func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 	m := gin.H{
-		"id": o.ID,
+		"id":              o.ID,
 		"restaurant_name": o.Restaurant.Name,
 		"restaurant": gin.H{
-			"id":             o.RestaurantID,
-			"name":           o.Restaurant.Name,
-			"slug":           o.Restaurant.Slug,
-			"address":        o.Restaurant.Address,
-			"instagram_url":  o.Restaurant.InstagramURL,
-			"facebook_url":   o.Restaurant.FacebookURL,
-			"website_url":    o.Restaurant.WebsiteURL,
-			"order_url":      o.Restaurant.OrderURL,
-			"order_url_alt":  o.Restaurant.OrderURLAlt,
+			"id":              o.RestaurantID,
+			"name":            o.Restaurant.Name,
+			"slug":            o.Restaurant.Slug,
+			"address":         o.Restaurant.Address,
+			"instagram_url":   o.Restaurant.InstagramURL,
+			"facebook_url":    o.Restaurant.FacebookURL,
+			"website_url":     o.Restaurant.WebsiteURL,
+			"order_platforms": o.Restaurant.OrderPlatforms,
 		},
 		"restaurant_id":    o.RestaurantID,
 		"title":            o.Title,

@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+const adminOnlyPaths = [
+  "/dashboard/users",
+  "/dashboard/owners",
+  "/dashboard/notifications",
+  "/dashboard/notification-templates",
+  "/dashboard/coupons",
+  "/dashboard/categories",
+  "/dashboard/audit-log",
+]
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -26,6 +36,9 @@ export function proxy(request: NextRequest) {
     if (user.role !== "admin" && user.role !== "restaurant_owner") {
       const loginUrl = new URL("/login?error=forbidden", request.url)
       return NextResponse.redirect(loginUrl)
+    }
+    if (user.role !== "admin" && adminOnlyPaths.some((path) => pathname.startsWith(path))) {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
     }
   } catch {
     const loginUrl = new URL("/login", request.url)

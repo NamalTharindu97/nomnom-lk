@@ -27,7 +27,7 @@ class OfferCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.md),
       child: Material(
         color: context.colors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => Navigator.of(context).pushNamed(
@@ -90,6 +90,8 @@ class OfferCard extends StatelessWidget {
                     const SizedBox(height: Spacings.xs),
                     Text(
                       offer.restaurantName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: textTheme.bodyMedium?.copyWith(
                         color: context.colors.textSecondary,
                         fontWeight: FontWeight.w700,

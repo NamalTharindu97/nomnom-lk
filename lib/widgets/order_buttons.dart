@@ -1,136 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../utils/order_link_parser.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
+import '../core/theme/app_colors.dart';
+import '../utils/spacings.dart';
 
-class OrderButtonsSection extends StatefulWidget {
-  final String? orderUrl;
-  final String? orderUrlAlt;
+enum OrderPlatform {
+  uberEats,
+  pickMe,
+}
+
+OrderPlatform? parsePlatform(String value) {
+  return switch (value) {
+    'uber_eats' => OrderPlatform.uberEats,
+    'pickme' => OrderPlatform.pickMe,
+    _ => null,
+  };
+}
+
+Color _platformColor(OrderPlatform platform) {
+  return switch (platform) {
+    OrderPlatform.uberEats => const Color(0xFF06C167),
+    OrderPlatform.pickMe => const Color(0xFF00B14F),
+  };
+}
+
+IconData _platformIcon(OrderPlatform platform) {
+  return switch (platform) {
+    OrderPlatform.uberEats => Icons.delivery_dining_rounded,
+    OrderPlatform.pickMe => Icons.local_taxi_rounded,
+  };
+}
+
+String _platformUri(OrderPlatform platform) {
+  return switch (platform) {
+    OrderPlatform.uberEats => 'ubereats://',
+    OrderPlatform.pickMe => 'pickme://',
+  };
+}
+
+class OrderButtonsSection extends StatelessWidget {
+  final List<String> platforms;
 
   const OrderButtonsSection({
     super.key,
-    this.orderUrl,
-    this.orderUrlAlt,
+    required this.platforms,
   });
-
-  @override
-  State<OrderButtonsSection> createState() => _OrderButtonsSectionState();
-}
-
-class _OrderButtonsSectionState extends State<OrderButtonsSection>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final urls = <String>[];
-    if (widget.orderUrl != null) urls.add(widget.orderUrl!);
-    if (widget.orderUrlAlt != null) urls.add(widget.orderUrlAlt!);
+    final parsed = platforms
+        .map(parsePlatform)
+        .whereType<OrderPlatform>()
+        .toList();
 
-    if (urls.isEmpty) return const SizedBox.shrink();
-
-    final hasBoth = urls.length >= 2;
+    if (parsed.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          t.offerOrderNow,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-        ),
-        const SizedBox(height: 12),
-        if (hasBoth)
-          FadeTransition(
-            opacity: Tween<double>(begin: 0, end: 1).animate(
-              CurvedAnimation(
-                parent: _animation,
-                curve: const Interval(0, 0.4, curve: Curves.easeOut),
-              ),
-            ),
-            child: Row(
-              children: [
-                for (int i = 0; i < urls.length; i++)
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: i == 0 ? 0 : 6,
-                        right: i == urls.length - 1 ? 0 : 6,
-                      ),
-                      child: _OrderButton(url: urls[i], t: t),
+        Row(
+          children: [
+            Icon(Icons.shopping_cart_rounded, size: 18, color: AppColors.curry),
+            const SizedBox(width: Spacings.xs),
+            Text(
+              t.offerOrderNow,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                ),
-              ],
             ),
-          )
-        else
-          FadeTransition(
-            opacity: Tween<double>(begin: 0, end: 1).animate(
-              CurvedAnimation(
-                parent: _animation,
-                curve: const Interval(0, 0.4, curve: Curves.easeOut),
-              ),
-            ),
-            child: _OrderButton(url: urls.first, t: t),
-          ),
+          ],
+        ),
+        const SizedBox(height: Spacings.sm),
+        for (int i = 0; i < parsed.length; i++) ...[
+          if (i > 0) const SizedBox(height: Spacings.xs),
+          _PlatformButton(platform: parsed[i], t: t),
+        ],
       ],
     );
   }
 }
 
-class _OrderButton extends StatelessWidget {
-  final String url;
+class _PlatformButton extends StatelessWidget {
+  final OrderPlatform platform;
   final AppLocalizations t;
 
-  const _OrderButton({
-    required this.url,
+  const _PlatformButton({
+    required this.platform,
     required this.t,
   });
 
   @override
   Widget build(BuildContext context) {
-    final type = parseOrderLink(url);
-    final color = orderLinkBrandColor(type);
-    final label = switch (type) {
-      OrderLinkType.uberEats => t.offerOrderUberEats,
-      OrderLinkType.pickMe => t.offerOrderPickMe,
-      OrderLinkType.unknown => t.offerOrderVia,
+    final label = switch (platform) {
+      OrderPlatform.uberEats => t.offerOrderUberEats,
+      OrderPlatform.pickMe => t.offerOrderPickMe,
     };
+    final brandColor = _platformColor(platform);
 
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        icon: Icon(orderLinkIcon(type), size: 20),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: brandColor,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            final uri = Uri.parse(_platformUri(platform));
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            } else if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(t.offerNoAppFound)),
+              );
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(_platformIcon(platform), color: Colors.white, size: 22),
+                const SizedBox(width: Spacings.sm),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  size: 22,
+                ),
+              ],
+            ),
           ),
         ),
-        onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
       ),
     );
   }

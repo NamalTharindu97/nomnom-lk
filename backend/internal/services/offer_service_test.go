@@ -504,17 +504,16 @@ func TestOfferService_Create_ValidatesRestaurantSocialLinks(t *testing.T) {
 	ig := "https://instagram.com/test"
 	fb := "https://facebook.com/test"
 	web := "https://test.com"
-	order := "https://ubereats.com/test"
 
 	mockOffer := newMockOfferRepo()
 	mockRest := newMockRestaurantRepo()
 	mockRest.restaurants[restID] = &models.Restaurant{
-		ID:           restID,
-		Name:         "Test",
-		InstagramURL: &ig,
-		FacebookURL:  &fb,
-		WebsiteURL:   &web,
-		OrderURL:     &order,
+		ID:             restID,
+		Name:           "Test",
+		InstagramURL:   &ig,
+		FacebookURL:    &fb,
+		WebsiteURL:     &web,
+		OrderPlatforms: models.JSONStringSlice{"uber_eats"},
 	}
 
 	svc := NewOfferService(mockOffer, mockRest, nil)
@@ -539,28 +538,25 @@ func TestOfferService_Create_ValidatesRestaurantSocialLinks(t *testing.T) {
 	assert.Equal(t, ig, *restaurant.InstagramURL)
 	assert.Equal(t, fb, *restaurant.FacebookURL)
 	assert.Equal(t, web, *restaurant.WebsiteURL)
-	assert.Equal(t, order, *restaurant.OrderURL)
+	assert.Contains(t, restaurant.OrderPlatforms, "uber_eats")
 }
 
-func TestOfferService_Create_WithAlternateOrderUrl(t *testing.T) {
+func TestOfferService_Create_WithAlternateOrderPlatforms(t *testing.T) {
 	restID := uuid.New()
 	userID := uuid.New()
 	now := time.Now()
 
 	ig := "https://instagram.com/test"
 	fb := "https://facebook.com/test"
-	order := "https://ubereats.com/test"
-	orderAlt := "https://pickme.lk/test"
 
 	mockOffer := newMockOfferRepo()
 	mockRest := newMockRestaurantRepo()
 	mockRest.restaurants[restID] = &models.Restaurant{
-		ID:           restID,
-		Name:         "Test",
-		InstagramURL: &ig,
-		FacebookURL:  &fb,
-		OrderURL:     &order,
-		OrderURLAlt:  &orderAlt,
+		ID:             restID,
+		Name:           "Test",
+		InstagramURL:   &ig,
+		FacebookURL:    &fb,
+		OrderPlatforms: models.JSONStringSlice{"uber_eats", "pickme"},
 	}
 
 	svc := NewOfferService(mockOffer, mockRest, nil)
@@ -582,7 +578,8 @@ func TestOfferService_Create_WithAlternateOrderUrl(t *testing.T) {
 
 	restaurant := mockRest.restaurants[restID]
 	require.NotNil(t, restaurant)
-	assert.Equal(t, orderAlt, *restaurant.OrderURLAlt)
+	assert.Contains(t, restaurant.OrderPlatforms, "uber_eats")
+	assert.Contains(t, restaurant.OrderPlatforms, "pickme")
 }
 
 

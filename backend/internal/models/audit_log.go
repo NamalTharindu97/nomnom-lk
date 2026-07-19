@@ -12,7 +12,7 @@ type AuditLog struct {
 	AdminID    uuid.UUID `gorm:"type:uuid;not null;index" json:"admin_id"`
 	AdminName  string    `gorm:"size:255" json:"admin_name"`
 	AdminRole  string    `gorm:"size:20" json:"admin_role"`
-	Action     string    `gorm:"size:50;not null;index" json:"action"`
+	Action     string    `gorm:"size:255;not null;index" json:"action"`
 	EntityType string    `gorm:"size:50;not null;index" json:"entity_type"`
 	EntityID   string    `gorm:"size:255" json:"entity_id"`
 	Details    string    `gorm:"type:text" json:"details,omitempty"`

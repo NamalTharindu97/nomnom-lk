@@ -229,6 +229,9 @@ class AppLocalizationsSi extends AppLocalizations {
   String get offerRestaurantLabel => 'අවන්හල';
 
   @override
+  String get offerDetailsLabel => 'විස්තර';
+
+  @override
   String get offerDiscountLabel => 'වට්ටම්';
 
   @override
@@ -552,4 +555,13 @@ class AppLocalizationsSi extends AppLocalizations {
 
   @override
   String get offerEndsToday => 'අද අවසන් වේ';
+
+  @override
+  String get offerNoAppFound => 'සුසංගත යෙදුමක් හමු නොවීය';
+
+  @override
+  String get editProfileCamera => 'කැමරාව';
+
+  @override
+  String get editProfileGallery => 'ගැලරිය';
 }

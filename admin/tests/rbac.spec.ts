@@ -32,14 +32,14 @@ test.describe("RBAC", () => {
       await loginAs(page, "admin@nomnom.lk", "Admin@123")
     })
 
-    test("should see all 11 nav items", async ({ page }) => {
+    test("should see all 12 nav items", async ({ page }) => {
       await page.goto("/dashboard")
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible()
 
       const labels = [
         "Dashboard", "Restaurants", "Offers", "Users", "Owners",
         "Push Notifications", "Templates", "Coupons", "Categories",
-        "Audit Log", "Settings",
+        "Banners", "Audit Log", "Settings",
       ]
       for (const label of labels) {
         await expect(page.locator("nav a", { hasText: label })).toBeVisible()
@@ -69,24 +69,31 @@ test.describe("RBAC", () => {
     })
 
     test("should see 5 nav items", async ({ page }) => {
-      const ownerLabels = ["Dashboard", "My Restaurants", "My Offers", "Notifications", "Settings"]
+      const ownerLabels = ["Dashboard", "My Restaurants", "My Offers", "My Banners", "Settings"]
       for (const label of ownerLabels) {
         await expect(page.locator("nav a", { hasText: label })).toBeVisible()
       }
 
-      const hidden = ["Users", "Owners", "Templates", "Coupons", "Categories", "Audit Log"]
-      await expect(page.locator("nav a", { hasText: "Users" })).not.toBeVisible()
-      await expect(page.locator("nav a", { hasText: "Owners" })).not.toBeVisible()
-      await expect(page.locator("nav a", { hasText: "Templates" })).not.toBeVisible()
-      await expect(page.locator("nav a", { hasText: "Coupons" })).not.toBeVisible()
-      await expect(page.locator("nav a", { hasText: "Categories" })).not.toBeVisible()
-      await expect(page.locator("nav a", { hasText: "Audit Log" })).not.toBeVisible()
+      const hidden = ["Users", "Owners", "Push Notifications", "Notifications", "Templates", "Coupons", "Categories", "Audit Log"]
+      for (const label of hidden) {
+        await expect(page.locator("nav a", { hasText: label })).not.toBeVisible()
+      }
+    })
+
+    test("should see owner-scoped usage dashboard", async ({ page }) => {
+      for (const label of ["My Restaurants", "My Offers", "Offer Views", "Favorites", "My Banners", "Banner Clicks"]) {
+        await expect(page.getByText(label, { exact: true }).first()).toBeVisible()
+      }
+      await expect(page.getByText("My Offers by Status")).toBeVisible()
+      await expect(page.getByText("Top Offer Usage")).toBeVisible()
+      await expect(page.getByText("Business Usage")).toBeVisible()
     })
 
     test("should be redirected from admin-only paths", async ({ page }) => {
       const adminOnlyPaths = [
         "/dashboard/users",
         "/dashboard/owners",
+        "/dashboard/notifications",
         "/dashboard/audit-log",
         "/dashboard/coupons",
         "/dashboard/categories",

@@ -1,8 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** P37 complete — admin dashboard fixes (11 issues: catch blocks, carrier fields, filter gaps). Backend `go build ./...` ✓, Admin `next build` ✓, tests ✓.
-- **Completed: All prior milestones** — 48 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, dual order URLs.
+- **Current:** P38 complete — banner lifecycle overhaul, order platforms migration, owner dashboard metrics, Flutter UX polish. Release prep phases 1-6 done (signing config, assets, API endpoint, placeholders, splash screen). Backend `go build ./...` ✓, Admin `next build` ✓, Flutter 20/20 ✓, Admin 53/53 E2E ✓.
+- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish.
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -17,7 +17,7 @@
 - **Build tags:** `//go:build seed` and `//go:build migration` on script files to avoid `main()` conflict in `go build ./...`.
 - **Flutter rebuild required:** After every Flutter code change, rebuild and re-run the app.
 - **Air for Go hot reload:** Backend uses `air`; admin uses next dev HMR; Flutter runs in debug mode.
-- **Not yet:** Flutter localization, full offline support.
+- **Not yet:** Full offline support.
 - **Preserve existing code structure:** When adding functionality, do NOT restructure existing code. Add new features alongside existing code, not by replacing or rewriting it. For example, fix scroll issues by adding a wrapper div or CSS class — don't restructure the dialog layout or convert divs to forms.
 
 ## Key Decisions

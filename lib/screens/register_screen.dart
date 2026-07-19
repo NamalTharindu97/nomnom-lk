@@ -121,11 +121,11 @@ class _RegisterScreenState extends State<RegisterScreen>
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+            gradient: LinearGradient(
             colors: [
               context.colors.background,
               context.colors.backgroundAlt,
-              const Color(0xFF24170C),
+              context.colors.surface,
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -140,7 +140,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                   padding: const EdgeInsets.symmetric(horizontal: Spacings.xl + 4),
                   child: Form(
                     key: _formKey,
-                    onChanged: () => _formKey.currentState?.validate(),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -189,7 +188,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 color: context.colors.surface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.black.withValues(alpha: 0.06),
+                                  color: context.colors.border,
                                 ),
                               ),
                               padding: const EdgeInsets.all(Spacings.lg),

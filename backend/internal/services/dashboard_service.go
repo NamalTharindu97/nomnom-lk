@@ -19,13 +19,15 @@ import (
 type DashboardService struct {
 	restaurantRepo *repository.RestaurantRepo
 	offerRepo      *repository.OfferRepo
+	bannerRepo     *repository.BannerRepo
 	rdb            *redis.Client
 }
 
-func NewDashboardService(restaurantRepo *repository.RestaurantRepo, offerRepo *repository.OfferRepo, rdb *redis.Client) *DashboardService {
+func NewDashboardService(restaurantRepo *repository.RestaurantRepo, offerRepo *repository.OfferRepo, bannerRepo *repository.BannerRepo, rdb *redis.Client) *DashboardService {
 	return &DashboardService{
 		restaurantRepo: restaurantRepo,
 		offerRepo:      offerRepo,
+		bannerRepo:     bannerRepo,
 		rdb:            rdb,
 	}
 }
@@ -40,7 +42,7 @@ func (s *DashboardService) ListOffers(ctx context.Context, ownerID uuid.UUID, st
 	}
 
 	version := s.rdb.Get(ctx, "offers:dashboard_cache_version").Val()
-	cacheKey := fmt.Sprintf("offers:dashboard:%s:%s:%s:%d:%d:v%s", ownerID, status, query, page, perPage, version)
+	cacheKey := fmt.Sprintf("offers:dashboard:%s:%s:%s:%s:%d:%d:v%s", ownerID, status, query, sort, page, perPage, version)
 
 	if cached, err := s.rdb.Get(ctx, cacheKey).Result(); err == nil {
 		var result struct {
@@ -86,21 +88,18 @@ func (s *DashboardService) GetRestaurantByIDForOwner(ownerID, restaurantID uuid.
 }
 
 func (s *DashboardService) GetOfferByIDForOwner(ownerID, offerID uuid.UUID) (*models.Offer, error) {
-	offer, err := s.offerRepo.FindByID(offerID)
+	offer, err := s.offerRepo.FindByIDForOwner(offerID, ownerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("offer not found")
 		}
 		return nil, err
 	}
-	if ownerID != uuid.Nil && (offer.CreatedBy == nil || *offer.CreatedBy != ownerID) {
-		return nil, errors.New("offer not found")
-	}
 	return offer, nil
 }
 
 func (s *DashboardService) Stats(ownerID uuid.UUID) (map[string]interface{}, error) {
-	var totalRestaurants, totalOffers, pendingRestaurants, pendingOffers int64
+	var totalRestaurants, pendingRestaurants int64
 
 	restaurants, err := s.restaurantRepo.FindByOwnerID(ownerID)
 	if err != nil {
@@ -112,23 +111,34 @@ func (s *DashboardService) Stats(ownerID uuid.UUID) (map[string]interface{}, err
 		if r.Status == models.RestaurantPending {
 			pendingRestaurants++
 		}
-		offers, err := s.offerRepo.FindByRestaurantID(r.ID)
-		if err != nil {
-			continue
-		}
-		totalOffers += int64(len(offers))
-		for _, o := range offers {
-			if o.Status == models.OfferPending {
-				pendingOffers++
-			}
-		}
+	}
+	offerMetrics, err := s.offerRepo.OwnerMetrics(ownerID)
+	if err != nil {
+		return nil, err
+	}
+	bannerMetrics, err := s.bannerRepo.CountStatsByOwner(ownerID)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"total_restaurants":   totalRestaurants,
-		"total_offers":        totalOffers,
-		"pending_restaurants": pendingRestaurants,
-		"pending_offers":      pendingOffers,
+		"total_restaurants":    totalRestaurants,
+		"total_offers":         offerMetrics.Total,
+		"pending_restaurants":  pendingRestaurants,
+		"pending_offers":       offerMetrics.Pending,
+		"approved_offers":      offerMetrics.Approved,
+		"rejected_offers":      offerMetrics.Rejected,
+		"expired_offers":       offerMetrics.Expired,
+		"total_views":          offerMetrics.TotalViews,
+		"total_favorites":      offerMetrics.TotalFavorites,
+		"total_banners":        bannerMetrics.Total,
+		"active_banners":       bannerMetrics.Active,
+		"pending_banners":      bannerMetrics.Pending,
+		"rejected_banners":     bannerMetrics.Rejected,
+		"total_banner_clicks":  bannerMetrics.TotalClicks,
+		"active_banner_clicks": bannerMetrics.ActiveClicks,
+		"top_offers":           offerMetrics.TopOffers,
+		"expiring_offers":      offerMetrics.ExpiringOffers,
 	}, nil
 }
 
@@ -153,11 +163,8 @@ func (s *DashboardService) CreateRestaurant(req *request.CreateRestaurantRequest
 	if req.WebsiteURL != "" {
 		restaurant.WebsiteURL = &req.WebsiteURL
 	}
-	if req.OrderURL != "" {
-		restaurant.OrderURL = &req.OrderURL
-	}
-	if req.OrderURLAlt != "" {
-		restaurant.OrderURLAlt = &req.OrderURLAlt
+	if len(req.OrderPlatforms) > 0 {
+		restaurant.OrderPlatforms = req.OrderPlatforms
 	}
 	if ownerID != uuid.Nil {
 		restaurant.OwnerID = &ownerID
@@ -217,11 +224,8 @@ func (s *DashboardService) UpdateRestaurant(id uuid.UUID, ownerID uuid.UUID, req
 	if req.WebsiteURL != nil {
 		restaurant.WebsiteURL = req.WebsiteURL
 	}
-	if req.OrderURL != nil {
-		restaurant.OrderURL = req.OrderURL
-	}
-	if req.OrderURLAlt != nil {
-		restaurant.OrderURLAlt = req.OrderURLAlt
+	if req.OrderPlatforms != nil {
+		restaurant.OrderPlatforms = *req.OrderPlatforms
 	}
 
 	translations := locale.BuildTranslations(
@@ -249,7 +253,7 @@ func (s *DashboardService) DeleteRestaurant(id uuid.UUID, ownerID uuid.UUID) err
 	return s.restaurantRepo.Delete(id)
 }
 
-func (s *DashboardService) CreateOffer(req *request.CreateOfferRequest, ownerID uuid.UUID) (*models.Offer, error) {
+func (s *DashboardService) CreateOffer(req *request.CreateOfferRequest, ownerID, createdBy uuid.UUID) (*models.Offer, error) {
 	restaurantID, err := uuid.Parse(req.RestaurantID)
 	if err != nil {
 		return nil, errors.New("invalid restaurant_id")
@@ -274,7 +278,7 @@ func (s *DashboardService) CreateOffer(req *request.CreateOfferRequest, ownerID 
 		StartDate:     req.StartDate,
 		EndDate:       req.EndDate,
 		PublishAt:     req.PublishAt,
-		CreatedBy:     &ownerID,
+		CreatedBy:     &createdBy,
 		Status:        models.OfferPending,
 	}
 
@@ -294,18 +298,20 @@ func (s *DashboardService) CreateOffer(req *request.CreateOfferRequest, ownerID 
 }
 
 func (s *DashboardService) UpdateOffer(id uuid.UUID, ownerID uuid.UUID, req *request.UpdateOfferRequest) (*models.Offer, error) {
-	offer, err := s.offerRepo.FindByID(id)
+	offer, err := s.offerRepo.FindByIDForOwner(id, ownerID)
 	if err != nil {
 		return nil, errors.New("offer not found")
 	}
-	if ownerID != uuid.Nil && (offer.CreatedBy == nil || *offer.CreatedBy != ownerID) {
-		return nil, errors.New("offer not found")
-	}
-
 	if req.RestaurantID != nil {
-		if rid, err := uuid.Parse(*req.RestaurantID); err == nil {
-			offer.RestaurantID = rid
+		rid, err := uuid.Parse(*req.RestaurantID)
+		if err != nil {
+			return nil, errors.New("invalid restaurant_id")
 		}
+		restaurant, err := s.restaurantRepo.FindByID(rid)
+		if err != nil || (ownerID != uuid.Nil && (restaurant.OwnerID == nil || *restaurant.OwnerID != ownerID)) {
+			return nil, errors.New("restaurant not found")
+		}
+		offer.RestaurantID = rid
 	}
 	if req.Title != nil {
 		offer.Title = *req.Title
@@ -351,11 +357,8 @@ func (s *DashboardService) UpdateOffer(id uuid.UUID, ownerID uuid.UUID, req *req
 }
 
 func (s *DashboardService) DeleteOffer(id uuid.UUID, ownerID uuid.UUID) error {
-	offer, err := s.offerRepo.FindByID(id)
+	_, err := s.offerRepo.FindByIDForOwner(id, ownerID)
 	if err != nil {
-		return errors.New("offer not found")
-	}
-	if ownerID != uuid.Nil && (offer.CreatedBy == nil || *offer.CreatedBy != ownerID) {
 		return errors.New("offer not found")
 	}
 	err = s.offerRepo.Delete(id)

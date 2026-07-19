@@ -34,10 +34,9 @@ type Restaurant struct {
 	CoverImage   *string          `gorm:"type:text" json:"cover_image,omitempty"`
 	InstagramURL *string          `gorm:"type:text" json:"instagram_url,omitempty"`
 	FacebookURL  *string          `gorm:"type:text" json:"facebook_url,omitempty"`
-	WebsiteURL   *string          `gorm:"type:text" json:"website_url,omitempty"`
-	OrderURL     *string          `gorm:"type:text" json:"order_url,omitempty"`
-	OrderURLAlt  *string          `gorm:"type:text" json:"order_url_alt,omitempty"`
-	Translations *json.RawMessage `gorm:"type:jsonb;default:'{}'" json:"translations,omitempty"`
+	WebsiteURL    *string          `gorm:"type:text" json:"website_url,omitempty"`
+	OrderPlatforms JSONStringSlice `gorm:"type:jsonb;default:'[]'" json:"order_platforms"`
+	Translations  *json.RawMessage `gorm:"type:jsonb;default:'{}'" json:"translations,omitempty"`
 	Status       RestaurantStatus `gorm:"not null;default:'pending';size:20" json:"status"`
 	IsFeatured   bool             `gorm:"default:false" json:"is_featured"`
 	CreatedAt    time.Time        `json:"created_at"`

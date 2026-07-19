@@ -229,6 +229,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get offerRestaurantLabel => 'உணவகம்';
 
   @override
+  String get offerDetailsLabel => 'விவரங்கள்';
+
+  @override
   String get offerDiscountLabel => 'தள்ளுபடி';
 
   @override
@@ -552,4 +555,13 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get offerEndsToday => 'இன்று முடிவடைகிறது';
+
+  @override
+  String get offerNoAppFound => 'பொருத்தமான பயன்பாடு கிடைக்கவில்லை';
+
+  @override
+  String get editProfileCamera => 'கேமரா';
+
+  @override
+  String get editProfileGallery => 'கேலரி';
 }

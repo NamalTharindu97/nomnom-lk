@@ -19,8 +19,7 @@ type CreateRestaurantRequest struct {
 	InstagramURL  string                 `json:"instagram_url,omitempty"`
 	FacebookURL   string                 `json:"facebook_url,omitempty"`
 	WebsiteURL    string                 `json:"website_url,omitempty"`
-	OrderURL      string                 `json:"order_url,omitempty"`
-	OrderURLAlt   string                 `json:"order_url_alt,omitempty"`
+	OrderPlatforms models.JSONStringSlice `json:"order_platforms,omitempty"`
 }
 
 type UpdateRestaurantRequest struct {
@@ -40,8 +39,7 @@ type UpdateRestaurantRequest struct {
 	InstagramURL  *string                 `json:"instagram_url,omitempty"`
 	FacebookURL   *string                 `json:"facebook_url,omitempty"`
 	WebsiteURL    *string                 `json:"website_url,omitempty"`
-	OrderURL      *string                 `json:"order_url,omitempty"`
-	OrderURLAlt   *string                 `json:"order_url_alt,omitempty"`
+	OrderPlatforms *models.JSONStringSlice `json:"order_platforms,omitempty"`
 }
 
 type ApproveRejectRequest struct {

@@ -24,8 +24,7 @@ interface Restaurant {
   instagram_url: string | null
   facebook_url: string | null
   website_url: string | null
-  order_url: string | null
-  order_url_alt: string | null
+  order_platforms: string[]
   status: string
   created_at: string
 }
@@ -187,7 +186,7 @@ export default function RestaurantDetailPage() {
                   <a href={restaurant.instagram_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.instagram_url}</a>
                 </p>
               </div>
-            ) : restaurant.facebook_url || restaurant.website_url || restaurant.order_url ? null : (
+            ) : restaurant.facebook_url || restaurant.website_url || (restaurant.order_platforms?.length > 0) ? null : (
               <p className="text-sm text-muted-foreground">No links configured</p>
             )}
             {restaurant.facebook_url && (
@@ -206,20 +205,14 @@ export default function RestaurantDetailPage() {
                 </p>
               </div>
             )}
-            {restaurant.order_url && (
+            {restaurant.order_platforms?.length > 0 && (
               <div>
-                <span className="text-sm text-muted-foreground">Order URL</span>
-                <p className="font-medium">
-                  <a href={restaurant.order_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.order_url}</a>
-                </p>
-              </div>
-            )}
-            {restaurant.order_url_alt && (
-              <div>
-                <span className="text-sm text-muted-foreground">Alternate Order URL</span>
-                <p className="font-medium">
-                  <a href={restaurant.order_url_alt} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.order_url_alt}</a>
-                </p>
+                <span className="text-sm text-muted-foreground">Ordering Platforms</span>
+                <div className="mt-1 flex gap-1 flex-wrap">
+                  {restaurant.order_platforms.map((p) => (
+                    <Badge key={p} variant="secondary">{p === "uber_eats" ? "Uber Eats" : "PickMe"}</Badge>
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>

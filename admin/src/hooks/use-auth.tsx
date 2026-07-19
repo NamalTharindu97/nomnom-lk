@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { api, ApiError } from "@/lib/api"
+import { api } from "@/lib/api"
 
 interface User {
   id: string
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setImpersonatedBy(res.impersonated_by)
     setImpersonatedUser(res.user)
 
-    router.refresh()
+    router.replace("/dashboard")
   }, [router])
 
   const stopImpersonating = useCallback(async () => {
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setImpersonatedBy(null)
     setImpersonatedUser(null)
 
-    router.refresh()
+    router.replace("/dashboard")
   }, [router])
 
   const isAdmin = user?.role === "admin" && !impersonatedBy

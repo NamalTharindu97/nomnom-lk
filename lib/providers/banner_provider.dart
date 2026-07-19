@@ -22,7 +22,9 @@ class BannerProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _banners = await _bannerService.fetchActiveBanners();
+      _banners =
+          await _bannerService.fetchActiveBanners(forceRefresh: forceRefresh);
+      debugPrint('Loaded ${_banners.length} active banners');
     } catch (e) {
       _error = 'failedLoadPullRetry';
       debugPrint('Banner load error: $e');

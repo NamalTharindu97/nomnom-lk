@@ -207,11 +207,11 @@ class _LoginScreenState extends State<LoginScreen>
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+            gradient: LinearGradient(
             colors: [
               context.colors.background,
               context.colors.backgroundAlt,
-              const Color(0xFF24170C),
+              context.colors.surface,
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -339,8 +339,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   color: context.colors.surface,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color:
-                                        Colors.black.withValues(alpha: 0.06),
+                                    color: context.colors.border,
                                   ),
                                 ),
                                 padding: const EdgeInsets.all(Spacings.lg),

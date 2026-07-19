@@ -8,8 +8,9 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import {
-  Store, Tag, Users, Bell, CheckCircle, Smartphone, Clock,
-  BarChart3, Ticket, Send, ChevronRight,
+  Store, Tag, Users, CheckCircle, Smartphone, Clock,
+  BarChart3, Ticket, Send, ChevronRight, Eye, Heart,
+  Image as ImageIcon, Settings, RefreshCw,
 } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
@@ -23,8 +24,11 @@ interface Stats {
   pending_restaurants: number
   pending_offers: number
   total_banners: number
+  active_banners: number
   pending_banners: number
+  rejected_banners: number
   total_banner_clicks: number
+  active_banner_clicks: number
   active_coupons: number
   total_coupon_redemptions: number
   total_notifications: number
@@ -56,6 +60,40 @@ interface AuditEntry {
 }
 
 interface NotificationStats { total: number; sent: number; pending: number; failed: number }
+
+interface OwnerTopOffer {
+  offer_id: string
+  title: string
+  view_count: number
+  favorite_count: number
+}
+
+interface OwnerExpiringOffer {
+  offer_id: string
+  title: string
+  restaurant_name: string
+  end_date: string
+}
+
+interface OwnerStats {
+  total_restaurants: number
+  total_offers: number
+  pending_restaurants: number
+  pending_offers: number
+  approved_offers: number
+  rejected_offers: number
+  expired_offers: number
+  total_views: number
+  total_favorites: number
+  total_banners: number
+  active_banners: number
+  pending_banners: number
+  rejected_banners: number
+  total_banner_clicks: number
+  active_banner_clicks: number
+  top_offers: OwnerTopOffer[]
+  expiring_offers: OwnerExpiringOffer[]
+}
 
 const PRESETS = [
   { label: "7d", days: 7 },
@@ -90,6 +128,7 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 function AdminDashboard() {
+  const [now] = useState(() => Date.now())
   const [stats, setStats] = useState<Stats | null>(null)
   const [timeline, setTimeline] = useState<TimelineData | null>(null)
   const [topRestaurants, setTopRestaurants] = useState<TopRestaurant[]>([])
@@ -403,7 +442,7 @@ function AdminDashboard() {
                   <p className="text-sm text-muted-foreground">No offers expiring soon</p>
                 ) : (
                   expiringOffers.map((offer) => {
-                    const daysLeft = Math.max(0, Math.ceil((new Date(offer.end_date).getTime() - Date.now()) / 86400000))
+                    const daysLeft = Math.max(0, Math.ceil((new Date(offer.end_date).getTime() - now) / 86400000))
                     return (
                       <div key={offer.offer_id} className="flex items-center justify-between text-sm">
                         <div className="min-w-0 flex-1">
@@ -517,22 +556,45 @@ function AdminDashboard() {
 }
 
 function OwnerDashboard() {
-  const [stats, setStats] = useState<{ total_restaurants: number; total_offers: number; pending_restaurants: number; pending_offers: number } | null>(null)
+  const [now] = useState(() => Date.now())
+  const [stats, setStats] = useState<OwnerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  useEffect(() => {
-    api.get<{ data: typeof stats }>("/dashboard/stats")
-      .then((res) => setStats(res.data))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true)
+    setError(false)
+    try {
+      const res = await api.get<{ data: OwnerStats }>("/dashboard/stats")
+      setStats(res.data)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    load()
+    const refreshOnFocus = () => load(false)
+    window.addEventListener("focus", refreshOnFocus)
+    return () => window.removeEventListener("focus", refreshOnFocus)
+  }, [load])
 
   const cards = [
     { title: "My Restaurants", value: stats?.total_restaurants ?? 0, icon: Store },
     { title: "My Offers", value: stats?.total_offers ?? 0, icon: Tag },
-    { title: "Pending Restaurants", value: stats?.pending_restaurants ?? 0, icon: Bell },
-    { title: "Pending Offers", value: stats?.pending_offers ?? 0, icon: Bell },
+    { title: "Offer Views", value: stats?.total_views ?? 0, icon: Eye },
+    { title: "Favorites", value: stats?.total_favorites ?? 0, icon: Heart },
+    { title: "My Banners", value: stats?.total_banners ?? 0, icon: ImageIcon },
+    { title: "Banner Clicks", value: stats?.total_banner_clicks ?? 0, icon: BarChart3 },
+  ]
+
+  const statusData = [
+    { name: "Approved", value: stats?.approved_offers ?? 0, fill: "oklch(0.6 0.15 150)" },
+    { name: "Pending", value: stats?.pending_offers ?? 0, fill: "oklch(0.65 0.16 70)" },
+    { name: "Rejected", value: stats?.rejected_offers ?? 0, fill: "oklch(0.6 0.15 340)" },
+    { name: "Expired", value: stats?.expired_offers ?? 0, fill: "oklch(0.5 0.1 180)" },
   ]
 
   if (error && !loading) {
@@ -541,10 +603,10 @@ function OwnerDashboard() {
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {loading ? (
           <>
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <Card key={i}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <Skeleton className="h-4 w-24" />
@@ -574,27 +636,132 @@ function OwnerDashboard() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <a
-            href="/dashboard/offers"
-            className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-accent"
-          >
-            <Tag className="size-4 text-primary" />
-            <span>My Offers</span>
-          </a>
-          <a
-            href="/dashboard/restaurants"
-            className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-accent"
-          >
-            <Store className="size-4 text-primary" />
-            <span>My Restaurants</span>
-          </a>
-        </CardContent>
-      </Card>
+      {!loading && (
+        <>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">My Offers by Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statusData}>
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Bar dataKey="value" name="Offers" radius={[4, 4, 0, 0]}>
+                        {statusData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Top Offer Usage</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  {(stats?.top_offers?.length ?? 0) === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No offer activity yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stats?.top_offers ?? []} layout="vertical" margin={{ left: 12, right: 12 }}>
+                        <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                        <YAxis dataKey="title" type="category" width={130} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Bar dataKey="view_count" name="Views" fill="oklch(0.65 0.16 70)" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="favorite_count" name="Favorites" fill="oklch(0.55 0.12 250)" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="text-sm font-medium">Business Usage</CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => load(false)} className="h-8 gap-1.5">
+                    <RefreshCw className="size-3.5" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {[
+                  { label: "Offer views", value: stats?.total_views ?? 0 },
+                  { label: "Favorites", value: stats?.total_favorites ?? 0 },
+                  { label: "Active banners", value: stats?.active_banners ?? 0 },
+                  { label: "Pending banners", value: stats?.pending_banners ?? 0 },
+                  { label: "Active banner clicks", value: stats?.active_banner_clicks ?? 0 },
+                  { label: "Lifetime banner clicks", value: stats?.total_banner_clicks ?? 0 },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border border-border p-4 text-center">
+                    <p className="text-2xl font-bold">{item.value}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Expiring Soon (7d)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(stats?.expiring_offers?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-muted-foreground">No offers expiring in the next 7 days</p>
+                ) : (
+                  stats?.expiring_offers.map((offer) => {
+                    const daysLeft = Math.max(0, Math.ceil((new Date(offer.end_date).getTime() - now) / 86400000))
+                    return (
+                      <div key={offer.offer_id} className="flex items-center justify-between gap-3 text-sm">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{offer.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">{offer.restaurant_name}</p>
+                        </div>
+                        <span className={`shrink-0 text-xs font-medium ${daysLeft <= 2 ? "text-destructive" : "text-warning"}`}>
+                          {daysLeft}d left
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { href: "/dashboard/offers", icon: Tag, label: "Manage My Offers" },
+                { href: "/dashboard/restaurants", icon: Store, label: "Manage My Restaurants" },
+                { href: "/dashboard/banners", icon: ImageIcon, label: "Manage My Banners" },
+                { href: "/dashboard/settings", icon: Settings, label: "Account Settings" },
+              ].map((action) => (
+                <a
+                  key={action.href}
+                  href={action.href}
+                  className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm transition-colors hover:bg-accent"
+                >
+                  <action.icon className="size-4 text-primary" />
+                  <span>{action.label}</span>
+                </a>
+              ))}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </>
   )
 }
