@@ -1,8 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** P38 complete + release prep phases 1-6 done. Obsidian knowledge base configured. Backend `go build ./...` ✓, Admin `next build` ✓, Flutter 20/20 ✓, Admin 53/53 E2E ✓.
-- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base.
+- **Current:** P47 (Render deployment prep) on `phase/P47-render-backend`. PR #29 open. Backend-only Blueprint for Singapore. Admin bootstrap on first boot. R2 secure config. Next: merge PR, deploy to Render, verify `/health`.
+- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
@@ -116,6 +116,15 @@
 - **See:** `plans/ci-cd-enhancement.md` for pipeline upgrades
 
 ## Recent Work
+- **2026-07-21:** P47 (Render deployment prep) — backend code changes + Blueprint for Singapore.
+  - `config.go`: Added `R2Secure`, `R2Prefix` fields to `R2Config` struct
+  - `upload_service.go`: Uses `cfg.Secure` and `cfg.Prefix` instead of hardcoded values
+  - `main.go`: Idempotent admin bootstrap (creates admin if none exist in DB)
+  - `render.yaml`: Backend-only Blueprint, Singapore region, R2 secure config, private DB/Redis
+  - `plans/render-deploy-complete.md`: 16-phase deployment plan (backend → Render → Flutter → Play Store → Admin → iOS)
+  - `plans/p38-render-deploy.md`: Updated with phased approach (backend first)
+  - PR #29: https://github.com/NamalTharindu97/nomnom-lk/pull/29
+  - **Next:** Merge PR, deploy to Render, verify `/health`, rotate R2 credentials
 - **2026-07-19:** Deployment planning — updated for phased Render deployment.
   - Updated `plans/p38-render-deploy.md` with phased approach (backend first)
   - Updated `plans/p43-release-plan.md` to reflect new order (Render deploy → Android signing)
