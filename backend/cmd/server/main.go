@@ -91,12 +91,14 @@ func bootstrapAdmin(db *gorm.DB, adminCfg *config.AdminConfig, logger zerolog.Lo
 		return
 	}
 
+	now := time.Now()
 	admin := models.User{
-		Email:        adminCfg.Email,
-		PasswordHash: hashedPassword,
-		Name:         "Admin",
-		Role:         models.RoleAdmin,
-		IsActive:     true,
+		Email:          adminCfg.Email,
+		PasswordHash:   hashedPassword,
+		Name:           "Admin",
+		Role:           models.RoleAdmin,
+		IsActive:       true,
+		EmailVerifiedAt: &now,
 	}
 
 	result := db.Create(&admin)
