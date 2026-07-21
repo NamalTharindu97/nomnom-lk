@@ -451,6 +451,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=/api/v1
+            API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.meta.outputs.sha_short }}
@@ -493,4 +494,3 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-

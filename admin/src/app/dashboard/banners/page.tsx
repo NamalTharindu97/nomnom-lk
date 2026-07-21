@@ -476,11 +476,11 @@ export default function BannersPage() {
                 <TableBody>
                   {loading ? <TableSkeleton columns={isAdmin ? 7 : 6} /> :
                     filteredBanners.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8">
-                          <EmptyState icon={<ImageIcon className="size-10 text-muted-foreground/50" />} title="No banners" description="Create your first banner to get started." />
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={<ImageIcon className="size-10 text-muted-foreground/50" />}
+                        title="No banners"
+                        description="Create your first banner to get started."
+                      />
                     ) : filteredBanners.map(b => (
                       <TableRow key={b.id} className="group">
                         <TableCell>

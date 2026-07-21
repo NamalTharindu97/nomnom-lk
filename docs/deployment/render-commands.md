@@ -120,40 +120,40 @@ curl -s "https://api.render.com/v1/redis/red-d9frkeernols73cji320/connection-inf
 ## 5. Set Secrets via API
 
 ```bash
-RENDER_API_KEY="rnd_OxOyPjWZEU0Fmg9BwCnx5HFNrsw4"
+RENDER_API_KEY="rnd_..."
 SERVICE_ID="srv-d9frkhgk1i2s73be0j50"
 
 # Individual env var updates
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_ACCESS_KEY_ID" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"value": "75beaac359f435b5901dd145f6e3378f"}'
+  -d '{"value": "YOUR_R2_ACCESS_KEY"}'
 
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_SECRET_ACCESS_KEY" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"value": "73db729689a4c4083e9e09309363dfa29cf6a41ac076bf64ec8e18dbfc973f4b"}'
+  -d '{"value": "YOUR_R2_SECRET_KEY"}'
 
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_ENDPOINT" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"value": "9e4b33ed2e3cfb1fbbb837ada2399a6d.r2.cloudflarestorage.com"}'
+  -d '{"value": "YOUR_R2_ENDPOINT.r2.cloudflarestorage.com"}'
 
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/ADMIN_PASSWORD" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"value": "Admin@123"}'
+  -d '{"value": "YOUR_ADMIN_PASSWORD"}'
 
 # DATABASE_URL and REDIS_URL
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/DATABASE_URL" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"value": "postgresql://nomnom:741Z1eaUB3BzMzT7Or3Kci64XBJ0SeT3@dpg-d9frkbjbc2fs73bq2ncg-a/nomnom_bd9o"}'
+  -d '{"value": "postgresql://nomnom:PASSWORD@dpg-xxx/nomnom_xxx"}'
 
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/REDIS_URL" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"value": "rediss://red-d9frkeernols73cji320:Cg1YFpQ4L88OE3a2BQenfcFhGHeAsvHc@red-d9frkeernols73cji320:6379"}'
+  -d '{"value": "rediss://red-xxx:PASSWORD@red-xxx:6379"}'
 
 # JWT_SECRET
 JWT_SECRET=$(openssl rand -hex 32)
@@ -166,11 +166,16 @@ curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/JWT_SE
 ## 6. Upload Firebase Credentials
 
 ```bash
+jq -Rs '{content: .}' backend/config/firebase-credentials.json > /tmp/firebase-secret.json
+
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/secret-files/firebase-credentials.json" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "{\"contents\": $(cat backend/config/firebase-credentials.json | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))")}"
+  --data-binary @/tmp/firebase-secret.json
 ```
+
+The secret file is mounted on a fresh deploy; a restart alone keeps the old
+mounted file.
 
 ## 7. First Deploy & Test
 
@@ -261,6 +266,51 @@ curl -X POST https://nomnom-backend-7iq0.onrender.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@nomnom.lk","password":"Admin@123"}'
 # → {"access_token":"eyJ...","user":{"role":"admin","name":"Admin"}}
+```
+
+## 11. Deploy Admin Dashboard
+
+```bash
+# Next.js compiles rewrites at build time, so include the backend target.
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=/api/v1 \
+  --build-arg API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com \
+  -t namal97/nomnom-admin:latest admin
+
+render services create \
+  --name nomnom-admin \
+  --type web_service \
+  --image docker.io/namal97/nomnom-admin:latest \
+  --plan free \
+  --region singapore \
+  --health-check-path /login \
+  --auto-deploy \
+  --env-var "NEXT_PUBLIC_API_URL=/api/v1" \
+  --env-var "API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com" \
+  --confirm --output json
+```
+
+Created: `srv-d9ft1t8okrbs738q9f60`
+
+URL: `https://nomnom-admin-e41y.onrender.com`
+
+Update backend CORS and deploy the environment change:
+
+```bash
+curl -X PUT \
+  "https://api.render.com/v1/services/srv-d9frkhgk1i2s73be0j50/env-vars/CORS_ORIGINS" \
+  -H "Authorization: Bearer ${RENDER_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"value":"https://nomnom-admin-e41y.onrender.com"}'
+
+render deploys create srv-d9frkhgk1i2s73be0j50 --confirm
+```
+
+Verify the hosted frontend and same-origin proxy:
+
+```bash
+curl -I https://nomnom-admin-e41y.onrender.com/login
+curl https://nomnom-admin-e41y.onrender.com/api/v1/restaurants
 ```
 
 ## Useful Render CLI Commands

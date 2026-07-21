@@ -76,7 +76,7 @@ render services create \
   --env-var "R2_SECURE=true" \
   --env-var "R2_FORCE_PATH_STYLE=false" \
   --env-var "R2_PREFIX=production" \
-  --env-var "CORS_ORIGINS=https://nomnom-admin.onrender.com" \
+  --env-var "CORS_ORIGINS=https://nomnom-admin-e41y.onrender.com" \
   --env-var "ADMIN_EMAIL=admin@nomnom.lk" \
   --env-var "FIREBASE_CREDENTIALS_PATH=/etc/secrets/firebase-credentials.json" \
   --env-var "DATABASE_URL=from_service:nomnom-db" \
@@ -155,7 +155,7 @@ curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/DATABA
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/REDIS_URL" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"value": "rediss://red-xxx:Cg1YFpQ4L88OE3a2BQenfcFhGHeAsvHc@red-xxx:6379"}'
+  -d '{"value": "rediss://red-xxx:PASSWORD@red-xxx:6379"}'
 
 # JWT_SECRET (generate a random one)
 JWT_SECRET=$(openssl rand -hex 32)
@@ -168,11 +168,15 @@ curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/JWT_SE
 ### Upload Firebase Credentials
 
 ```bash
+jq -Rs '{content: .}' backend/config/firebase-credentials.json > /tmp/firebase-secret.json
+
 curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/secret-files/firebase-credentials.json" \
   -H "Authorization: Bearer ${RENDER_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "{\"contents\": $(cat backend/config/firebase-credentials.json | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))")}"
+  --data-binary @/tmp/firebase-secret.json
 ```
+
+Secret-file updates require a new deploy, not only a service restart.
 
 ### Trigger Redeploy
 
@@ -224,3 +228,44 @@ curl -s -X PATCH "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a"
 - DB and Redis are **private-only** (no public access from Render's internal network)
 - Firebase credentials mounted as a secret file at `/etc/secrets/firebase-credentials.json`
 - Admin user is **auto-created on first boot** if no admin exists (idempotent bootstrap)
+
+## Step 6: Deploy the Admin Dashboard
+
+The admin dashboard uses the Docker image published by GitHub Actions and
+proxies browser API requests to the hosted backend.
+
+The Next.js rewrite destination is compiled during the Docker build. Build the
+image with both arguments:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=/api/v1 \
+  --build-arg API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com \
+  -t namal97/nomnom-admin:latest admin
+```
+
+```bash
+render services create \
+  --name nomnom-admin \
+  --type web_service \
+  --image docker.io/namal97/nomnom-admin:latest \
+  --plan free \
+  --region singapore \
+  --health-check-path /login \
+  --auto-deploy \
+  --env-var "NEXT_PUBLIC_API_URL=/api/v1" \
+  --env-var "API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com" \
+  --confirm --output json
+```
+
+After creation, record the generated admin URL and update backend
+`CORS_ORIGINS` to that exact HTTPS origin. Verify the frontend and proxy:
+
+```bash
+curl -I https://nomnom-admin-e41y.onrender.com/login
+curl https://nomnom-admin-e41y.onrender.com/api/v1/restaurants
+```
+
+Created service: `srv-d9ft1t8okrbs738q9f60`
+
+Live URL: `https://nomnom-admin-e41y.onrender.com`

@@ -164,6 +164,54 @@ Fixed 2 high-severity vulns. 2 moderate postcss vulns remain (require breaking `
 
 **Impact:** None — the `DATABASE_URL` connection string contains the correct name. The backend uses `DATABASE_URL` directly, not the name.
 
+## Issue 10: Firebase Secret File Mounted Empty
+
+**Problem:** The secret-file API returned HTTP 200, but Firebase initialization
+failed with `unexpected end of JSON input` because the payload used `contents`
+instead of the API's `content` field.
+
+**Fix:** Upload the JSON through the correct field and trigger a full deploy. A
+service restart alone reuses the old mounted secret.
+
+```bash
+jq -Rs '{content: .}' backend/config/firebase-credentials.json > /tmp/firebase-secret.json
+
+curl -X PUT \
+  "https://api.render.com/v1/services/${SERVICE_ID}/secret-files/firebase-credentials.json" \
+  -H "Authorization: Bearer ${RENDER_API_KEY}" \
+  -H "Content-Type: application/json" \
+  --data-binary @/tmp/firebase-secret.json
+
+render deploys create "${SERVICE_ID}" --confirm
+```
+
+## Issue 11: Admin Proxy Used `localhost:8080` on Render
+
+**Problem:** The admin service had the correct runtime `API_PROXY_TARGET`, but
+`/api/v1/*` returned HTTP 500. Next.js evaluates `rewrites()` during
+`next build`, so the Docker image had already compiled the default
+`http://localhost:8080` destination.
+
+**Fix:** Add `API_PROXY_TARGET` as a Docker build argument and pass the hosted
+backend URL from GitHub Actions:
+
+```dockerfile
+ARG NEXT_PUBLIC_API_URL=/api/v1
+ARG API_PROXY_TARGET=http://localhost:8080
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV API_PROXY_TARGET=$API_PROXY_TARGET
+RUN npm run build
+```
+
+```yaml
+build-args: |
+  NEXT_PUBLIC_API_URL=/api/v1
+  API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com
+```
+
+After rebuilding and redeploying the image, `/api/v1/restaurants` and admin
+login both returned HTTP 200 through the hosted frontend.
+
 ## Environment Variable Reference
 
 | Variable | Source | Notes |
@@ -183,5 +231,5 @@ Fixed 2 high-severity vulns. 2 moderate postcss vulns remain (require breaking `
 | `R2_SECURE` | Fixed | `true` |
 | `R2_FORCE_PATH_STYLE` | Fixed | `false` |
 | `R2_PREFIX` | Fixed | `production` |
-| `CORS_ORIGINS` | Fixed | `https://nomnom-admin.onrender.com` |
+| `CORS_ORIGINS` | Fixed | `https://nomnom-admin-e41y.onrender.com` |
 | `ADMIN_EMAIL` | Fixed | `admin@nomnom.lk` |

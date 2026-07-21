@@ -14,6 +14,7 @@
 | Resource | ID | Dashboard URL |
 |----------|-----|---------------|
 | Backend | `srv-d9frkhgk1i2s73be0j50` | https://dashboard.render.com/web/srv-d9frkhgk1i2s73be0j50 |
+| Admin | `srv-d9ft1t8okrbs738q9f60` | https://dashboard.render.com/web/srv-d9ft1t8okrbs738q9f60 |
 | PostgreSQL | `dpg-d9frkbjbc2fs73bq2ncg-a` | https://dashboard.render.com/d/dpg-d9frkbjbc2fs73bq2ncg-a |
 | Redis | `red-d9frkeernols73cji320` | https://dashboard.render.com/keyvalue/red-d9frkeernols73cji320 |
 | Deploy | `dep-d9frs30k1i2s73begrm0` | — |
@@ -72,7 +73,9 @@
 | Credential | Where |
 |-----------|-------|
 | Image | `docker.io/namal97/nomnom-backend:latest` |
-| GitHub Actions pushes to | `namal97/nomnom-backend:latest` on every master merge |
+| Admin image | `docker.io/namal97/nomnom-admin:latest` |
+| Verified admin SHA tag | `docker.io/namal97/nomnom-admin:6c084ce` |
+| GitHub Actions pushes to | Both images on every master merge after tests pass |
 
 ## How to Update Credentials
 
