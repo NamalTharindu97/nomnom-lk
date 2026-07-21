@@ -400,8 +400,7 @@ jobs:
 
   docker:
     name: Build & Push Docker Images
-    # One-time P48 branch publication is removed after the preview image is built.
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/phase/P48-render-admin')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [backend, admin]
     runs-on: ubuntu-latest
 
