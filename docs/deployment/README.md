@@ -16,6 +16,8 @@ free tier).
 
 **Admin URL:** `https://nomnom-admin-e41y.onrender.com`
 
+**Verified admin image:** `namal97/nomnom-admin:6c084ce`
+
 ## Documentation Index
 
 | File | Description |

@@ -74,6 +74,7 @@
 |-----------|-------|
 | Image | `docker.io/namal97/nomnom-backend:latest` |
 | Admin image | `docker.io/namal97/nomnom-admin:latest` |
+| Verified admin SHA tag | `docker.io/namal97/nomnom-admin:6c084ce` |
 | GitHub Actions pushes to | Both images on every master merge after tests pass |
 
 ## How to Update Credentials

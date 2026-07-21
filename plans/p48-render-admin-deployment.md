@@ -141,3 +141,14 @@ After the initial deployment is stable:
 - The current free PostgreSQL resource reports an expiry date of 2026-08-20 and
   must be upgraded or replaced before permanent production use.
 - A custom admin domain is intentionally deferred.
+
+## Deployment Result
+
+- Service: `nomnom-admin`
+- Service ID: `srv-d9ft1t8okrbs738q9f60`
+- URL: `https://nomnom-admin-e41y.onrender.com`
+- Verified image source commit: `6c084ce`
+- Hosted `/login`, API proxy, banners, images, hard refresh, and owner route guard
+  verified successfully.
+- Browser sweep: 12 dashboard routes, 3 banners, 6 rendered images, 0
+  application failures.
