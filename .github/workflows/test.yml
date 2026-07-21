@@ -400,7 +400,8 @@ jobs:
 
   docker:
     name: Build & Push Docker Images
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # One-time P48 branch publication is removed after the preview image is built.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/phase/P48-render-admin')
     needs: [backend, admin]
     runs-on: ubuntu-latest
 
@@ -451,6 +452,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=/api/v1
+            API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.meta.outputs.sha_short }}
@@ -493,4 +495,3 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-

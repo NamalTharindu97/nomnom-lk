@@ -1,7 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** P47 (Render deployment prep) on `phase/P47-render-backend`. PR #29 open. Backend-only Blueprint for Singapore. Admin bootstrap on first boot. R2 secure config. Next: merge PR, deploy to Render, verify `/health`.
+- **Current:** P48 (Render admin deployment) on `phase/P48-render-admin`. Backend and admin are live on Render in Singapore. Next: complete hosted verification, merge P48, and redeploy the SHA-tagged admin image.
 - **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
 
 ## Deployment Documentation

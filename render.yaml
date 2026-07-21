@@ -1,4 +1,4 @@
-# NomNom LK — Render Blueprint (Backend Only)
+# NomNom LK — Render Blueprint
 # Deploy: Render Dashboard → New → Blueprint → Connect repo
 
 services:
@@ -44,13 +44,28 @@ services:
       - key: R2_PREFIX
         value: production
       - key: CORS_ORIGINS
-        value: "https://nomnom-admin.onrender.com"
+        value: "https://nomnom-admin-e41y.onrender.com"
       - key: ADMIN_EMAIL
         value: admin@nomnom.lk
       - key: ADMIN_PASSWORD
         sync: false
       - key: FIREBASE_CREDENTIALS_PATH
         value: /etc/secrets/firebase-credentials.json
+
+  # ── Next.js Admin Dashboard ─────────────────────────────────────
+  - type: web
+    name: nomnom-admin
+    runtime: image
+    plan: free
+    region: singapore
+    image:
+      url: docker.io/namal97/nomnom-admin:latest
+    healthCheckPath: /login
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: /api/v1
+      - key: API_PROXY_TARGET
+        value: https://nomnom-backend-7iq0.onrender.com
 
   # ── Render Redis KV ────────────────────────────────────────────
   - type: keyvalue
