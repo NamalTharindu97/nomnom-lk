@@ -153,11 +153,12 @@ func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter, statusFil
 	var total int64
 
 	query := r.db.Model(&models.User{})
-	if statusFilter == "inactive" {
+	switch statusFilter {
+	case "inactive":
 		query = query.Where("is_active = ?", false)
-	} else if statusFilter == "all" {
+	case "all":
 		// no filter — include both active and inactive
-	} else {
+	default:
 		query = query.Where("is_active = ?", true)
 	}
 	if emailFilter != "" {
