@@ -111,7 +111,8 @@
 - **Admin dashboard:** Connect after backend is stable (week 2)
 - **Flutter app:** Point to production API, build release AAB (week 3)
 - **CI/CD enhancement:** Add deploy.yml workflow, Render deploy hooks, smoke tests (ongoing)
-- **See:** `plans/p38-render-deploy.md` for full phased deployment plan
+- **See:** `plans/render-deploy-complete.md` for complete deployment plan (16 phases)
+- **See:** `plans/p38-render-deploy.md` for phased deployment (backend first)
 - **See:** `plans/ci-cd-enhancement.md` for pipeline upgrades
 
 ## Recent Work
