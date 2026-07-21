@@ -4,6 +4,13 @@
 - **Current:** P47 (Render deployment prep) on `phase/P47-render-backend`. PR #29 open. Backend-only Blueprint for Singapore. Admin bootstrap on first boot. R2 secure config. Next: merge PR, deploy to Render, verify `/health`.
 - **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
 
+## Deployment Documentation
+- **`docs/deployment/README.md`** — Overview of what was deployed (Render resources, URLs, quick reference)
+- **`docs/deployment/render-setup.md`** — Full step-by-step setup guide (prerequisites, resource creation, env vars, verification)
+- **`docs/deployment/render-commands.md`** — Every command we ran during deployment, in chronological order, with outputs
+- **`docs/deployment/render-issues.md`** — All bugs encountered and how they were fixed (9 issues)
+- **`docs/deployment/render-credentials.md`** — Where credentials live (no secrets, just references)
+
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
 - **Build order & sign-off:** Phase-by-phase via feature branches (`phase/N-name`), merge to master after approval, branches preserved on remote.
