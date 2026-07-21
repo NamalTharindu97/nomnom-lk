@@ -3,6 +3,10 @@ import 'dart:io' show Platform;
 class ApiConfig {
   ApiConfig._();
 
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
   static String get _defaultBaseUrl {
     try {
       if (Platform.isAndroid) {
@@ -12,10 +16,8 @@ class ApiConfig {
     return 'http://localhost:8080/api/v1';
   }
 
-  static final String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: _defaultBaseUrl,
-  );
+  static String get baseUrl =>
+      _configuredBaseUrl.isNotEmpty ? _configuredBaseUrl : _defaultBaseUrl;
 
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);

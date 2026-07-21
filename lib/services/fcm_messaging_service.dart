@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/notification_provider.dart';
@@ -21,6 +22,7 @@ class FcmMessagingService {
   final NotificationProvider _notificationProvider;
   final _messaging = FirebaseMessaging.instance;
   final _notifsPlugin = FlutterLocalNotificationsPlugin();
+  final _storage = const FlutterSecureStorage();
 
   String? _currentToken;
   void Function(String?)? _onNavigate;
@@ -180,12 +182,12 @@ class FcmMessagingService {
   }
 
   Future<void> _registerToken(String token) async {
+    if (await _storage.read(key: 'access_token') == null) return;
     try {
       await _apiClient.post('/devices', {
         'token': token,
-        'platform': defaultTargetPlatform == TargetPlatform.iOS
-            ? 'ios'
-            : 'android',
+        'platform':
+            defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
       });
       debugPrint('FCM token registered');
     } catch (e) {
