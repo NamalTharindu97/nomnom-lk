@@ -483,26 +483,33 @@ flutter build ipa --release --dart-define=API_BASE_URL=https://nomnom-lk-api.onr
 ## Execution Order & Dependencies
 
 ```
-Phase 1 (Android Signing)  ──┐
+NEW ORDER (Backend First):
+Phase 7 (Render Deploy)     ──► Phase 1 (Android Signing)
+                                   │
 Phase 2 (Assets)            ──┤
 Phase 4 (Placeholders)      ──┼──► Phase 8 (Play Store Submit)
 Phase 5 (Google Sign-In)    ──┤
 Phase 6 (Splash Screen)     ──┘
                                │
-Phase 3 (API Endpoint)      ──┤
-Phase 7 (Render Deploy)     ──┘
+Phase 3 (API Endpoint)      ──┘
                                │
 Phase 9 (iOS)               ──┘ (Future — needs Flutter upgrade)
 Phase 10 (Monitoring)       ──┘ (Post-launch)
 Phase 11 (Versioning)       ──┘ (Ongoing)
 ```
 
-**Critical path:** Phase 1 → Phase 2 → Phase 3 → Phase 7 → Phase 8
+**Critical path:** Phase 7 → Phase 1 → Phase 2 → Phase 3 → Phase 8
 
 **Estimated timeline:**
+- **Backend on Render:** 1 day (follow P38)
 - **Android Play Store:** 2–3 days (signing + build + submit)
-- **Render backend deploy:** 1 day (follow P38)
 - **iOS App Store:** 1–2 weeks (Flutter upgrade + Apple account + review)
+
+**Why backend first?**
+- Get API live for testing immediately
+- Flutter app can point to production API early
+- Admin dashboard can connect to hosted backend
+- Validates infrastructure before app store submission
 
 ---
 

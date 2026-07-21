@@ -50,7 +50,7 @@ func NewUploadService(cfg *config.R2Config) (*UploadService, error) {
 	}
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:        credentials.NewStaticV4(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
-		Secure:       false,
+		Secure:       cfg.Secure,
 		Region:       cfg.Region,
 		BucketLookup: lookupType,
 	})
@@ -72,8 +72,10 @@ func NewUploadService(cfg *config.R2Config) (*UploadService, error) {
 		}
 	}
 
-	env := "dev"
-	prefix := env
+	prefix := cfg.Prefix
+	if prefix == "" {
+		prefix = "dev"
+	}
 
 	return &UploadService{
 		client: client,

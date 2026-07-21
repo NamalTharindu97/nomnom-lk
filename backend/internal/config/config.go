@@ -68,7 +68,9 @@ type R2Config struct {
 	SecretAccessKey string
 	Bucket          string
 	Endpoint        string
+	Secure          bool
 	ForcePathStyle  bool
+	Prefix          string
 }
 
 type SentryConfig struct {
@@ -167,7 +169,9 @@ func Load() (*Config, error) {
 	v.SetDefault("R2_SECRET_ACCESS_KEY", "minioadmin")
 	v.SetDefault("R2_BUCKET", "nomnom-images")
 	v.SetDefault("R2_ENDPOINT", "localhost:9000")
+	v.SetDefault("R2_SECURE", false)
 	v.SetDefault("R2_FORCE_PATH_STYLE", true)
+	v.SetDefault("R2_PREFIX", "dev")
 
 	v.SetDefault("SENTRY_DSN", "")
 
@@ -246,7 +250,9 @@ func Load() (*Config, error) {
 			SecretAccessKey: v.GetString("R2_SECRET_ACCESS_KEY"),
 			Bucket:          v.GetString("R2_BUCKET"),
 			Endpoint:        v.GetString("R2_ENDPOINT"),
+			Secure:          v.GetBool("R2_SECURE"),
 			ForcePathStyle:  v.GetBool("R2_FORCE_PATH_STYLE"),
+			Prefix:          v.GetString("R2_PREFIX"),
 		},
 		Sentry: SentryConfig{
 			DSN: v.GetString("SENTRY_DSN"),
