@@ -9,6 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	BrowserAccessCookie = "nomnom_access"
+	authTransportKey    = "auth_transport"
+	authTransportBearer = "bearer"
+	authTransportCookie = "cookie"
+)
+
 type Claims struct {
 	Sub            string `json:"sub"`
 	Email          string `json:"email"`
@@ -22,33 +29,41 @@ type Claims struct {
 func Auth(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
+		tokenString := ""
+		transport := authTransportBearer
 		if authHeader == "" {
+			tokenString, _ = c.Cookie(BrowserAccessCookie)
+			transport = authTransportCookie
+		}
+		if tokenString == "" && authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": gin.H{
 					"code":    "UNAUTHORIZED",
-					"message": "Missing authorization header",
+					"message": "Authentication required",
 				},
 			})
 			return
 		}
 
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": gin.H{
-					"code":    "UNAUTHORIZED",
-					"message": "Invalid authorization header format",
-				},
-			})
-			return
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error": gin.H{
+						"code":    "UNAUTHORIZED",
+						"message": "Invalid authorization header format",
+					},
+				})
+				return
+			}
+			tokenString = parts[1]
 		}
 
-		tokenString := parts[1]
 		claims := &Claims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(jwtSecret), nil
-		})
+		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -66,8 +81,18 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 		c.Set("user_role", claims.Role)
 		c.Set("impersonated_by", claims.ImpersonatedBy)
 		c.Set("impersonated_at", claims.ImpersonatedAt)
+		c.Set(authTransportKey, transport)
+		if transport == authTransportCookie && !validCSRF(c) {
+			abortCSRF(c)
+			return
+		}
 		c.Next()
 	}
+}
+
+func IsCookieAuth(c *gin.Context) bool {
+	transport, exists := c.Get(authTransportKey)
+	return exists && transport == authTransportCookie
 }
 
 func GetUserID(c *gin.Context) (uuid.UUID, bool) {

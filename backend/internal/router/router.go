@@ -56,7 +56,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	// Handlers
 	firebaseService := services.NewFirebaseService(&cfg.Firebase)
 	bannerRepo := repository.NewBannerRepo(db)
-	authHandler := handlers.NewAuthHandler(authService, firebaseService, auditService)
+	authHandler := handlers.NewAuthHandler(authService, firebaseService, auditService, &cfg.Browser, &cfg.JWT)
 	userHandler := handlers.NewUserHandler(userRepo, auditService)
 	dashboardService := services.NewDashboardService(restaurantRepo, offerRepo, bannerRepo, rdb)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService, auditService, bannerRepo)
@@ -73,7 +73,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	bannerHandler := handlers.NewBannerHandler(bannerRepo, offerRepo, restaurantRepo, auditService, sseService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditService)
-	impersonationHandler := handlers.NewImpersonationHandler(impersonationService)
+	impersonationHandler := handlers.NewImpersonationHandler(impersonationService, &cfg.Browser, &cfg.JWT)
 	r := gin.New()
 
 	r.Use(
@@ -117,7 +117,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			authGroup.POST("/firebase", authHandler.FirebaseLogin)
 			authGroup.POST("/refresh", authHandler.Refresh)
 			authGroup.POST("/logout", middleware.Auth(cfg.JWT.Secret), middleware.AuditTrail(auditService), authHandler.Logout)
+			authGroup.POST("/browser/login", authHandler.BrowserLogin)
+			authGroup.POST("/browser/refresh", middleware.RequireBrowserCSRF(), authHandler.BrowserRefresh)
+			authGroup.POST("/browser/logout", middleware.RequireBrowserCSRF(), authHandler.BrowserLogout)
 		}
+		v1.GET("/auth/browser/session", middleware.Auth(cfg.JWT.Secret), middleware.RequireDashboardAccess(), middleware.RequireActive(userRepo), authHandler.BrowserSession)
 
 		verificationGroup := v1.Group("/auth")
 		verificationGroup.Use(middleware.RateLimit(rdb, 3, 1*time.Minute, "rl:verify"))

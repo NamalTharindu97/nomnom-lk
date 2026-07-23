@@ -99,3 +99,16 @@ func ValidateToken(secret string, tokenString string) (*Claims, error) {
 	}
 	return claims, nil
 }
+
+// ValidateTokenIgnoringExpiry verifies the signature for refresh-time identity continuity.
+// Callers must authenticate the refresh session independently before trusting these claims.
+func ValidateTokenIgnoringExpiry(secret string, tokenString string) (*Claims, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithoutClaimsValidation())
+	if err != nil || !token.Valid {
+		return nil, jwt.ErrSignatureInvalid
+	}
+	return claims, nil
+}

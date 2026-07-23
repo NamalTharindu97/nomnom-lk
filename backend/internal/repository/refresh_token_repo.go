@@ -37,6 +37,10 @@ func (r *RefreshTokenRepo) DeleteByID(id uuid.UUID) error {
 	return r.db.Delete(&models.RefreshToken{}, id).Error
 }
 
+func (r *RefreshTokenRepo) DeleteByHash(tokenHash string) error {
+	return r.db.Where("token_hash = ?", tokenHash).Delete(&models.RefreshToken{}).Error
+}
+
 func (r *RefreshTokenRepo) DeleteExpired() error {
 	return r.db.Where("expires_at < ?", time.Now()).Delete(&models.RefreshToken{}).Error
 }

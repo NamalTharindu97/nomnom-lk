@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nomnom-lk/backend/internal/config"
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/services"
@@ -16,14 +17,97 @@ type AuthHandler struct {
 	authService     *services.AuthService
 	firebaseService *services.FirebaseService
 	auditService    *services.AuditService
+	browserSession  *browserSession
 }
 
-func NewAuthHandler(authService *services.AuthService, firebaseService *services.FirebaseService, auditService *services.AuditService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService, firebaseService *services.FirebaseService, auditService *services.AuditService, browserCfg *config.BrowserSessionConfig, jwtCfg *config.JWTConfig) *AuthHandler {
 	return &AuthHandler{
 		authService:     authService,
 		firebaseService: firebaseService,
 		auditService:    auditService,
+		browserSession:  newBrowserSession(browserCfg, jwtCfg),
 	}
+}
+
+// BrowserLogin creates a dashboard-only session without exposing JWTs to JavaScript.
+func (h *AuthHandler) BrowserLogin(c *gin.Context) {
+	var req request.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, []response.ErrorDetail{{Field: "body", Message: err.Error()}})
+		return
+	}
+
+	result, err := h.authService.LoginDashboard(req.Email, req.Password)
+	if err != nil {
+		status := http.StatusUnauthorized
+		if err.Error() == "your account has been suspended. contact an administrator" || err.Error() == "access restricted to administrators and restaurant owners only" {
+			status = http.StatusForbidden
+		}
+		h.auditService.LogAction(uuid.Nil, req.Email, "", "auth.login.failed", "user", "",
+			fmt.Sprintf("Failed dashboard login attempt for: %s", req.Email))
+		response.Error(c, status, "UNAUTHORIZED", err.Error())
+		return
+	}
+
+	if err := h.browserSession.set(c, result.AccessToken, result.RefreshToken); err != nil {
+		response.InternalError(c, "failed to create browser session")
+		return
+	}
+	h.auditService.LogAction(result.User.ID, result.User.Name, result.User.Role, "auth.login", "user", result.User.ID.String(),
+		fmt.Sprintf("Dashboard user logged in: %s (%s)", result.User.Name, result.User.Email))
+	c.JSON(http.StatusOK, gin.H{"user": result.User, "expires_in": result.ExpiresIn})
+}
+
+func (h *AuthHandler) BrowserRefresh(c *gin.Context) {
+	refreshToken, err := c.Cookie(browserRefreshCookie)
+	if err != nil || refreshToken == "" {
+		h.browserSession.clear(c)
+		response.Unauthorized(c, "browser session expired")
+		return
+	}
+	currentAccessToken, _ := c.Cookie(middleware.BrowserAccessCookie)
+	result, err := h.authService.RefreshDashboard(refreshToken, currentAccessToken)
+	if err != nil {
+		h.browserSession.clear(c)
+		response.Error(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
+		return
+	}
+	if err := h.browserSession.set(c, result.AccessToken, result.RefreshToken); err != nil {
+		response.InternalError(c, "failed to refresh browser session")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"expires_in": result.ExpiresIn})
+}
+
+func (h *AuthHandler) BrowserLogout(c *gin.Context) {
+	refreshToken, _ := c.Cookie(browserRefreshCookie)
+	h.browserSession.clear(c)
+	if refreshToken == "" {
+		c.Status(http.StatusNoContent)
+		return
+	}
+	user, err := h.authService.LogoutRefreshToken(refreshToken)
+	if err != nil {
+		response.InternalError(c, "failed to revoke browser session")
+		return
+	}
+	if user != nil {
+		h.auditService.LogAction(user.ID, user.Name, string(user.Role), "auth.logout", "user", user.ID.String(),
+			fmt.Sprintf("Dashboard user logged out: %s", user.Name))
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *AuthHandler) BrowserSession(c *gin.Context) {
+	userID, _ := middleware.GetUserID(c)
+	email, _ := middleware.GetUserEmail(c)
+	name, _ := middleware.GetUserName(c)
+	role, _ := middleware.GetUserRole(c)
+	impersonatedBy, _ := middleware.GetImpersonatedBy(c)
+	c.JSON(http.StatusOK, gin.H{
+		"user":            gin.H{"id": userID, "email": email, "name": name, "role": role},
+		"impersonated_by": impersonatedBy,
+	})
 }
 
 // Register creates a new user with email & password and sends verification code.
