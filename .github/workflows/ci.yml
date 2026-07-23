@@ -1,10 +1,15 @@
-name: Test
+name: CI
 
 on:
   push:
-    branches: [master, "phase/**"]
+    branches: [staging, master]
   pull_request:
-    branches: [master]
+    branches: [staging, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   backend:
@@ -70,8 +75,10 @@ jobs:
           version: v2.12.2
           working-directory: backend
 
-      - name: Install dependencies
-        run: go mod tidy
+      - name: Tidy and verify no diff
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum || (echo "go.mod/go.sum are dirty after tidy" && exit 1)
         working-directory: backend
 
       - name: Check Go vulnerabilities
@@ -174,7 +181,7 @@ jobs:
           restore-keys: npm-
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         working-directory: admin
 
       - name: Lint
@@ -376,7 +383,7 @@ jobs:
           retention-days: 1
 
   flutter:
-    name: Flutter Unit + Widget Tests
+    name: Flutter
     runs-on: ubuntu-latest
 
     steps:
@@ -385,7 +392,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.29"
+          flutter-version: "3.44.7"
           channel: "stable"
           cache: true
 
@@ -395,13 +402,13 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: Run unit and widget tests
+      - name: Run tests
         run: flutter test
 
   docker:
-    name: Build & Push Docker Images
+    name: Docker (Build + Push + Scan)
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [backend, admin]
+    needs: [backend, admin, flutter]
     runs-on: ubuntu-latest
 
     steps:

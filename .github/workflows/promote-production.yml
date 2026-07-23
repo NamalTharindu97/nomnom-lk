@@ -1,0 +1,68 @@
+name: Promote to Production
+
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: "Staging commit SHA to promote"
+        required: true
+        type: string
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Production gate
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify source branch is staging
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ "${{ github.event.pull_request.head.ref }}" != "staging" ]; then
+            echo "::error::Production PRs must originate from the staging branch."
+            echo "This PR came from: ${{ github.event.pull_request.head.ref }}"
+            exit 1
+          fi
+          echo "Source branch is staging — proceeding."
+
+      - name: Record promotion intent
+        run: |
+          SOURCE_SHA="${{ inputs.source_sha || github.event.pull_request.merge_commit_sha }}"
+          echo "source_sha=$SOURCE_SHA" >> $GITHUB_OUTPUT
+          echo "## Production Promotion" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source SHA:** \`$SOURCE_SHA\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR:** ${{ github.event.pull_request.html_url || 'manual dispatch' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo ":information_source: Production deployment is not yet configured." >> $GITHUB_STEP_SUMMARY
+          echo "This workflow will promote staging-tested images when Contabo VPS is provisioned." >> $GITHUB_STEP_SUMMARY
+        id: promo
+
+  deploy:
+    name: Deploy to production
+    needs: gate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://nomnom-admin-e41y.onrender.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Production approval received
+        run: |
+          echo "## Production Deployment Approved" >> $GITHUB_STEP_SUMMARY
+          echo "- **Approved by:** $GITHUB_ACTOR" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ needs.gate.outputs.source_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo ":warning: Production deployment pipeline is not yet implemented." >> $GITHUB_STEP_SUMMARY
+          echo "Images must be deployed manually via Render dashboard until Contabo VPS cutover." >> $GITHUB_STEP_SUMMARY
