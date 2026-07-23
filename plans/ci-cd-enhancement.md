@@ -216,11 +216,12 @@ jobs:
           # Test 1: Health check
           curl -sf "$BASE_URL/health" || exit 1
           
-          # Test 2: Login
-          TOKEN=$(curl -sf -X POST "$BASE_URL/api/v1/auth/login" \
-            -H "Content-Type: application/json" \
-            -d '{"email":"admin@nomnom.lk","password":"Admin@123"}' \
-            | jq -r '.access_token')
+          # Test 2: Login with a protected environment smoke-test account.
+          TOKEN=$(jq -n --arg email "$SMOKE_EMAIL" --arg password "$SMOKE_PASSWORD" \
+            '{email: $email, password: $password}' | \
+            curl -sf -X POST "$BASE_URL/api/v1/auth/login" \
+              -H "Content-Type: application/json" --data-binary @- | \
+            jq -r '.access_token')
           
           # Test 3: Get offers
           curl -sf "$BASE_URL/api/v1/offers" \

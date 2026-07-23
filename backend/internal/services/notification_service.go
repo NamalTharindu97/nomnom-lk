@@ -221,23 +221,34 @@ func (s *NotificationService) sendFCMDirect(ctx context.Context, token string, i
 
 	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode == 200 {
-		fmt.Printf("INFO: FCM sent to token %s\n", token[:20])
+		fmt.Println("INFO: FCM notification sent")
 		return
 	}
 
-	fmt.Printf("WARN: FCM HTTP error %d for token %s: %s\n", resp.StatusCode, token[:20], string(respBody))
+	status, stale := parseFCMError(respBody)
+	fmt.Printf("WARN: FCM HTTP error status_code=%d fcm_status=%s stale_token=%t\n", resp.StatusCode, status, stale)
+	if stale {
+		if delErr := s.deviceTokenRepo.DeleteByTokenValue(token); delErr != nil {
+			fmt.Println("WARN: failed to delete stale FCM token")
+		}
+	}
+}
+
+func parseFCMError(body []byte) (string, bool) {
 	var fcmResp struct {
 		Error struct {
 			Message string `json:"message"`
+			Status  string `json:"status"`
 		} `json:"error"`
 	}
-	if json.Unmarshal(respBody, &fcmResp) == nil {
-		if isUnregisteredByMessage(fcmResp.Error.Message) {
-			if delErr := s.deviceTokenRepo.DeleteByTokenValue(token); delErr != nil {
-				fmt.Printf("WARN: failed to delete stale token: %v\n", delErr)
-			}
-		}
+	if json.Unmarshal(body, &fcmResp) != nil {
+		return "unknown", false
 	}
+	status := fcmResp.Error.Status
+	if status == "" {
+		status = "unknown"
+	}
+	return status, isUnregisteredByMessage(fcmResp.Error.Message)
 }
 
 func isUnregisteredByMessage(msg string) bool {
@@ -245,6 +256,3 @@ func isUnregisteredByMessage(msg string) bool {
 		strings.Contains(msg, "Unregistered") ||
 		strings.Contains(msg, "UNREGISTERED")
 }
-
-
-

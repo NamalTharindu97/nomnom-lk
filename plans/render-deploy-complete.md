@@ -97,7 +97,7 @@ When `ENVIRONMENT=production`, startup should reject:
 - Missing R2 credentials
 - Missing R2 endpoint
 - Missing production admin password
-- Default `Admin@123` password
+- Any known development or previously published admin password
 - Invalid database configuration
 
 Firebase, SMTP, and Sentry may remain optional initially, but the backend should log clear warnings when unavailable.

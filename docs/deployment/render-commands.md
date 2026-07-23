@@ -100,91 +100,22 @@ render services create \
 Created: `srv-d9frkhgk1i2s73be0j50`
 URL: `https://nomnom-backend-7iq0.onrender.com`
 
-## 4. Fetch Connection Strings
+## 4. Configure Runtime Secrets
 
-```bash
-RENDER_API_KEY="rnd_..."  # from ~/.render/cli.yaml
-
-# PostgreSQL
-curl -s "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a/connection-info" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}"
-# → internalConnectionString: postgresql://nomnom:PASSWORD@dpg-d9frkbjbc2fs73bq2ncg-a/nomnom_bd9o
-
-# Redis
-curl -s "https://api.render.com/v1/redis/red-d9frkeernols73cji320/connection-info" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}"
-# → internalConnectionString: redis://red-d9frkeernols73cji320:6379
-# → externalConnectionString: rediss://red-d9frkeernols73cji320:PASSWORD@...:6379
-```
-
-## 5. Set Secrets via API
-
-```bash
-RENDER_API_KEY="rnd_..."
-SERVICE_ID="srv-d9frkhgk1i2s73be0j50"
-
-# Individual env var updates
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_ACCESS_KEY_ID" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_R2_ACCESS_KEY"}'
-
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_SECRET_ACCESS_KEY" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_R2_SECRET_KEY"}'
-
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_ENDPOINT" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_R2_ENDPOINT.r2.cloudflarestorage.com"}'
-
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/ADMIN_PASSWORD" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_ADMIN_PASSWORD"}'
-
-# DATABASE_URL and REDIS_URL
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/DATABASE_URL" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "postgresql://nomnom:PASSWORD@dpg-xxx/nomnom_xxx"}'
-
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/REDIS_URL" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "rediss://red-xxx:PASSWORD@red-xxx:6379"}'
-
-# JWT_SECRET
-JWT_SECRET=$(openssl rand -hex 32)
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/JWT_SECRET" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"value\": \"${JWT_SECRET}\"}"
-```
-
-## 6. Upload Firebase Credentials
-
-```bash
-jq -Rs '{content: .}' backend/config/firebase-credentials.json > /tmp/firebase-secret.json
-
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/secret-files/firebase-credentials.json" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  --data-binary @/tmp/firebase-secret.json
-```
+Connection strings were copied from each Render resource's **Connect** panel
+directly into the backend environment. R2, JWT, and bootstrap values were entered
+through the Render Dashboard, and Firebase credentials were uploaded through
+**Secret Files**. Values and raw connection-info responses are intentionally not
+recorded here.
 
 The secret file is mounted on a fresh deploy; a restart alone keeps the old
-mounted file.
+mounted file. Future automation must use protected GitHub environments and must
+not place credentials in command arguments or logs.
 
 ## 7. First Deploy & Test
 
 ```bash
-# Trigger deploy
-curl -s -X POST "https://api.render.com/v1/services/${SERVICE_ID}/deploys" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{}'
+render deploys create srv-d9frkhgk1i2s73be0j50 --wait
 
 # Health check (after ~1 min)
 curl https://nomnom-backend-7iq0.onrender.com/health
@@ -193,7 +124,7 @@ curl https://nomnom-backend-7iq0.onrender.com/health
 # Admin login test
 curl -X POST https://nomnom-backend-7iq0.onrender.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@nomnom.lk","password":"Admin@123"}'
+  --data-binary @/path/to/private-login-payload.json
 # → FAILED: "please verify your email first"
 ```
 
@@ -229,10 +160,7 @@ done
 
 ### Redeploy
 ```bash
-curl -s -X POST "https://api.render.com/v1/services/${SERVICE_ID}/deploys" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{}'
+render deploys create srv-d9frkhgk1i2s73be0j50 --wait
 ```
 
 ## 9. Fix — Existing Admin in Database
@@ -240,22 +168,18 @@ curl -s -X POST "https://api.render.com/v1/services/${SERVICE_ID}/deploys" \
 The admin was already created by the first deploy (without `email_verified_at`). The bootstrap code only runs when NO admin exists. So we fixed it directly in the DB.
 
 ```bash
-# Add our IP to DB allow list
+# Add our IP to the DB allow list
 MY_IP=$(curl -s ifconfig.me)
-curl -s -X PATCH "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"ipAllowList\": [{\"cidrBlock\": \"175.157.115.71/32\", \"description\": \"local dev\"}]}"
+render postgres update dpg-d9frkbjbc2fs73bq2ncg-a \
+  --ip-allow-list "cidr=${MY_IP}/32,description=temporary-maintenance" \
+  --confirm
 
 # Fix the admin user
 render psql nomnom-db --command "UPDATE users SET email_verified_at = NOW() WHERE email = 'admin@nomnom.lk' AND email_verified_at IS NULL;" --output text
 # → UPDATE 1
 
-# Remove our IP
-curl -s -X PATCH "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"ipAllowList": []}'
+# The temporary operator IP was removed through the PostgreSQL Render Dashboard.
+# The allow list was verified empty before the maintenance session ended.
 ```
 
 ## 10. Final Verification
@@ -264,7 +188,7 @@ curl -s -X PATCH "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a"
 # Admin login → SUCCESS
 curl -X POST https://nomnom-backend-7iq0.onrender.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@nomnom.lk","password":"Admin@123"}'
+  --data-binary @/path/to/private-login-payload.json
 # → {"access_token":"eyJ...","user":{"role":"admin","name":"Admin"}}
 ```
 
@@ -294,16 +218,11 @@ Created: `srv-d9ft1t8okrbs738q9f60`
 
 URL: `https://nomnom-admin-e41y.onrender.com`
 
-Update backend CORS and deploy the environment change:
+Update `CORS_ORIGINS` directly in the backend service's Render Environment page,
+then deploy the environment change with:
 
 ```bash
-curl -X PUT \
-  "https://api.render.com/v1/services/srv-d9frkhgk1i2s73be0j50/env-vars/CORS_ORIGINS" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value":"https://nomnom-admin-e41y.onrender.com"}'
-
-render deploys create srv-d9frkhgk1i2s73be0j50 --confirm
+render deploys create srv-d9frkhgk1i2s73be0j50 --wait
 ```
 
 Verify the hosted frontend and same-origin proxy:

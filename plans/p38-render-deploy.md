@@ -134,7 +134,7 @@ curl https://nomnom-backend.onrender.com/health
 # Login
 curl -X POST https://nomnom-backend.onrender.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@nomnom.lk","password":"Admin@123"}'
+  --data-binary @/path/to/private-login-payload.json
 # Expected: JWT token
 
 # Offers

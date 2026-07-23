@@ -22,7 +22,16 @@ backend/coverage.html
 
 # Environment
 .env
+.env.*
+!.env.example
+!**/.env.example
 backend/config/firebase-credentials.json
+**/firebase-credentials*.json
+**/firebase-adminsdk*.json
+**/*service-account*.json
+**/*.pem
+**/*.p12
+**/*.pfx
 
 # Android signing
 android/key.properties

@@ -91,101 +91,25 @@ render services create \
 Result: `srv-d9frkhgk1i2s73be0j50`
 URL: `https://nomnom-backend-7iq0.onrender.com`
 
-## Step 3: Set Real Secrets via Render API
+## Step 3: Set Runtime Secrets
 
-The CLI doesn't support env var updates. Use the API directly.
+Do not print `~/.render/cli.yaml`, raw connection-info responses, or secret
+values in a terminal transcript. Use the Render Dashboard for manual setup and
+protected GitHub environment secrets for automated deployment.
 
-### Get API Key
-
-The Render CLI stores its token in `~/.render/cli.yaml`. Extract the API key:
-```bash
-cat ~/.render/cli.yaml
-# Look for: api.key: rnd_...
-```
-
-### Get Connection Strings
-
-```bash
-RENDER_API_KEY="rnd_..."
-SERVICE_ID="srv-d9frkhgk1i2s73be0j50"
-
-# PostgreSQL
-curl -s "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a/connection-info" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}"
-
-# Redis
-curl -s "https://api.render.com/v1/redis/red-d9frkeernols73cji320/connection-info" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}"
-```
-
-### Update Environment Variables
-
-```bash
-# R2 Access Key
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_ACCESS_KEY_ID" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_R2_ACCESS_KEY"}'
-
-# R2 Secret Key
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_SECRET_ACCESS_KEY" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_R2_SECRET_KEY"}'
-
-# R2 Endpoint
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/R2_ENDPOINT" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_R2_ENDPOINT.r2.cloudflarestorage.com"}'
-
-# Admin Password
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/ADMIN_PASSWORD" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "YOUR_ADMIN_PASSWORD"}'
-
-# DATABASE_URL (internal connection string from step above)
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/DATABASE_URL" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "postgresql://nomnom:PASSWORD@dpg-xxx/nomnom_xxx"}'
-
-# REDIS_URL (internal connection string from step above)
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/REDIS_URL" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "rediss://red-xxx:PASSWORD@red-xxx:6379"}'
-
-# JWT_SECRET (generate a random one)
-JWT_SECRET=$(openssl rand -hex 32)
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/JWT_SECRET" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"value\": \"${JWT_SECRET}\"}"
-```
-
-### Upload Firebase Credentials
-
-```bash
-jq -Rs '{content: .}' backend/config/firebase-credentials.json > /tmp/firebase-secret.json
-
-curl -s -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/secret-files/firebase-credentials.json" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  --data-binary @/tmp/firebase-secret.json
-```
+1. Open the PostgreSQL resource's **Connect** panel and copy its internal URL
+   directly into the backend service's `DATABASE_URL` environment field.
+2. Open the Redis resource's **Connect** panel and copy its internal URL directly
+   into `REDIS_URL`.
+3. In the backend service's **Environment** page, enter `JWT_SECRET`, the R2
+   credentials, and the bootstrap admin password directly. Never reuse a human
+   login password for bootstrap configuration.
+4. Add `firebase-credentials.json` through Render's **Secret Files** interface
+   and keep `FIREBASE_CREDENTIALS_PATH=/etc/secrets/firebase-credentials.json`.
+5. Save the configuration and trigger a fresh deploy with `render deploys
+   create srv-d9frkhgk1i2s73be0j50 --wait`.
 
 Secret-file updates require a new deploy, not only a service restart.
-
-### Trigger Redeploy
-
-```bash
-curl -s -X POST "https://api.render.com/v1/services/${SERVICE_ID}/deploys" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
 
 ## Step 4: Verify
 
@@ -196,29 +120,18 @@ curl https://nomnom-backend-7iq0.onrender.com/health
 # Admin login
 curl -X POST https://nomnom-backend-7iq0.onrender.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@nomnom.lk","password":"Admin@123"}'
+  --data-binary @/path/to/private-login-payload.json
 ```
 
 ## Step 5: Seed Data (Optional)
 
 The production database starts empty. To seed it with sample data:
 
-```bash
-# Add your IP to DB allow list temporarily
-curl -s -X PATCH "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"ipAllowList\": [{\"cidrBlock\": \"$(curl -s ifconfig.me)/32\", \"description\": \"seed\"}]}"
-
-# Seed via render psql (or local psql with external connection string)
-render psql nomnom-db --command "..." --output text
-
-# Remove IP from allow list after
-curl -s -X PATCH "https://api.render.com/v1/postgres/dpg-d9frkbjbc2fs73bq2ncg-a" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"ipAllowList": []}'
-```
+1. Add only the operator's current `/32` address through the PostgreSQL Render
+   Dashboard allow list.
+2. Run the approved seed operation with `render psql` or a local client.
+3. Remove the temporary allow-list entry immediately.
+4. Verify the allow list is empty before ending the maintenance session.
 
 ## Architecture Notes
 

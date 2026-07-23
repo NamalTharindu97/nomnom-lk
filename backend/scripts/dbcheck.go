@@ -29,8 +29,6 @@ func main() {
 		cfg.Database.User, cfg.Database.Password,
 		cfg.Database.Host, cfg.Database.Port,
 		cfg.Database.Name, cfg.Database.SSLMode)
-	fmt.Fprintf(os.Stderr, "[dbcheck] pgURL: %s\n", pgURL)
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
