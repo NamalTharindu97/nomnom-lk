@@ -3,20 +3,10 @@ import { test, expect, type Page, type BrowserContext } from "@playwright/test"
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"
 
 async function loginAs(page: Page, email: string, password: string) {
-  const res = await page.request.post(`${API_BASE}/auth/login`, {
+	const res = await page.request.post("/api/v1/auth/browser/login", {
     data: { email, password },
   })
   expect(res.status()).toBe(200)
-  const { access_token, user } = await res.json()
-  await page.evaluate(
-    ({ token, userData }) => {
-      localStorage.setItem("token", token)
-      localStorage.setItem("user", JSON.stringify(userData))
-      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`
-      document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=86400; SameSite=Lax`
-    },
-    { token: access_token, userData: user }
-  )
 }
 
 async function clearAuth(page: Page, context: BrowserContext) {
@@ -130,10 +120,13 @@ test.describe("RBAC", () => {
       expect(createRes.status()).toBe(200)
     })
 
-    test("should be redirected from dashboard to login", async ({ page, context }) => {
+    test("should be rejected before a dashboard session is created", async ({ page, context }) => {
       await page.goto("/login")
       await clearAuth(page, context)
-      await loginAs(page, regularEmail, "Test@123")
+	  const response = await page.request.post("/api/v1/auth/browser/login", {
+		data: { email: regularEmail, password: "Test@123" },
+	  })
+	  expect(response.status()).toBe(403)
 
       await page.goto("/dashboard")
       await expect(page).toHaveURL(/\/login/)

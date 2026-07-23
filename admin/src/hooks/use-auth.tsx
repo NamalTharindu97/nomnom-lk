@@ -11,18 +11,17 @@ interface User {
   role: string
 }
 
-interface ImpersonationUser {
-  id: string
-  email: string
-  name: string
-  role: string
+type ImpersonationUser = User
+
+interface SessionResponse {
+  user: User
+  impersonated_by?: string
 }
 
 interface AuthContext {
   user: User | null
-  token: string | null
   login: (email: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   isLoading: boolean
   isAdmin: boolean
   isOwner: boolean
@@ -35,105 +34,69 @@ interface AuthContext {
 
 const AuthCtx = createContext<AuthContext | null>(null)
 
-function decodeToken(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".")
-    if (parts.length !== 3) return null
-    const payload = parts[1]
-    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-    return JSON.parse(decoded)
-  } catch {
-    return null
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [impersonatedUser, setImpersonatedUser] = useState<ImpersonationUser | null>(null)
   const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token")
-    const storedUser = localStorage.getItem("user")
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
-
-      const claims = decodeToken(storedToken)
-      if (claims?.impersonated_by && typeof claims.impersonated_by === "string" && claims.impersonated_by !== "") {
-        setImpersonatedBy(claims.impersonated_by as string)
-        setImpersonatedUser(JSON.parse(storedUser))
-      }
+    let active = true
+    api.get<SessionResponse>("/auth/browser/session")
+      .then((session) => {
+        if (!active) return
+        setUser(session.user)
+        setImpersonatedBy(session.impersonated_by || null)
+        setImpersonatedUser(session.impersonated_by ? session.user : null)
+      })
+      .catch(() => {
+        if (!active) return
+        setUser(null)
+        setImpersonatedBy(null)
+        setImpersonatedUser(null)
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
     }
-    setIsLoading(false)
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ access_token: string; user: User }>("/auth/login", {
-      email,
-      password,
-    })
-
-    const { access_token, user: userData } = res
-
-    if (userData.role !== "admin" && userData.role !== "restaurant_owner") {
-      throw new Error("Access restricted to administrators and restaurant owners only.")
-    }
-
-    localStorage.setItem("token", access_token)
-    localStorage.setItem("user", JSON.stringify(userData))
-    document.cookie = `token=${access_token}; path=/; max-age=86400; SameSite=Lax`
-    document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=86400; SameSite=Lax`
-    setToken(access_token)
-    setUser(userData)
-  }, [])
-
-  const logout = useCallback(() => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-    document.cookie = "token=; path=/; max-age=0"
-    document.cookie = "user=; path=/; max-age=0"
-    setToken(null)
-    setUser(null)
+    const res = await api.post<{ user: User }>("/auth/browser/login", { email, password })
+    setUser(res.user)
     setImpersonatedBy(null)
     setImpersonatedUser(null)
-    router.push("/login")
+  }, [])
+
+  const logout = useCallback(async () => {
+    try {
+      await api.post<void>("/auth/browser/logout")
+    } finally {
+      setUser(null)
+      setImpersonatedBy(null)
+      setImpersonatedUser(null)
+      router.push("/login")
+    }
   }, [router])
 
   const impersonate = useCallback(async (userId: string) => {
-    const res = await api.post<{ access_token: string; user: User; impersonated_by: string }>("/admin/impersonate", {
+    const res = await api.post<{ user: User; impersonated_by: string }>("/admin/impersonate", {
       user_id: userId,
     })
-
-    localStorage.setItem("token", res.access_token)
-    localStorage.setItem("user", JSON.stringify(res.user))
-    document.cookie = `token=${res.access_token}; path=/; max-age=86400; SameSite=Lax`
-    document.cookie = `user=${JSON.stringify(res.user)}; path=/; max-age=86400; SameSite=Lax`
-
-    setToken(res.access_token)
     setUser(res.user)
     setImpersonatedBy(res.impersonated_by)
     setImpersonatedUser(res.user)
-
     router.replace("/dashboard")
   }, [router])
 
   const stopImpersonating = useCallback(async () => {
-    const res = await api.post<{ access_token: string; user: User }>("/admin/impersonate/stop")
-
-    localStorage.setItem("token", res.access_token)
-    localStorage.setItem("user", JSON.stringify(res.user))
-    document.cookie = `token=${res.access_token}; path=/; max-age=86400; SameSite=Lax`
-    document.cookie = `user=${JSON.stringify(res.user)}; path=/; max-age=86400; SameSite=Lax`
-
-    setToken(res.access_token)
+    const res = await api.post<{ user: User }>("/admin/impersonate/stop")
     setUser(res.user)
     setImpersonatedBy(null)
     setImpersonatedUser(null)
-
     router.replace("/dashboard")
   }, [router])
 
@@ -144,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthCtx.Provider
       value={{
         user,
-        token,
         login,
         logout,
         isLoading,
