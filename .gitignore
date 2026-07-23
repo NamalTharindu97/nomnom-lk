@@ -60,3 +60,4 @@ devtools_options.yaml
 
 # OpenCode config (contains MCP tokens)
 opencode.json
+backend/seed
