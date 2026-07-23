@@ -1,0 +1,88 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate staging release candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record staging SHA
+        run: |
+          echo "Staging commit: $GITHUB_SHA"
+          echo "Triggered by: $GITHUB_ACTOR"
+          echo "## Staging Release Candidate" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`$GITHUB_SHA\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`staging\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor:** $GITHUB_ACTOR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo ":information_source: Staging deployment is not yet configured." >> $GITHUB_STEP_SUMMARY
+          echo "This workflow will trigger automated staging deployment when Contabo VPS is provisioned." >> $GITHUB_STEP_SUMMARY
+
+  build-backend:
+    name: Build backend Docker image
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          push: false
+          load: false
+          tags: nomnom-backend:staging
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: nomnom-backend:staging
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+  build-admin:
+    name: Build admin Docker image
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build admin image
+        uses: docker/build-push-action@v5
+        with:
+          context: admin
+          push: false
+          load: false
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api/v1
+            API_PROXY_TARGET=http://backend:8080
+          tags: nomnom-admin:staging
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan admin image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: nomnom-admin:staging
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
