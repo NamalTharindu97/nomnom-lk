@@ -81,14 +81,17 @@ func main() {
 
 	mc, err := minio.New(cfg.R2.Endpoint, &minio.Options{
 		Creds:        credentials.NewStaticV4(cfg.R2.AccessKeyID, cfg.R2.SecretAccessKey, ""),
-		Secure:       false,
+		Secure:       cfg.R2.Secure,
 		BucketLookup: minio.BucketLookupAuto,
 	})
 	if err != nil {
 		log.Fatalf("Failed to create MinIO client: %v", err)
 	}
 
-	env := "dev"
+	env := cfg.R2.Prefix
+	if env == "" {
+		env = "dev"
+	}
 	bucket := cfg.R2.Bucket
 
 	ctx := context.Background()
@@ -103,11 +106,10 @@ func main() {
 		}
 	}
 
-	cleanup(db)
+	fmt.Printf("Env prefix: %s | Bucket: %s | Secure: %v\n", env, bucket, cfg.R2.Secure)
 
-	adminID := createAdmin(db, cfg)
 	owners := createOwners(db)
-	fmt.Printf("Created admin: %s\n", adminID)
+	fmt.Println("Owners ready")
 	for email, id := range owners {
 		fmt.Printf("Created owner: %s -> %s\n", email, id)
 	}
@@ -305,18 +307,30 @@ func main() {
 
 		translations := buildTranslations(r.NameSi, r.NameTa, r.DescSi, r.DescTa, "name", "description")
 
-		rest := models.Restaurant{
-			Name:         r.Name,
-			Description:  &r.Description,
-			Address:      r.Address,
-			Latitude:     &r.Latitude,
-			Longitude:    &r.Longitude,
-			CuisineTags:  r.CuisineTags,
-			CoverImage:   &coverImage,
-			OwnerID:      &ownerID,
-			Status:       models.RestaurantApproved,
-			IsFeatured:   i < 4,
-			Translations: translations,
+		slug := strings.ToLower(strings.ReplaceAll(r.Name, " ", "-"))
+
+		var rest models.Restaurant
+		result := db.Where("slug = ?", slug).First(&rest)
+		if result.Error == nil {
+			fmt.Printf("  ℹ️  Restaurant exists: %s (id: %s)\n", r.Name, rest.ID)
+			restaurantIDs[i] = rest.ID
+			continue
+		}
+
+		rest = models.Restaurant{
+			Name:           r.Name,
+			Slug:           slug,
+			Description:    &r.Description,
+			Address:        r.Address,
+			Latitude:       &r.Latitude,
+			Longitude:      &r.Longitude,
+			CuisineTags:    r.CuisineTags,
+			CoverImage:     &coverImage,
+			OwnerID:        &ownerID,
+			Status:         models.RestaurantApproved,
+			IsFeatured:     i < 4,
+			Translations:   translations,
+			OrderPlatforms: r.OrderPlatforms,
 		}
 		if r.InstagramURL != "" {
 			rest.InstagramURL = &r.InstagramURL
@@ -326,9 +340,6 @@ func main() {
 		}
 		if r.WebsiteURL != "" {
 			rest.WebsiteURL = &r.WebsiteURL
-		}
-		if len(r.OrderPlatforms) > 0 {
-			rest.OrderPlatforms = r.OrderPlatforms
 		}
 		if err := db.Create(&rest).Error; err != nil {
 			fmt.Printf("  ❌ Failed to create restaurant %s: %v\n", r.Name, err)
@@ -345,6 +356,13 @@ func main() {
 		}
 		rid := restaurantIDs[o.RestaurantIdx]
 		if rid == uuid.Nil {
+			continue
+		}
+
+		var existing models.Offer
+		result := db.Where("restaurant_id = ? AND title = ?", rid, o.Title).First(&existing)
+		if result.Error == nil {
+			fmt.Printf("  ℹ️  Offer exists: %s\n", o.Title)
 			continue
 		}
 
