@@ -31,9 +31,8 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 16));
 
-    final fade = tester.widget<FadeTransition>(
-      find.byType(FadeTransition),
-    );
+    final fade = tester
+        .widget<FadeTransition>(find.byType(FadeTransition).first);
 
     expect(fade.opacity.value, greaterThan(0.0));
   });

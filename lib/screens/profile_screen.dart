@@ -413,7 +413,7 @@ class _ThemeTile extends StatelessWidget {
             Switch(
               value: themeProvider.isDark,
               onChanged: (_) => themeProvider.toggle(),
-              activeColor: AppColors.curry,
+              activeThumbColor: AppColors.curry,
               activeTrackColor: AppColors.curry.withValues(alpha: 0.4),
             ),
           ],
