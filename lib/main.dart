@@ -376,9 +376,10 @@ class NomNomApp extends StatelessWidget {
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       builder: (context, child) {
+        final textScaler = MediaQuery.textScalerOf(context)
+            .clamp(minScaleFactor: 0.75, maxScaleFactor: 1.5);
         return MediaQuery(
-          data:
-              MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
           child: child!,
         );
       },

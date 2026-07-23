@@ -104,20 +104,15 @@ brew install postgresql@16
 
 **Problem:** Render PostgreSQL has an IP allow list that defaults to empty (private only).
 
-**Fix:** Temporarily add your IP:
+**Fix:** Temporarily add only your current `/32` address with the authenticated
+Render CLI, then clear it immediately:
 ```bash
-# Get your public IP
 MY_IP=$(curl -s ifconfig.me)
-
-# Add to allow list (note: Render may IPv4-ize IPv6 addresses)
-curl -X PATCH "https://api.render.com/v1/postgres/dpg-xxx" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"ipAllowList\": [{\"cidrBlock\": \"175.157.115.71/32\", \"description\": \"fix\"}]}"
-
-# After psql work, remove it
-curl -X PATCH "https://api.render.com/v1/postgres/dpg-xxx" \
-  -d '{"ipAllowList": []}'
+render postgres update dpg-xxx \
+  --ip-allow-list "cidr=${MY_IP}/32,description=temporary-maintenance" \
+  --confirm
+# Run the required psql operation, then:
+render postgres update dpg-xxx --clear-ip-allow-list --confirm
 ```
 
 ## Issue 8: CI Failures After P47 Merge
@@ -170,20 +165,10 @@ Fixed 2 high-severity vulns. 2 moderate postcss vulns remain (require breaking `
 failed with `unexpected end of JSON input` because the payload used `contents`
 instead of the API's `content` field.
 
-**Fix:** Upload the JSON through the correct field and trigger a full deploy. A
-service restart alone reuses the old mounted secret.
-
-```bash
-jq -Rs '{content: .}' backend/config/firebase-credentials.json > /tmp/firebase-secret.json
-
-curl -X PUT \
-  "https://api.render.com/v1/services/${SERVICE_ID}/secret-files/firebase-credentials.json" \
-  -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  -H "Content-Type: application/json" \
-  --data-binary @/tmp/firebase-secret.json
-
-render deploys create "${SERVICE_ID}" --confirm
-```
+**Fix:** Replace the file through Render's **Secret Files** interface and trigger
+a full deploy with `render deploys create "${SERVICE_ID}" --wait`. A service
+restart alone reuses the old mounted secret. Do not transform or print the JSON
+in a recorded terminal session.
 
 ## Issue 11: Admin Proxy Used `localhost:8080` on Render
 
@@ -222,7 +207,7 @@ login both returned HTTP 200 through the hosted frontend.
 | `R2_ACCESS_KEY_ID` | Cloudflare R2 | **Rotate after sharing in chat** |
 | `R2_SECRET_ACCESS_KEY` | Cloudflare R2 | **Rotate after sharing in chat** |
 | `R2_ENDPOINT` | Cloudflare R2 | `9e4b33ed2e3cfb1fbbb837ada2399a6d.r2.cloudflarestorage.com` |
-| `ADMIN_PASSWORD` | User chosen | Currently `Admin@123` — change for production |
+| `ADMIN_PASSWORD` | User chosen | Rotated; never record the value in source or documentation |
 | `FIREBASE_CREDENTIALS_PATH` | Fixed path | `/etc/secrets/firebase-credentials.json` |
 | `SERVER_PORT` | Fixed | `10000` (Render convention) |
 | `ENVIRONMENT` | Fixed | `production` |

@@ -1,0 +1,242 @@
+name: nomnom
+
+services:
+  caddy:
+    image: ${CADDY_IMAGE:?Set CADDY_IMAGE to an immutable digest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?Set ADMIN_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+      - app
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+  admin:
+    image: ${ADMIN_IMAGE:?Set ADMIN_IMAGE to an immutable SHA image}
+    restart: unless-stopped
+    environment:
+      API_PROXY_TARGET: http://backend:8080
+      NEXT_PUBLIC_API_URL: /api/v1
+      PORT: "3000"
+    expose:
+      - "3000"
+    networks:
+      - app
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 768M
+
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to an immutable SHA image}
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8080"
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${DATABASE_USER:-nomnom}
+      DATABASE_NAME: ${DATABASE_NAME:-nomnom}
+      DATABASE_SSLMODE: require
+      DATABASE_PASSWORD_FILE: /run/secrets/database_password
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      BROWSER_COOKIE_SECURE: "true"
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase_credentials
+      R2_REGION: ${R2_REGION:-auto}
+      R2_ACCESS_KEY_FILE: /run/secrets/r2_access_key
+      R2_SECRET_KEY_FILE: /run/secrets/r2_secret_key
+      R2_BUCKET: ${R2_BUCKET:?Set R2_BUCKET}
+      R2_ENDPOINT: ${R2_ENDPOINT:?Set R2_ENDPOINT}
+      R2_SECURE: "true"
+      R2_FORCE_PATH_STYLE: "false"
+      R2_PREFIX: ${R2_PREFIX:?Set R2_PREFIX}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      CORS_ORIGINS: https://${ADMIN_DOMAIN:?Set ADMIN_DOMAIN}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL}
+      ADMIN_PASSWORD_FILE: /run/secrets/admin_password
+      SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:?Set SMTP_USERNAME}
+      SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
+    expose:
+      - "8080"
+    secrets:
+      - source: backend_database_password
+        target: database_password
+      - source: backend_redis_password
+        target: redis_password
+      - jwt_secret
+      - firebase_credentials
+      - r2_access_key
+      - r2_secret_key
+      - admin_password
+      - smtp_password
+    networks:
+      - app
+      - data
+      - egress
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 1G
+
+  postgres:
+    image: ${POSTGRES_IMAGE:?Set POSTGRES_IMAGE to an immutable digest}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-nomnom}
+      POSTGRES_USER: ${DATABASE_USER:-nomnom}
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/run/secrets/postgres_tls_cert
+      - -c
+      - ssl_key_file=/run/secrets/postgres_tls_key
+    secrets:
+      - source: postgres_database_password
+        target: database_password
+      - postgres_tls_cert
+      - postgres_tls_key
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 2G
+
+  redis:
+    image: ${REDIS_IMAGE:?Set REDIS_IMAGE to an immutable digest}
+    restart: unless-stopped
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    secrets:
+      - source: redis_health_password
+        target: redis_password
+      - redis_users_acl
+    volumes:
+      - ./config/redis.conf:/etc/redis/redis.conf:ro
+      - redis_data:/data
+    networks:
+      - data
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$(cat /run/secrets/redis_password) redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 512M
+
+networks:
+  edge:
+  app:
+    internal: true
+  data:
+    internal: true
+  egress:
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:
+
+secrets:
+  backend_database_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/database_password
+  postgres_database_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/postgres/database_password
+  backend_redis_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/redis_password
+  redis_health_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/redis/redis_password
+  redis_users_acl:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/redis/redis_users.acl
+  jwt_secret:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/jwt_secret
+  firebase_credentials:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/firebase_credentials.json
+  r2_access_key:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/r2_access_key
+  r2_secret_key:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/r2_secret_key
+  admin_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/admin_password
+  smtp_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/backend/smtp_password
+  postgres_tls_cert:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/postgres/postgres_tls.crt
+  postgres_tls_key:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/postgres/postgres_tls.key

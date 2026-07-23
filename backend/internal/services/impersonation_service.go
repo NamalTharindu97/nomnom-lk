@@ -104,7 +104,7 @@ func (s *ImpersonationService) StopImpersonation(adminID uuid.UUID) (string, *mo
 	ctx := context.Background()
 	redisKey := fmt.Sprintf("%s%s", impersonationRedisPrefix, adminID.String())
 
-	adminToken, err := s.rdb.Get(ctx, redisKey).Result()
+	_, err = s.rdb.Get(ctx, redisKey).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return "", nil, errors.New("no active impersonation session found")
@@ -114,23 +114,15 @@ func (s *ImpersonationService) StopImpersonation(adminID uuid.UUID) (string, *mo
 
 	s.rdb.Del(ctx, redisKey)
 
-	claims, err := jwt.ValidateToken(s.jwtCfg.Secret, adminToken)
+	adminToken, err := jwt.GenerateAccessToken(s.jwtCfg.Secret, admin.ID, admin.Email, admin.Name, string(admin.Role), s.jwtCfg.AccessExpiry)
 	if err != nil {
-		return adminToken, nil, nil
-	}
-
-	impersonatedUserID, _ := uuid.Parse(claims.Sub)
-
-	impersonatedUser, err := s.userRepo.FindByID(impersonatedUserID)
-	var target *models.User
-	if err == nil {
-		target = impersonatedUser
+		return "", nil, fmt.Errorf("failed to restore admin session: %w", err)
 	}
 
 	s.auditService.LogAction(admin.ID, admin.Name, string(admin.Role), "admin.impersonate.stop", "user", adminID.String(),
 		fmt.Sprintf("Admin %s (%s) stopped impersonating", admin.Name, admin.Email))
 
-	return adminToken, target, nil
+	return adminToken, admin, nil
 }
 
 func (s *ImpersonationService) GetImpersonationStatus(adminID uuid.UUID) (bool, *models.User, time.Time, error) {
@@ -165,5 +157,3 @@ func (s *ImpersonationService) isActiveImpersonation(adminID uuid.UUID) bool {
 	err := s.rdb.Get(ctx, redisKey).Err()
 	return err == nil
 }
-
-

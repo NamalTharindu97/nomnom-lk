@@ -1,6 +1,7 @@
 # Render Deployment — Credentials Reference
 
-**No secrets stored here.** This file documents where credentials live.
+**No active secret values belong here.** This file documents credential
+locations and rotation responsibilities only.
 
 ## Render
 
@@ -64,7 +65,7 @@
 | Field | Value |
 |-------|-------|
 | Email | `admin@nomnom.lk` |
-| Password | `Admin@123` (change for production) |
+| Password | Rotated; stored only in the administrator's password manager |
 | Role | `admin` |
 | Email Verified | Yes (fixed via DB after initial bootstrap) |
 
@@ -81,20 +82,11 @@
 
 ### R2 Keys
 1. Create new token at Cloudflare → R2 → API Tokens
-2. Update on Render:
-   ```bash
-   curl -X PUT "https://api.render.com/v1/services/srv-d9frkhgk1i2s73be0j50/env-vars/R2_ACCESS_KEY_ID" \
-     -H "Authorization: Bearer $(grep 'key:' ~/.render/cli.yaml | awk '{print $2}')" \
-     -H "Content-Type: application/json" \
-     -d '{"value": "NEW_KEY"}'
-   ```
-3. Trigger redeploy:
-   ```bash
-   curl -X POST "https://api.render.com/v1/services/srv-d9frkhgk1i2s73be0j50/deploys" \
-     -H "Authorization: Bearer $(grep 'key:' ~/.render/cli.yaml | awk '{print $2}')" \
-     -H "Content-Type: application/json" \
-     -d '{}'
-   ```
+2. Enter the replacement values directly in the backend service's Render
+   **Environment** page.
+3. Trigger and verify a fresh deploy with the authenticated Render CLI.
+4. Revoke the previous Cloudflare token only after image read, upload, and
+   deletion checks pass.
 
 ### Admin Password
 1. Update on Render (env var `ADMIN_PASSWORD`)

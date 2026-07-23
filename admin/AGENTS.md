@@ -24,5 +24,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Backend `GET /users` endpoint added at `/api/v1/users` (admin-only).
 - Offer images are URL strings (upload support not yet added).
 
-## Default Credentials
-- `admin@nomnom.lk` / `Admin@123`
+## Local Credentials
+- Development and E2E credentials are defined in ignored local configuration
+  and isolated test fixtures. Never reuse them in staging or production.

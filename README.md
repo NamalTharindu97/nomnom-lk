@@ -63,8 +63,8 @@ npm run dev
 flutter run
 ```
 
-**Default login:** `admin@nomnom.lk` / `Admin@123`
-**Owner login:** `kfc@nomnom.lk` / `Owner@123`
+Local login credentials come from the ignored `backend/.env` and development
+seed configuration. Never reuse development credentials in hosted environments.
 
 ---
 
@@ -178,12 +178,8 @@ npm audit --audit-level=high
 
 ### E2E Test Accounts
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@nomnom.lk` | `Admin@123` |
-| Owner (KFC) | `kfc@nomnom.lk` | `Owner@123` |
-| Owner (Pizza Hut) | `owner@nomnom.lk` | `Owner@123` |
-| Owner (Subway) | `subway@nomnom.lk` | `Owner@123` |
+E2E credentials are isolated test fixtures defined in `admin/tests/` and the CI
+workflow. They must never be accepted by staging or production.
 
 ---
 
@@ -391,7 +387,7 @@ curl http://localhost:8080/health
 # Login
 curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@nomnom.lk","password":"Admin@123"}'
+  --data-binary @/path/to/private-local-login-payload.json
 
 # Get restaurants
 curl http://localhost:8080/api/v1/restaurants

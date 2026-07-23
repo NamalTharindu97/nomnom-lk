@@ -71,6 +71,25 @@ func (s *AuthService) Register(email, password, name string) error {
 }
 
 func (s *AuthService) Login(email, password string) (*response.AuthResponse, error) {
+	user, err := s.authenticatePassword(email, password)
+	if err != nil {
+		return nil, err
+	}
+	return s.generateAuthResponse(user)
+}
+
+func (s *AuthService) LoginDashboard(email, password string) (*response.AuthResponse, error) {
+	user, err := s.authenticatePassword(email, password)
+	if err != nil {
+		return nil, err
+	}
+	if user.Role != models.RoleAdmin && user.Role != models.RoleRestaurantOwner {
+		return nil, errors.New("access restricted to administrators and restaurant owners only")
+	}
+	return s.generateAuthResponse(user)
+}
+
+func (s *AuthService) authenticatePassword(email, password string) (*models.User, error) {
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -95,7 +114,7 @@ func (s *AuthService) Login(email, password string) (*response.AuthResponse, err
 		return nil, errors.New("please verify your email first")
 	}
 
-	return s.generateAuthResponse(user)
+	return user, nil
 }
 
 func (s *AuthService) SendVerificationCode(email string) error {
@@ -212,6 +231,10 @@ func (s *AuthService) Refresh(refreshTokenStr string) (*response.TokenPairRespon
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
+	if !user.IsActive {
+		s.refreshTokenRepo.DeleteByID(storedToken.ID)
+		return nil, errors.New("your account has been suspended. contact an administrator")
+	}
 
 	s.refreshTokenRepo.DeleteByID(storedToken.ID)
 
@@ -238,8 +261,65 @@ func (s *AuthService) Refresh(refreshTokenStr string) (*response.TokenPairRespon
 	}, nil
 }
 
+func (s *AuthService) RefreshDashboard(refreshTokenStr, currentAccessToken string) (*response.TokenPairResponse, error) {
+	result, err := s.Refresh(refreshTokenStr)
+	if err != nil || currentAccessToken == "" {
+		return result, err
+	}
+
+	adminClaims, err := jwt.ValidateToken(s.cfg.Secret, result.AccessToken)
+	if err != nil {
+		return result, nil
+	}
+	currentClaims, err := jwt.ValidateTokenIgnoringExpiry(s.cfg.Secret, currentAccessToken)
+	if err != nil || currentClaims.ImpersonatedBy != adminClaims.Sub {
+		return result, nil
+	}
+	active, err := s.rdb.Exists(context.Background(), "impersonation:"+adminClaims.Sub).Result()
+	if err != nil || active == 0 {
+		return result, nil
+	}
+	targetID, err := uuid.Parse(currentClaims.Sub)
+	if err != nil {
+		return result, nil
+	}
+	target, err := s.userRepo.FindByID(targetID)
+	if err != nil || !target.IsActive || target.Role != models.RoleRestaurantOwner {
+		return result, nil
+	}
+	adminID, err := uuid.Parse(adminClaims.Sub)
+	if err != nil {
+		return result, nil
+	}
+	result.AccessToken, err = jwt.GenerateImpersonationToken(
+		s.cfg.Secret, target.ID, target.Email, target.Name, string(target.Role), s.cfg.AccessExpiry, adminID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to continue impersonation session: %w", err)
+	}
+	return result, nil
+}
+
 func (s *AuthService) Logout(userID uuid.UUID) error {
 	return s.refreshTokenRepo.DeleteByUserID(userID)
+}
+
+func (s *AuthService) LogoutRefreshToken(refreshTokenStr string) (*models.User, error) {
+	storedToken, err := s.refreshTokenRepo.FindByHash(hashToken(refreshTokenStr))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if err := s.refreshTokenRepo.DeleteByHash(storedToken.TokenHash); err != nil {
+		return nil, err
+	}
+	user, err := s.userRepo.FindByID(storedToken.UserID)
+	if err != nil {
+		return nil, nil
+	}
+	return user, nil
 }
 
 func (s *AuthService) generateAuthResponse(user *models.User) (*response.AuthResponse, error) {

@@ -2,6 +2,7 @@ package database
 
 import (
 	"log"
+	"time"
 
 	"github.com/nomnom-lk/backend/internal/config"
 	"github.com/nomnom-lk/backend/internal/models"
@@ -12,7 +13,12 @@ import (
 
 func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger: logger.New(log.New(log.Writer(), "\r\n", log.LstdFlags), logger.Config{
+			SlowThreshold:        time.Second,
+			LogLevel:             logger.Warn,
+			ParameterizedQueries: true,
+			Colorful:             false,
+		}),
 	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)

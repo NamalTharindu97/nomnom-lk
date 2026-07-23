@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/nomnom-lk/backend/internal/config"
 	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/services"
 	"github.com/nomnom-lk/backend/pkg/response"
@@ -13,10 +14,14 @@ import (
 
 type ImpersonationHandler struct {
 	impersonationService *services.ImpersonationService
+	browserSession       *browserSession
 }
 
-func NewImpersonationHandler(impersonationService *services.ImpersonationService) *ImpersonationHandler {
-	return &ImpersonationHandler{impersonationService: impersonationService}
+func NewImpersonationHandler(impersonationService *services.ImpersonationService, browserCfg *config.BrowserSessionConfig, jwtCfg *config.JWTConfig) *ImpersonationHandler {
+	return &ImpersonationHandler{
+		impersonationService: impersonationService,
+		browserSession:       newBrowserSession(browserCfg, jwtCfg),
+	}
 }
 
 type startImpersonationRequest struct {
@@ -56,8 +61,7 @@ func (h *ImpersonationHandler) Start(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token":    impersonationToken,
+	result := gin.H{
 		"user": gin.H{
 			"id":    target.ID,
 			"email": target.Email,
@@ -65,7 +69,13 @@ func (h *ImpersonationHandler) Start(c *gin.Context) {
 			"role":  target.Role,
 		},
 		"impersonated_by": adminID,
-	})
+	}
+	if middleware.IsCookieAuth(c) {
+		h.browserSession.setAccess(c, impersonationToken)
+	} else {
+		result["access_token"] = impersonationToken
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *ImpersonationHandler) Stop(c *gin.Context) {
@@ -81,7 +91,12 @@ func (h *ImpersonationHandler) Stop(c *gin.Context) {
 			response.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"access_token": resultToken})
+		if middleware.IsCookieAuth(c) {
+			h.browserSession.setAccess(c, resultToken)
+			c.JSON(http.StatusOK, gin.H{})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"access_token": resultToken})
+		}
 		return
 	}
 
@@ -107,10 +122,13 @@ func (h *ImpersonationHandler) Stop(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token": adminToken,
-		"user":         userInfo,
-	})
+	result := gin.H{"user": userInfo}
+	if middleware.IsCookieAuth(c) {
+		h.browserSession.setAccess(c, adminToken)
+	} else {
+		result["access_token"] = adminToken
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *ImpersonationHandler) Status(c *gin.Context) {
@@ -149,7 +167,7 @@ func (h *ImpersonationHandler) Status(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"is_impersonating": true,
+		"is_impersonating":  true,
 		"impersonated_user": userInfo,
 		"started_at":        startedAt,
 	})

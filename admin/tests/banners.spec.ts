@@ -3,17 +3,15 @@ import { test, expect, type Page } from "@playwright/test"
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"
 
 async function authenticate(page: Page, email: string, password: string) {
-  const response = await page.request.post(`${API_BASE}/auth/login`, {
+	const browserResponse = await page.request.post("/api/v1/auth/browser/login", {
+		data: { email, password },
+	})
+	expect(browserResponse.status()).toBe(200)
+	const response = await page.request.post(`${API_BASE}/auth/login`, {
     data: { email, password },
   })
   expect(response.status()).toBe(200)
-  const { access_token, user } = await response.json()
-  await page.evaluate(({ token, userData }) => {
-    localStorage.setItem("token", token)
-    localStorage.setItem("user", JSON.stringify(userData))
-    document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`
-    document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=86400; SameSite=Lax`
-  }, { token: access_token, userData: user })
+	const { access_token } = await response.json()
   return access_token as string
 }
 

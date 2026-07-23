@@ -70,7 +70,7 @@ class FcmMessagingService {
       );
       debugPrint('FCM permission: ${settings.authorizationStatus}');
     } catch (e) {
-      debugPrint('FCM permission error: $e');
+      debugPrint('FCM permission error: ${e.runtimeType}');
     }
   }
 
@@ -84,16 +84,18 @@ class FcmMessagingService {
           await prefs.setBool('fcm_token_migrated', true);
           debugPrint('FCM migration done');
         } catch (e) {
-          debugPrint('FCM migration deleteToken error: $e');
+          debugPrint(
+            'FCM migration deleteToken error: ${e.runtimeType}',
+          );
         }
       }
       _currentToken = await _messaging.getToken();
-      debugPrint('FCM token: $_currentToken');
+      debugPrint('FCM token obtained');
       if (_currentToken != null) {
         await _registerToken(_currentToken!);
       }
     } catch (e) {
-      debugPrint('FCM getToken error: $e');
+      debugPrint('FCM getToken error: ${e.runtimeType}');
     }
   }
 
@@ -124,7 +126,7 @@ class FcmMessagingService {
   }
 
   static Future<void> _backgroundHandler(RemoteMessage message) async {
-    debugPrint('FCM background message: ${message.notification?.title}');
+    debugPrint('FCM background message received');
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -191,7 +193,7 @@ class FcmMessagingService {
       });
       debugPrint('FCM token registered');
     } catch (e) {
-      debugPrint('FCM register error: $e');
+      debugPrint('FCM register error: ${e.runtimeType}');
     }
   }
 
@@ -201,7 +203,7 @@ class FcmMessagingService {
       await _apiClient.delete('/devices', data: {'token': _currentToken});
       _currentToken = null;
     } catch (e) {
-      debugPrint('FCM unregister error: $e');
+      debugPrint('FCM unregister error: ${e.runtimeType}');
     }
   }
 }

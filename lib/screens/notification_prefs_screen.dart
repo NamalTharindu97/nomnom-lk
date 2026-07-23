@@ -112,7 +112,7 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
                       Switch(
                         value: _values[key]!,
                         onChanged: (v) => _toggle(key, v),
-                        activeColor: AppColors.curry,
+                        activeThumbColor: AppColors.curry,
                       ),
                     ],
                   ),

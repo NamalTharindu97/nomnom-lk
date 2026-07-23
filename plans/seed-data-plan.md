@@ -23,7 +23,8 @@
 | 10 | `subway@nomnom.lk` | Subway Owner | Subway | 1 |
 | 11 | `tacbell@nomnom.lk` | Taco Bell Owner | Taco Bell | 1 |
 
-All passwords: `Owner@123`
+All development owners use the seed-only password defined in
+`backend/scripts/seed.go`. It must never be reused for hosted accounts.
 All have `is_active: true`, `email_verified_at: now`.
 
 ### Changes (only `backend/scripts/seed.go`)

@@ -1,0 +1,75 @@
+name: Verify Production Backup Restore
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_id:
+        description: Encrypted backup object name
+        required: true
+        type: string
+      confirmation:
+        description: Type VERIFY-RESTORE to continue
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-production-restore
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Restore into disposable verification database
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          BACKUP_ID: ${{ inputs.backup_id }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$CONFIRMATION" == "VERIFY-RESTORE" ]]
+          [[ "$BACKUP_ID" =~ ^[A-Za-z0-9._/-]+\.dump\.age$ ]]
+          [[ "$BACKUP_ID" != /* && "$BACKUP_ID" != *".."* ]]
+
+      - name: Install SSH identity
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          install -d "$RUNNER_TEMP/nomnom-ssh"
+          printf '%s' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
+          chmod 0600 "$RUNNER_TEMP/nomnom-ssh/id" "$RUNNER_TEMP/nomnom-ssh/known_hosts"
+
+      - name: Stream recovery identity to verification restore
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT }}
+          VPS_DEPLOY_USER: ${{ vars.VPS_DEPLOY_USER }}
+          AGE_PRIVATE_IDENTITY: ${{ secrets.AGE_PRIVATE_IDENTITY }}
+          BACKUP_ID: ${{ inputs.backup_id }}
+        run: |
+          set -Eeuo pipefail
+          trap 'rm -rf "$RUNNER_TEMP/nomnom-ssh"' EXIT
+          : "${VPS_HOST:?VPS_HOST is required}"
+          : "${VPS_DEPLOY_USER:?VPS_DEPLOY_USER is required}"
+          port=${VPS_PORT:-22}
+          ssh_options=(
+            -i "$RUNNER_TEMP/nomnom-ssh/id"
+            -p "$port"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=$RUNNER_TEMP/nomnom-ssh/known_hosts"
+          )
+          # BACKUP_ID is client-expanded only after the strict allowlist checks above.
+          # shellcheck disable=SC2029
+          printf '%s' "$AGE_PRIVATE_IDENTITY" | ssh "${ssh_options[@]}" \
+            "$VPS_DEPLOY_USER@$VPS_HOST" \
+            "sudo /usr/local/sbin/nomnom-restore-postgres '$BACKUP_ID' VERIFY-RESTORE"

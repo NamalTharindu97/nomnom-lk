@@ -1,7 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** P48 (Render admin deployment) on `phase/P48-render-admin`. Backend and admin are live on Render in Singapore. Next: complete hosted verification, merge P48, and redeploy the SHA-tagged admin image.
+- **Current:** Security Phase 2 (GitHub-to-server secret delivery) is implemented and user-approved on `phase/P53-github-server-secret-delivery`. Phase 0 provider rotations are explicitly deferred but remain a mandatory pre-release gate. Next: Phase 3 secure admin browser sessions, only after explicit user approval. P50 production Git and CI/CD migration remains planned in `plans/production-git-cicd-plan.md`.
 - **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
 
 ## Deployment Documentation
@@ -13,7 +13,7 @@
 
 ## Constraints & Preferences
 - **Stack:** Go + Gin + GORM + PostgreSQL 16 + Redis 7 + MinIO + Firebase Auth + FCM + JWT + Sentry + Docker/Render + Next.js 16 + Tailwind v4 + shadcn/ui + Flutter + Dio + firebase_messaging.
-- **Build order & sign-off:** Phase-by-phase via feature branches (`phase/N-name`), merge to master after approval, branches preserved on remote.
+- **Build order & sign-off:** Until P50 is implemented, continue phase-by-phase via feature branches (`phase/N-name`) and PRs to `master`. P50 will introduce protected `staging` and `master` branches with staged promotion and manual production approval.
 - **Architecture:** Standard struct-based DI; roles (user, restaurant_owner, admin); approval workflow; localization via JSONB translations (`Translations` type alias `map[string]map[string]string` stored in JSONB column).
 - **Docker for infra only:** Postgres 16, Redis 7, MinIO via `docker compose up -d` in `backend/`. Backend runs natively with `make run`.
 - **Firebase graceful fallback:** Both Firebase Auth + FCM client log warning and return nil if credentials file absent.
@@ -26,9 +26,11 @@
 - **Air for Go hot reload:** Backend uses `air`; admin uses next dev HMR; Flutter runs in debug mode.
 - **Not yet:** Full offline support.
 - **Preserve existing code structure:** When adding functionality, do NOT restructure existing code. Add new features alongside existing code, not by replacing or rewriting it. For example, fix scroll issues by adding a wrapper div or CSS class — don't restructure the dialog layout or convert divs to forms.
+- **Preserve existing features and fixes (mandatory):** Never remove, replace, disable, or regress an existing feature, behavior, bug fix, route, localization, test, or deployment capability while implementing another task unless the user explicitly approves that exact removal. Before each phase, record the affected baseline behavior and tests; make the smallest additive change; run targeted regression tests plus the relevant full build/test suite; inspect the final diff for accidental deletions; and rebuild/re-run Flutter after every Flutter change. If a requested change conflicts with existing behavior, stop and ask instead of silently choosing one. Do not perform unrelated cleanup or broad rewrites during phased work.
 
 ## Key Decisions
-- **Git workflow:** Feature branches (`phase/N-name`) only — commit, push branch, create PR. Never push directly to `origin/master`.
+- **Git workflow (current):** Feature branches (`phase/N-name`) only — commit, push branch, create PR. Never push directly to `origin/master`.
+- **Git workflow (approved P50 target):** `staging` is the protected integration branch and `master` remains the protected production/live branch. Feature/fix/phase branches target `staging`; staging deploys automatically to isolated infrastructure; only `staging` may enter `master`; production deploys the exact staging-tested SHA images after manual GitHub environment approval. Render image auto-deploy and mutable `latest` deployments will be disabled during cutover.
 - **Dashboard RBAC pattern:** Separate `/api/v1/dashboard/*` route group with `RequireDashboardAccess` + `RequireActive` + `OwnerScoped` middleware chain. `OwnerScoped` sets `owner_scope_id` in context for `restaurant_owner` only; handlers use `GetOwnerScopeID()` to scope queries. `uuid.Nil` means "no scope" = admin = access all.
 - **Repo scoping convention:** `FindAllByOwner` and `FindByOwnerID` methods skip `owner_id` filter when `ownerID == uuid.Nil`, enabling single-query pattern for both admin (all) and owner (filtered).
 - **Cookie-based auth sync:** `document.cookie` set on login, cleared on logout, enables Next.js 16 proxy.ts server-side route guard for `/dashboard/*`.
@@ -66,8 +68,8 @@
 - Docker services (postgres 16, redis 7, minio) via `docker compose up -d` in `backend/`. Seeded data: 11 restaurants, 23 offers, 11 owners.
 - Backend FCM via direct HTTP to FCM v1 API using `cloud-platform` OAuth2 scope. No Firebase Admin SDK.
 - **Android google-services plugin** required for Firebase to work on Android.
-- Admin user: `admin@nomnom.lk` / `Admin@123` (role = admin).
-- Owner users: 11 brand-specific owners, one per restaurant. All passwords `Owner@123`. Emails: `owner@nomnom.lk` (Pizza Hut), `kfc@nomnom.lk`, `breadtalk@nomnom.lk`, `keells@nomnom.lk`, `fab@nomnom.lk`, `popeyes@nomnom.lk`, `solobowl@nomnom.lk`, `spar@nomnom.lk`, `streetburger@nomnom.lk`, `subway@nomnom.lk`, `tacbell@nomnom.lk`.
+- Admin user: `admin@nomnom.lk` (role = admin). Production password was rotated during security Phase 0 and must never be recorded in Git.
+- Owner users: 11 brand-specific owners, one per restaurant. Production owner accounts are suspended until each receives a unique password. Emails: `owner@nomnom.lk` (Pizza Hut), `kfc@nomnom.lk`, `breadtalk@nomnom.lk`, `keells@nomnom.lk`, `fab@nomnom.lk`, `popeyes@nomnom.lk`, `solobowl@nomnom.lk`, `spar@nomnom.lk`, `streetburger@nomnom.lk`, `subway@nomnom.lk`, `tacbell@nomnom.lk`. Development-only seed passwords remain defined in `backend/scripts/seed.go` and must never be reused for hosted accounts.
 
 ## Relevant Files
 ### Backend
@@ -123,6 +125,25 @@
 - **See:** `plans/ci-cd-enhancement.md` for pipeline upgrades
 
 ## Recent Work
+- **2026-07-22:** P50 production Git and CI/CD strategy approved and documented.
+  - Added `plans/production-git-cicd-plan.md`.
+  - Selected two long-lived branches: protected `staging` for integration and protected `master` for production/live.
+  - Selected fully isolated Render staging resources (backend, admin, PostgreSQL, Redis, R2 prefix, Firebase configuration).
+  - Selected automatic staging deployment and manual GitHub `production` environment approval.
+  - Production will promote the exact staging-tested immutable SHA images without rebuilding.
+  - Planned workflows: `ci.yml`, `deploy-staging.yml`, `promote-production.yml`, and `rollback-production.yml`.
+  - Cutover will disable Render auto-deploy and stop deploying mutable `latest` tags.
+  - Current uncommitted seed changes remain in `backend/scripts/seed.go` and generated `backend/seed`; preserve them when starting P50.
+- **2026-07-22:** P49 mobile auth refresh race fix — merged to `master` via PR #34 at `ff77f51`.
+  - `AuthInterceptor` serializes concurrent refreshes, uses an isolated refresh client, and retries each failed request once.
+  - FCM device registration skips unauthenticated startup.
+  - `API_BASE_URL` now uses a valid compile-time `String.fromEnvironment` value with runtime local fallback.
+  - Verified Google login, FCM registration, notification loading, SSE, and 3 active banners on the Android emulator against Render.
+  - Master CI passed, including backend, Flutter, 53 Playwright tests, Docker publication, Trivy, and SonarCloud after one transient Sonar retry.
+- **2026-07-22:** P48 hosted admin deployment — merged to `master` via PR #33 at `121b17e`.
+  - Backend and admin are live on Render in Singapore.
+  - Admin verified at `https://nomnom-admin-e41y.onrender.com`; backend at `https://nomnom-backend-7iq0.onrender.com`.
+  - Hosted route, proxy, RBAC, banners, images, Firebase login, SSE, and FCM push verification completed.
 - **2026-07-21:** P47 (Render deployment prep) — backend code changes + Blueprint for Singapore.
   - `config.go`: Added `R2Secure`, `R2Prefix` fields to `R2Config` struct
   - `upload_service.go`: Uses `cfg.Secure` and `cfg.Prefix` instead of hardcoded values
@@ -225,7 +246,7 @@
   - Fixes: `auth.setup.ts` cookie sync; user `Create` handler sets `EmailVerifiedAt`; `FindAll` excludes inactive users; global-teardown cleans up E2E users.
 - **2026-07-06:** Seed data realism update — DONE.
   - Replaced single `createRestaurantOwner()` with `createOwners()` returning email→UUID map.
-  - 11 brand-specific owners created (one per restaurant), all passwords `Owner@123`.
+  - 11 brand-specific owners created (one per restaurant) with a shared development-only seed password that must never be used for hosted accounts.
   - Each restaurant assigned to its correct owner via `OwnerEmail` field in `restaurantSeed`.
   - All 23 offers now have `CreatedBy` = restaurant's owner (not admin), enabling owner CRUD.
   - Verified: admin sees 11R/23O/11 owners; KFC owner sees 1R/3O.

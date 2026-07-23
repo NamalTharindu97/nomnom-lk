@@ -5,33 +5,62 @@ title = "NomNom LK Gitleaks Config"
 [extend]
 useDefault = true
 
-[allowlist]
-  description = "Known dev credentials and generated files"
+# Extend only the generic API key rule with narrowly scoped, line-and-path
+# exceptions for confirmed public identifiers and generated dependency names.
+[[rules]]
+id = "generic-api-key"
+
+  [[rules.allowlists]]
+  description = "Firebase public Android client API key"
+  condition = "AND"
+  regexTarget = "line"
+  regexes = ['''^\s*"current_key":\s*"AIza[0-9A-Za-z_-]+"\s*$''']
+  paths = ['''(?i)google-services\.json$''']
+
+  [[rules.allowlists]]
+  description = "Firebase public Apple client API key"
+  condition = "AND"
+  regexTarget = "line"
+  regexes = ['''^\s*<string>AIza[0-9A-Za-z_-]+</string>\s*$''']
+  paths = ['''(?i)GoogleService-Info\.plist$''']
+
+  [[rules.allowlists]]
+  description = "Public SonarCloud project identifier"
+  condition = "AND"
+  regexTarget = "line"
+  regexes = ['''sonar\.projectKey=NamalTharindu97_nomnom-lk''']
+  paths = ['''^sonar-project\.properties$''', '''^plans/ci-pipeline-plan\.md$''']
+
+  [[rules.allowlists]]
+  description = "Generated CocoaPods dependency names"
+  condition = "AND"
+  regexTarget = "line"
   regexes = [
-    "(?i)minioadmin",
-    "(?i)Admin@123",
-    "(?i)Owner@123",
-    "change-me",
-    "test-secret-key-for-ci",
-    "firebase-credentials\\.json",
-    "nomnom123",
+    '''(FirebaseAppCheckInterop|FirebaseAuthInterop|FirebaseCoreExtension|FirebaseCoreInternal|FirebaseInstallations|FirebaseMessaging|RecaptchaInterop)''',
+    '''^\s+(AppAuth|firebase_auth|FirebaseAuth|GTMAppAuth): [0-9a-f]+\s*$''',
   ]
-  paths = [
-    # Firebase configs (public API keys, not secrets)
-    "(?i)google-services\\.json$",
-    "(?i)GoogleService-Info\\.plist$",
-    "(?i)firebase-credentials\\.json$",
-    # Podfile.lock (version hashes, not secrets)
-    "Podfile\\.lock$",
-    # Generated Pod source
-    "Pods/",
-    # Backend log file
-    "backend\\.log$",
-    # Build artifacts
-    "\\.next/",
-    "\\.auth/",
-    "node_modules/",
-    # Docs with example config snippets
-    "plans/.*\\.md$",
-    "sonar-project\\.properties$",
-  ]
+  paths = ['''^ios/Podfile\.lock$''']
+
+  [[rules.allowlists]]
+  description = "Historical Render API key placeholder scheduled for Phase 4 history rewrite"
+  condition = "AND"
+  regexTarget = "line"
+  regexes = ['''RENDER_API_KEY="rnd_\.\.\."''']
+  paths = ['''^docs/deployment/render-commands\.md$''']
+
+[[rules]]
+id = "gcp-api-key"
+
+  [[rules.allowlists]]
+  description = "Firebase public Android client API key"
+  condition = "AND"
+  regexTarget = "line"
+  regexes = ['''"current_key":\s*"AIza[0-9A-Za-z_-]+"''']
+  paths = ['''(?i)google-services\.json$''']
+
+  [[rules.allowlists]]
+  description = "Firebase public Apple client API key"
+  condition = "AND"
+  regexTarget = "line"
+  regexes = ['''<string>AIza[0-9A-Za-z_-]+</string>''']
+  paths = ['''(?i)GoogleService-Info\.plist$''']
