@@ -85,7 +85,14 @@ class NomNomBootstrap extends StatelessWidget {
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: localeProvider),
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(ApiAuthService(apiClient)),
+          create: (_) => AuthProvider(
+            ApiAuthService(apiClient),
+            apiClient: apiClient,
+            favoriteStore: favoriteStore,
+            notificationStore: notificationStore,
+            offerStore: offerStore,
+            restaurantStore: restaurantStore,
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) {

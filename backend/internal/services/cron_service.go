@@ -16,6 +16,7 @@ type CronService struct {
 	notificationRepo *repository.NotificationRepo
 	scheduledRepo    *repository.ScheduledNotificationRepo
 	auditLogRepo     *repository.AuditLogRepo
+	userRepo         *repository.UserRepo
 }
 
 func NewCronService(db *gorm.DB, notificationSvc *NotificationService, notificationRepo *repository.NotificationRepo) *CronService {
@@ -32,6 +33,10 @@ func (s *CronService) SetAuditLogRepo(repo *repository.AuditLogRepo) {
 
 func (s *CronService) SetScheduledRepo(repo *repository.ScheduledNotificationRepo) {
 	s.scheduledRepo = repo
+}
+
+func (s *CronService) SetUserRepo(repo *repository.UserRepo) {
+	s.userRepo = repo
 }
 
 func (s *CronService) MarkExpiredOffers() {
@@ -171,4 +176,23 @@ func (s *CronService) RunAll() {
 	s.ProcessScheduledNotifications()
 	s.ProcessScheduledPublishes()
 	s.PruneAuditLogs()
+	s.FinalizeDeletions()
+}
+
+func (s *CronService) FinalizeDeletions() {
+	if s.userRepo == nil {
+		return
+	}
+	users, err := s.userRepo.FindPendingFinalizations()
+	if err != nil {
+		fmt.Printf("CRON: failed to find pending deletions: %v\n", err)
+		return
+	}
+	for _, user := range users {
+		if err := s.userRepo.FinalizeDeletion(user.ID); err != nil {
+			fmt.Printf("CRON: failed to finalize deletion for %s: %v\n", user.ID, err)
+			continue
+		}
+		fmt.Printf("CRON: finalized deletion for user %s\n", user.ID)
+	}
 }

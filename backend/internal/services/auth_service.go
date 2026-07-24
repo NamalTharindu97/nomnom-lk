@@ -114,6 +114,10 @@ func (s *AuthService) authenticatePassword(email, password string) (*models.User
 		return nil, errors.New("please verify your email first")
 	}
 
+	if user.IsPendingDeletion() {
+		return nil, errors.New("account deletion is pending. cancel the request to restore access")
+	}
+
 	return user, nil
 }
 
@@ -234,6 +238,11 @@ func (s *AuthService) Refresh(refreshTokenStr string) (*response.TokenPairRespon
 	if !user.IsActive {
 		s.refreshTokenRepo.DeleteByID(storedToken.ID)
 		return nil, errors.New("your account has been suspended. contact an administrator")
+	}
+
+	if user.IsPendingDeletion() {
+		s.refreshTokenRepo.DeleteByID(storedToken.ID)
+		return nil, errors.New("account deletion is pending. cancel the request to restore access")
 	}
 
 	s.refreshTokenRepo.DeleteByID(storedToken.ID)

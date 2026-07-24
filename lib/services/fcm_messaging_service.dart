@@ -9,6 +9,9 @@ import 'api_client.dart';
 
 FcmMessagingService? fcmService;
 
+@pragma('vm:entry-point')
+Future<void> fcmBackgroundHandler(RemoteMessage message) async {}
+
 class FcmMessagingService {
   FcmMessagingService({
     required ApiClient apiClient,
@@ -30,7 +33,6 @@ class FcmMessagingService {
   Future<void> initialize({void Function(String?)? onNavigate}) async {
     _onNavigate = onNavigate;
     await _initLocalNotifications();
-    await _requestPermission();
     await _getToken();
     _setupTokenRefresh();
     _setupForegroundHandler();
@@ -57,7 +59,7 @@ class FcmMessagingService {
     );
   }
 
-  Future<void> _requestPermission() async {
+  Future<bool> requestNotificationPermission() async {
     try {
       final settings = await _messaging.requestPermission(
         alert: true,
@@ -68,9 +70,9 @@ class FcmMessagingService {
         criticalAlert: false,
         provisional: false,
       );
-      debugPrint('FCM permission: ${settings.authorizationStatus}');
+      return settings.authorizationStatus == AuthorizationStatus.authorized;
     } catch (e) {
-      debugPrint('FCM permission error: ${e.runtimeType}');
+      return false;
     }
   }
 
@@ -90,7 +92,6 @@ class FcmMessagingService {
         }
       }
       _currentToken = await _messaging.getToken();
-      debugPrint('FCM token obtained');
       if (_currentToken != null) {
         await _registerToken(_currentToken!);
       }
@@ -122,11 +123,7 @@ class FcmMessagingService {
   }
 
   void _setupBackgroundHandler() {
-    FirebaseMessaging.onBackgroundMessage(_backgroundHandler);
-  }
-
-  static Future<void> _backgroundHandler(RemoteMessage message) async {
-    debugPrint('FCM background message received');
+    FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler);
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -191,7 +188,6 @@ class FcmMessagingService {
         'platform':
             defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
       });
-      debugPrint('FCM token registered');
     } catch (e) {
       debugPrint('FCM register error: ${e.runtimeType}');
     }
