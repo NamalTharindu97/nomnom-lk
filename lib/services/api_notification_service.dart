@@ -20,7 +20,7 @@ class ApiNotificationService {
 
   Future<int> fetchUnreadCount() async {
     final response = await _client.get('/notifications/unread-count');
-    return (response['data']?['count'] as num?)?.toInt() ?? 0;
+    return (response['data']?['unread_count'] as num?)?.toInt() ?? 0;
   }
 
   Future<void> markAsRead(String id) async {
