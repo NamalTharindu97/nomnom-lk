@@ -58,7 +58,7 @@ class ApiConfig {
 
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
-  static const int perPage = 20;
+  static const int perPage = 100;
 
   static String resolveUrl(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {

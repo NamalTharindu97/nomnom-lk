@@ -249,9 +249,8 @@ class _SseListenerState extends State<_SseListener>
     final apiClient = context.read<ApiClient>();
     apiClient.invalidateCache('/banners/active');
     context.read<BannerProvider>().refreshBanners();
-    if (_hasSseConnection) return;
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 300), () {
       apiClient.invalidateCache('/offers');
       context.read<OfferProvider>().refreshOffers();
       apiClient.invalidateCache('/restaurants');
@@ -299,7 +298,7 @@ class _SseListenerState extends State<_SseListener>
         break;
     }
     _debounce?.cancel();
-    _debounce = Timer(const Duration(seconds: 1), _flushEvents);
+    _debounce = Timer(const Duration(milliseconds: 300), _flushEvents);
   }
 
   void _flushEvents() {
