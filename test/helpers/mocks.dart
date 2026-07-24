@@ -53,6 +53,9 @@ class MockFavoriteStore implements FavoriteStore {
   Future<void> syncFromRemote(Set<String> remoteIds) async {}
 
   @override
+  Future<void> clear() async {}
+
+  @override
   Future<void> init() async {}
 }
 

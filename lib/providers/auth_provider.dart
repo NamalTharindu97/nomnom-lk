@@ -1,17 +1,41 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:google_sign_in/google_sign_in.dart' as gsi;
 
 import '../models/app_user.dart';
 import '../services/api_auth_service.dart';
+import '../services/api_client.dart';
 import '../services/fcm_messaging_service.dart';
+import '../services/local/favorite_store.dart';
+import '../services/local/notification_store.dart';
+import '../services/local/offer_store.dart';
+import '../services/local/restaurant_store.dart';
 
 class AuthProvider extends ChangeNotifier {
-  AuthProvider(this._authService);
+  AuthProvider(
+    this._authService, {
+    ApiClient? apiClient,
+    FavoriteStore? favoriteStore,
+    NotificationStore? notificationStore,
+    OfferStore? offerStore,
+    RestaurantStore? restaurantStore,
+  })  : _apiClient = apiClient,
+        _favoriteStore = favoriteStore,
+        _notificationStore = notificationStore,
+        _offerStore = offerStore,
+        _restaurantStore = restaurantStore;
 
   final ApiAuthService _authService;
+  final ApiClient? _apiClient;
+  final FavoriteStore? _favoriteStore;
+  final NotificationStore? _notificationStore;
+  final OfferStore? _offerStore;
+  final RestaurantStore? _restaurantStore;
 
   AppUser? _user;
   bool _isInitialized = false;
   bool _isLoading = false;
+  bool _isSigningOut = false;
 
   AppUser? get user => _user;
   bool get isInitialized => _isInitialized;
@@ -90,11 +114,28 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    if (_isSigningOut) return;
+    _isSigningOut = true;
     _setLoading(true);
+
     await fcmService?.unregisterToken();
+
     await _authService.logout();
+
+    try { await fb.FirebaseAuth.instance.signOut(); } catch (_) {}
+    try { gsi.GoogleSignIn().signOut(); } catch (_) {}
+
+    _apiClient?.clearCache();
+    _apiClient?.clearTokens();
+
+    await _favoriteStore?.clear();
+    await _notificationStore?.clear();
+    await _offerStore?.clear();
+    await _restaurantStore?.clear();
+
     _user = null;
     _isInitialized = true;
+    _isSigningOut = false;
     _setLoading(false);
   }
 

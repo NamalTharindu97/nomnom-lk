@@ -27,4 +27,8 @@ class FavoriteStore {
   Future<void> syncFromRemote(Set<String> remoteIds) async {
     await _box.put('favorite_ids', remoteIds.join(','));
   }
+
+  Future<void> clear() async {
+    await _box.clear();
+  }
 }
