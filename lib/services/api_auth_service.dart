@@ -110,6 +110,14 @@ class ApiAuthService {
     await _client.clearTokens();
   }
 
+  Future<Map<String, dynamic>> requestDeletion() async {
+    return await _client.post('/users/me/delete-account', {});
+  }
+
+  Future<Map<String, dynamic>> cancelDeletion() async {
+    return await _client.post('/users/me/cancel-deletion', {});
+  }
+
   Future<AppUser?> restoreUser() async {
     final storage = const FlutterSecureStorage();
     final token = await storage.read(key: 'access_token');

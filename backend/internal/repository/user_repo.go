@@ -175,3 +175,30 @@ func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter, statusFil
 	}
 	return users, total, nil
 }
+
+func (r *UserRepo) FindPendingFinalizations() ([]models.User, error) {
+	var users []models.User
+	err := r.db.Where("deletion_scheduled_at IS NOT NULL AND deletion_scheduled_at <= ?", time.Now()).Find(&users).Error
+	return users, err
+}
+
+func (r *UserRepo) FinalizeDeletion(userID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("user_id = ?", userID).Delete(&models.RefreshToken{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("user_id = ?", userID).Delete(&models.DeviceToken{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("user_id = ?", userID).Delete(&models.Notification{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("user_id = ?", userID).Delete(&models.Favorite{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&models.AuditLog{}).Where("user_id = ?", userID).Update("user_id", uuid.Nil).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&models.User{}, userID).Error
+	})
+}
