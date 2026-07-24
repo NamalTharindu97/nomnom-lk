@@ -154,6 +154,22 @@ encrypted recovery copies even though GitHub Secrets is the operational source.
 
 ---
 
+## Phase Status Summary (2026-07-23)
+
+| Phase | Status | Date |
+|---|---|---|
+| 0 | **Deferred** — requires Render production access | — |
+| 1 | **Done** | 2026-07-22 |
+| 2 | **Done** | 2026-07-22 |
+| 3 | **Done** | 2026-07-23 |
+| 4 | **Pending** — blocked by Phase 0 | — |
+| 5 | **Done** | 2026-07-23 |
+| 6 | **In Progress** | today |
+| 7-13 | **Pending** | — |
+| P50 (Git + CI) | **Done** — staging/master branches, ci.yml, deploy-staging.yml, promote-production.yml | 2026-07-23 |
+
+---
+
 ## Phase 0: Credential Containment
 
 **Goal:** Invalidate known or potentially exposed production credentials before
