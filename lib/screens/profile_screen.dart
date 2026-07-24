@@ -13,6 +13,8 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/restaurant_provider.dart';
+import '../services/api_auth_service.dart';
+import '../services/api_client.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../providers/theme_provider.dart';
 import '../utils/spacings.dart';
@@ -357,6 +359,10 @@ class _MenuSection extends StatelessWidget {
             title: AppLocalizations.of(context)!.profileAbout,
             subtitle: AppLocalizations.of(context)!.profileVersion,
           ),
+          if (!user.isGuest) ...[
+            _MenuDivider(),
+            _DeleteAccountTile(),
+          ],
         ],
       ),
     );
@@ -598,6 +604,101 @@ class _SignOutButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeleteAccountTile extends StatefulWidget {
+  @override
+  State<_DeleteAccountTile> createState() => _DeleteAccountTileState();
+}
+
+class _DeleteAccountTileState extends State<_DeleteAccountTile> {
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return InkWell(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete Account'),
+            content: const Text(
+              'Your account will be scheduled for deletion in 30 days. '
+              'You can cancel at any time during this period. '
+              'This action cannot be undone after the 30-day window.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final provider = context.read<AuthProvider>();
+                  final service = ApiAuthService(
+                    context.read<ApiClient>(),
+                  );
+                  try {
+                    await service.requestDeletion();
+                    if (!mounted) return;
+                    await provider.signOut();
+                    if (!mounted) return;
+                    if (!context.mounted) return;
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRoutes.login,
+                      (_) => false,
+                    );
+                  } catch (_) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to schedule deletion')),
+                    );
+                  }
+                },
+                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.chili.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_forever_rounded, color: AppColors.chili, size: 20),
+            ),
+            const SizedBox(width: Spacings.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete Account',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.chili,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Schedule account deletion in 30 days',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

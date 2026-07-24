@@ -340,3 +340,78 @@ func (h *UserHandler) Delete(c *gin.Context) {
 
 	response.SuccessNoContent(c)
 }
+
+func (h *UserHandler) RequestDeletion(c *gin.Context) {
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
+	user, err := h.repo.FindByID(userID)
+	if err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
+	if !user.CanSelfDelete() {
+		response.Error(c, http.StatusForbidden, "FORBIDDEN", "only consumer accounts can self-delete. contact support for other account types")
+		return
+	}
+
+	if user.IsPendingDeletion() {
+		response.Error(c, http.StatusConflict, "CONFLICT", "deletion already requested")
+		return
+	}
+
+	now := time.Now()
+	deletionTime := now.Add(30 * 24 * time.Hour)
+	user.DeletionRequestedAt = &now
+	user.DeletionScheduledAt = &deletionTime
+
+	if err := h.repo.Update(user); err != nil {
+		response.InternalError(c, "failed to schedule deletion")
+		return
+	}
+
+	h.auditService.LogAction(userID, user.Name, string(user.Role), "user.deletion.request", "user", userID.String(),
+		fmt.Sprintf("User requested account deletion: %s (%s), scheduled for %s", user.Name, user.Email, deletionTime.Format(time.RFC3339)))
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":         "account deletion scheduled",
+		"scheduled_at":    deletionTime,
+		"recovery_window": "30 days",
+	})
+}
+
+func (h *UserHandler) CancelDeletion(c *gin.Context) {
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		response.Unauthorized(c, "authentication required")
+		return
+	}
+
+	user, err := h.repo.FindByID(userID)
+	if err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
+	if !user.IsPendingDeletion() {
+		response.Error(c, http.StatusBadRequest, "BAD_REQUEST", "no pending deletion request")
+		return
+	}
+
+	user.DeletionRequestedAt = nil
+	user.DeletionScheduledAt = nil
+
+	if err := h.repo.Update(user); err != nil {
+		response.InternalError(c, "failed to cancel deletion")
+		return
+	}
+
+	h.auditService.LogAction(userID, user.Name, string(user.Role), "user.deletion.cancel", "user", userID.String(),
+		fmt.Sprintf("User cancelled account deletion: %s (%s)", user.Name, user.Email))
+
+	c.JSON(http.StatusOK, gin.H{"message": "account deletion cancelled"})
+}

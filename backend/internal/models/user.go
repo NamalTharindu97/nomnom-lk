@@ -24,10 +24,25 @@ type User struct {
 	Role         UserRole  `gorm:"not null;default:'user';size:20" json:"role"`
 	FirebaseUID  *string   `gorm:"uniqueIndex;size:128" json:"-"`
 	Phone        *string   `gorm:"size:20" json:"phone,omitempty"`
-	IsActive        bool       `gorm:"default:true" json:"is_active"`
-	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	IsActive             bool       `gorm:"default:true" json:"is_active"`
+	EmailVerifiedAt      *time.Time `json:"email_verified_at,omitempty"`
+	DeletionRequestedAt  *time.Time `json:"-"`
+	DeletionScheduledAt  *time.Time `json:"-"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+}
+
+func (u *User) IsPendingDeletion() bool {
+	return u.DeletionRequestedAt != nil && u.DeletionScheduledAt != nil &&
+		time.Now().Before(*u.DeletionScheduledAt)
+}
+
+func (u *User) IsDeletionFinalized() bool {
+	return u.DeletionScheduledAt != nil && !u.DeletionScheduledAt.After(time.Now())
+}
+
+func (u *User) CanSelfDelete() bool {
+	return u.Role == RoleUser
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {

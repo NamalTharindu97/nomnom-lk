@@ -46,6 +46,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	cronService := services.NewCronService(db, notificationService, notificationRepo)
 	cronService.SetScheduledRepo(scheduledNotificationRepo)
 	cronService.SetAuditLogRepo(auditLogRepo)
+	cronService.SetUserRepo(userRepo)
 
 	uploadService, err := services.NewUploadService(&cfg.R2)
 	if err != nil {
@@ -136,6 +137,8 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			usersGroup.GET("/me", userHandler.Me)
 			usersGroup.POST("/me/change-password", userHandler.ChangePassword)
 			usersGroup.PUT("/me/profile", userHandler.UpdateProfile)
+			usersGroup.POST("/me/delete-account", userHandler.RequestDeletion)
+			usersGroup.POST("/me/cancel-deletion", userHandler.CancelDeletion)
 		}
 
 		adminUsers := usersGroup.Group("")
