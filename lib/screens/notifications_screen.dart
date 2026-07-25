@@ -187,7 +187,7 @@ class _NotificationTile extends StatelessWidget {
                   Text(
                     _formatDate(context, notification.createdAt),
                     style: textTheme.labelSmall?.copyWith(
-                      color: context.colors.muted.withValues(alpha: 0.7),
+                      color: context.colors.muted,
                     ),
                   ),
                 ],

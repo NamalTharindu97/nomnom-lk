@@ -43,7 +43,7 @@ class InfoCard extends StatelessWidget {
                 Text(
                   title,
                   style: textTheme.labelMedium?.copyWith(
-                    color: context.colors.muted,
+                    color: context.colors.textSecondary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

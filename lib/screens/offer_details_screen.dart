@@ -344,6 +344,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: textTheme.titleMedium?.copyWith(
+            color: context.colors.textPrimary,
             fontWeight: FontWeight.w800,
           ),
         ),

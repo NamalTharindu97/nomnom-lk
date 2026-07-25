@@ -99,7 +99,7 @@ class _SocialPillButton extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: color,
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -107,7 +107,7 @@ class _SocialPillButton extends StatelessWidget {
             Icon(
               Icons.chevron_right_rounded,
               size: 20,
-              color: color.withValues(alpha: 0.5),
+              color: color,
             ),
           ],
         ),

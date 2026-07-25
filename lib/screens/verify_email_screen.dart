@@ -257,7 +257,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                 textInputAction: TextInputAction.done,
                                 maxLength: 6,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? context.colors.textPrimary
+                                      : Colors.black87,
                                   fontSize: 28,
                                   letterSpacing: 12,
                                   fontWeight: FontWeight.w700,
