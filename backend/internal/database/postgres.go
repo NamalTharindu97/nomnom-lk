@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -79,20 +80,20 @@ func runIndexMigrations(db *gorm.DB) {
 				ALTER TABLE restaurants DROP COLUMN order_url_alt;
 			END IF;
 		END $$`,
-		`UPDATE banners b
+		fmt.Sprintf(`UPDATE banners b
 		 SET offer_id = NULL, owner_id = NULL
-		 WHERE b.link_type = 'offer'
-		   AND NOT EXISTS (SELECT 1 FROM offers o WHERE o.id::text = b.link_value)`,
-		`UPDATE banners b
+		 WHERE b.link_type = '%s'
+		   AND NOT EXISTS (SELECT 1 FROM offers o WHERE o.id::text = b.link_value)`, models.BannerLinkOffer),
+		fmt.Sprintf(`UPDATE banners b
 		 SET offer_id = o.id, owner_id = r.owner_id
 		 FROM offers o
 		 JOIN restaurants r ON r.id = o.restaurant_id
-		 WHERE b.link_type = 'offer' AND o.id::text = b.link_value`,
-		`UPDATE banners b
+		 WHERE b.link_type = '%s' AND o.id::text = b.link_value`, models.BannerLinkOffer),
+		fmt.Sprintf(`UPDATE banners b
 		 SET offer_id = NULL, owner_id = r.owner_id
 		 FROM restaurants r
-		 WHERE b.link_type = 'restaurant' AND r.id::text = b.link_value`,
-		`UPDATE banners SET offer_id = NULL, owner_id = NULL WHERE link_type = 'external'`,
+		 WHERE b.link_type = '%s' AND r.id::text = b.link_value`, models.BannerLinkRestaurant),
+		fmt.Sprintf(`UPDATE banners SET offer_id = NULL, owner_id = NULL WHERE link_type = '%s'`, models.BannerLinkExternal),
 		`CREATE INDEX IF NOT EXISTS idx_banners_offer_id ON banners(offer_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_banners_owner_status ON banners(owner_id, status)`,
 		// Add search_vector generated column (from schema.sql / 003_create_offers.up.sql)

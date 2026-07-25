@@ -59,7 +59,7 @@ func (s *CronService) MarkExpiredOffers() {
 			offerIDStrings[i] = id.String()
 		}
 		if err := s.db.Model(&models.Banner{}).
-			Where("offer_id IN ? OR (link_type = 'offer' AND link_value IN ?)", expiredIDs, offerIDStrings).
+			Where(fmt.Sprintf("offer_id IN ? OR (link_type = '%s' AND link_value IN ?)", models.BannerLinkOffer), expiredIDs, offerIDStrings).
 			Update("status", models.BannerRejected).Error; err != nil {
 			fmt.Printf("CRON: failed to deactivate banners for expired offers: %v\n", err)
 		}

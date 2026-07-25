@@ -64,6 +64,7 @@ class HomeScreen extends StatelessWidget {
               SliverToBoxAdapter(child: _SectionDivider()),
               const SliverToBoxAdapter(child: SizedBox(height: Spacings.sm)),
               SliverToBoxAdapter(child: _CuisineFilterChips()),
+              SliverToBoxAdapter(child: _CategoryFilterChips()),
               SliverToBoxAdapter(child: _AllOffersHeader()),
               const SliverToBoxAdapter(child: SizedBox(height: Spacings.xs)),
               _HomeBody(),
@@ -183,6 +184,16 @@ class _CuisineState {
 
   const _CuisineState({
     required this.tags,
+    this.selected,
+  });
+}
+
+class _CategoryState {
+  final List<String> categories;
+  final String? selected;
+
+  const _CategoryState({
+    required this.categories,
     this.selected,
   });
 }
@@ -513,6 +524,58 @@ class _CuisineFilterChips extends StatelessWidget {
                       isSelected: state.selected == tag,
                       onTap: () =>
                           context.read<OfferProvider>().filterByCuisine(tag),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CategoryFilterChips extends StatelessWidget {
+  const _CategoryFilterChips();
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<OfferProvider, _CategoryState>(
+      selector: (_, p) => _CategoryState(
+        categories: p.allCategories,
+        selected: p.selectedCategory,
+      ),
+      shouldRebuild: (prev, next) => prev.selected != next.selected,
+      builder: (_, state, __) {
+        if (state.categories.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Spacings.md,
+            0,
+            Spacings.md,
+            Spacings.sm,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: AppLocalizations.of(context)!.allLabel,
+                  isSelected: state.selected == null,
+                  onTap: () =>
+                      context.read<OfferProvider>().clearCategoryFilter(),
+                ),
+                ...state.categories.map(
+                  (category) => Padding(
+                    padding: const EdgeInsets.only(left: Spacings.xs),
+                    child: _FilterChip(
+                      label: category,
+                      isSelected: state.selected == category,
+                      onTap: () => context
+                          .read<OfferProvider>()
+                          .filterByCategory(category),
                     ),
                   ),
                 ),

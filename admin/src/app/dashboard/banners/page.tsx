@@ -13,6 +13,9 @@ import { EmptyState } from "@/components/empty-state"
 import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
 import { useAuth } from "@/hooks/use-auth"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
@@ -22,6 +25,20 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Plus, Pencil, Trash2, Image as ImageIcon, CheckCircle, XCircle, ExternalLink, Tag, Store, Link2 } from "lucide-react"
+
+const bannerSchema = z.object({
+  title: z.string().optional(),
+  image_url: z.string().min(1, "Image URL is required"),
+  link_type: z.enum(["offer", "restaurant", "external"], { message: "Link type is required" }),
+  link_value: z.string().min(1, "Link value is required"),
+  is_active: z.boolean().optional(),
+  cta_text: z.string().optional(),
+  display_order: z.number().min(0, "Must be 0 or higher").optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+})
+
+type BannerForm = z.infer<typeof bannerSchema>
 
 interface Banner {
   id: string
@@ -60,15 +77,6 @@ export default function BannersPage() {
   const [showForm, setShowForm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null)
   const [saving, setSaving] = useState(false)
-
-  const [image, setImage] = useState("")
-  const [linkType, setLinkType] = useState("offer")
-  const [linkValue, setLinkValue] = useState("")
-  const [title, setTitle] = useState("")
-  const [sponsorName, setSponsorName] = useState("")
-  const [sortOrder, setSortOrder] = useState(0)
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
 
   const [myOffers, setMyOffers] = useState<Offer[]>([])
@@ -77,6 +85,30 @@ export default function BannersPage() {
   const [adminRestaurants, setAdminRestaurants] = useState<Restaurant[]>([])
 
   const endpoint = isAdmin ? "/admin/banners" : "/dashboard/banners"
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<BannerForm>({
+    resolver: zodResolver(bannerSchema),
+    defaultValues: {
+      title: "",
+      image_url: "",
+      link_type: "offer",
+      link_value: "",
+      is_active: false,
+      cta_text: "",
+      display_order: 0,
+      start_date: "",
+      end_date: "",
+    },
+  })
+
+  const currentLinkType = watch("link_type")
 
   const loadBanners = useCallback(async () => {
     if (authLoading || !user) return
@@ -114,14 +146,17 @@ export default function BannersPage() {
   useEffect(() => { loadAdminData() }, [loadAdminData])
 
   function resetForm() {
-    setImage("")
-    setLinkType("offer")
-    setLinkValue("")
-    setTitle("")
-    setSponsorName("")
-    setSortOrder(0)
-    setStartDate("")
-    setEndDate("")
+    reset({
+      title: "",
+      image_url: "",
+      link_type: "offer",
+      link_value: "",
+      is_active: false,
+      cta_text: "",
+      display_order: 0,
+      start_date: "",
+      end_date: "",
+    })
     setSelectedOffer("")
   }
 
@@ -134,53 +169,54 @@ export default function BannersPage() {
   function startEdit(b: Banner) {
     setEditing(b)
     setShowForm(true)
-    setImage(b.image)
-    setLinkType(b.link_type)
-    setLinkValue(b.link_value)
-    setTitle(b.title || "")
-    setSponsorName(b.sponsor_name || "")
-    setSortOrder(b.sort_order)
-    setStartDate(b.start_date ? b.start_date.slice(0, 10) : "")
-    setEndDate(b.end_date ? b.end_date.slice(0, 10) : "")
+    reset({
+      title: b.title || "",
+      image_url: b.image,
+      link_type: b.link_type as BannerForm["link_type"],
+      link_value: b.link_value,
+      is_active: b.status === "approved",
+      cta_text: b.sponsor_name || "",
+      display_order: b.sort_order,
+      start_date: b.start_date ? b.start_date.slice(0, 10) : "",
+      end_date: b.end_date ? b.end_date.slice(0, 10) : "",
+    })
     setSelectedOffer(b.offer_id || "")
   }
 
-  async function handleSave() {
-    if (!image.trim()) { notify("Image URL is required", "error"); return }
-
+  async function onSave(data: BannerForm) {
     if (!isAdmin && !selectedOffer) {
       notify("Please select an offer", "error")
       return
     }
 
-    if (!isAdmin && !editing) {
-      await handleOwnerCreate()
-      return
-    }
-
-    if (isAdmin && !linkValue.trim()) {
-      notify("Please select a banner destination", "error")
-      return
-    }
-
-    if (startDate && endDate && endDate < startDate) {
+    if (data.start_date && data.end_date && data.end_date < data.start_date) {
       notify("End date must be on or after start date", "error")
+      return
+    }
+
+    if (!isAdmin && !editing) {
+      await handleOwnerCreate(data)
+      return
+    }
+
+    if (!isAdmin && editing) {
+      await handleOwnerUpdate(data)
       return
     }
 
     setSaving(true)
     try {
       const body: Record<string, unknown> = {
-        image: image.trim(),
-        link_type: linkType,
-        link_value: linkValue,
-        title: title.trim(),
-        sponsor_name: sponsorName.trim(),
-        sort_order: sortOrder,
+        image: data.image_url.trim(),
+        link_type: data.link_type,
+        link_value: data.link_value,
+        title: data.title?.trim() || "",
+        sponsor_name: data.cta_text?.trim() || "",
+        sort_order: data.display_order ?? 0,
       }
-      if (startDate) body.start_date = startDate
-      if (endDate) body.end_date = endDate
-      if (linkType === "offer") body.offer_id = linkValue
+      if (data.start_date) body.start_date = data.start_date
+      if (data.end_date) body.end_date = data.end_date
+      if (data.link_type === "offer") body.offer_id = data.link_value
 
       if (editing) {
         await api.put(`/admin/banners/${editing.id}`, body)
@@ -197,13 +233,13 @@ export default function BannersPage() {
     setSaving(false)
   }
 
-  async function handleOwnerCreate() {
+  async function handleOwnerCreate(data: BannerForm) {
     setSaving(true)
     try {
       await api.post("/dashboard/banners", {
         offer_id: selectedOffer,
-        image: image.trim(),
-        title: title.trim(),
+        image: data.image_url.trim(),
+        title: data.title?.trim() || "",
       })
       notify("Banner submitted for approval", "success")
       setEditing(null)
@@ -214,14 +250,14 @@ export default function BannersPage() {
     setSaving(false)
   }
 
-  async function handleOwnerUpdate() {
+  async function handleOwnerUpdate(data: BannerForm) {
     if (!editing) return
     setSaving(true)
     try {
       await api.put(`/dashboard/banners/${editing.id}`, {
         offer_id: selectedOffer || editing.offer_id,
-        image: image.trim(),
-        title: title.trim(),
+        image: data.image_url.trim(),
+        title: data.title?.trim() || "",
       })
       notify("Banner updated", "success")
       setEditing(null)
@@ -304,7 +340,7 @@ export default function BannersPage() {
       formData.append("file", file)
       try {
         const res = await api.upload<{ data: { url: string } }>("/upload?folder=banners", formData)
-        setImage(res.data.url)
+        setValue("image_url", res.data.url, { shouldValidate: true })
         notify("Image uploaded", "success")
       } catch { notify("Upload failed", "error") }
     }
@@ -326,11 +362,6 @@ export default function BannersPage() {
           <Button onClick={startCreate}><Plus className="mr-2 size-4" />New Banner</Button>
         </div>
 
-        {/* Create/Edit Dialog */}
-        <Card className={editing || image || title ? "hidden" : "block"}>
-          {/* For simplicity, we use a modal-like approach with state */}
-        </Card>
-
         {(editing || showForm) && (
           <Card className="border-primary/20">
             <CardContent className="pt-6 space-y-4">
@@ -351,46 +382,56 @@ export default function BannersPage() {
               )}
 
               <div className="grid gap-2">
-                <Label>Image</Label>
+                <Label htmlFor="image_url">Image</Label>
                 <div className="flex gap-2">
-                  <Input value={image} onChange={e => setImage(e.target.value)} placeholder="Image URL" className="flex-1" />
-                  <Button variant="outline" onClick={handleImageUpload}>Upload</Button>
+                  <Input id="image_url" {...register("image_url")} placeholder="Image URL" className="flex-1" />
+                  <Button variant="outline" type="button" onClick={handleImageUpload}>Upload</Button>
                 </div>
+                {errors.image_url && <p className="text-xs text-destructive">{errors.image_url.message}</p>}
               </div>
 
               <div className="grid gap-2">
-                <Label>Title</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Weekend Special!" />
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" {...register("title")} placeholder="e.g. Weekend Special!" />
+                {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
               </div>
 
               {isAdmin && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label>Link Type</Label>
-                      <Select value={linkType} onValueChange={v => { setLinkType(v); setLinkValue(""); setSelectedOffer("") }}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Label htmlFor="link_type">Link Type</Label>
+                      <Select
+                        value={currentLinkType}
+                        onValueChange={(v) => {
+                          setValue("link_type", v as BannerForm["link_type"], { shouldValidate: true })
+                          setValue("link_value", "")
+                          setSelectedOffer("")
+                        }}
+                      >
+                        <SelectTrigger id="link_type"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="offer">Offer</SelectItem>
                           <SelectItem value="restaurant">Restaurant</SelectItem>
                           <SelectItem value="external">External URL</SelectItem>
                         </SelectContent>
                       </Select>
+                      {errors.link_type && <p className="text-xs text-destructive">{errors.link_type.message}</p>}
                     </div>
                     <div className="grid gap-2">
-                      <Label>{linkType === "offer" ? "Offer" : linkType === "restaurant" ? "Restaurant" : "URL"}</Label>
-                      {linkType === "offer" ? (
-                        <Select value={linkValue} onValueChange={setLinkValue}>
-                          <SelectTrigger><SelectValue placeholder="Select an offer..." /></SelectTrigger>
+                      <Label htmlFor="link_value">{currentLinkType === "offer" ? "Offer" : currentLinkType === "restaurant" ? "Restaurant" : "URL"}</Label>
+                      {currentLinkType === "offer" ? (
+                        <Select value={watch("link_value")} onValueChange={(v) => setValue("link_value", v, { shouldValidate: true })}>
+                          <SelectTrigger id="link_value"><SelectValue placeholder="Select an offer..." /></SelectTrigger>
                           <SelectContent>
                             {adminOffers.map(o => (
                               <SelectItem key={o.id} value={o.id}>{o.title}{o.restaurant_name ? ` — ${o.restaurant_name}` : ""}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      ) : linkType === "restaurant" ? (
-                        <Select value={linkValue} onValueChange={setLinkValue}>
-                          <SelectTrigger><SelectValue placeholder="Select a restaurant..." /></SelectTrigger>
+                      ) : currentLinkType === "restaurant" ? (
+                        <Select value={watch("link_value")} onValueChange={(v) => setValue("link_value", v, { shouldValidate: true })}>
+                          <SelectTrigger id="link_value"><SelectValue placeholder="Select a restaurant..." /></SelectTrigger>
                           <SelectContent>
                             {adminRestaurants.map(r => (
                               <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
@@ -398,38 +439,43 @@ export default function BannersPage() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Input value={linkValue} onChange={e => setLinkValue(e.target.value)} placeholder="https://..." />
+                        <Input id="link_value" {...register("link_value")} placeholder="https://..." />
                       )}
+                      {errors.link_value && <p className="text-xs text-destructive">{errors.link_value.message}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label>Sponsor Name</Label>
-                      <Input value={sponsorName} onChange={e => setSponsorName(e.target.value)} placeholder="Restaurant name" />
+                      <Label htmlFor="cta_text">CTA Text / Sponsor Name</Label>
+                      <Input id="cta_text" {...register("cta_text")} placeholder="Restaurant name" />
+                      {errors.cta_text && <p className="text-xs text-destructive">{errors.cta_text.message}</p>}
                     </div>
                     <div className="grid gap-2">
-                      <Label>Sort Order</Label>
-                      <Input type="number" value={sortOrder} onChange={e => setSortOrder(Number(e.target.value))} />
+                      <Label htmlFor="display_order">Display Order</Label>
+                      <Input id="display_order" type="number" {...register("display_order", { valueAsNumber: true })} />
+                      {errors.display_order && <p className="text-xs text-destructive">{errors.display_order.message}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label>Start Date</Label>
-                      <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                      <Label htmlFor="start_date">Start Date</Label>
+                      <Input id="start_date" type="date" {...register("start_date")} />
+                      {errors.start_date && <p className="text-xs text-destructive">{errors.start_date.message}</p>}
                     </div>
                     <div className="grid gap-2">
-                      <Label>End Date</Label>
-                      <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                      <Label htmlFor="end_date">End Date</Label>
+                      <Input id="end_date" type="date" {...register("end_date")} />
+                      {errors.end_date && <p className="text-xs text-destructive">{errors.end_date.message}</p>}
                     </div>
                   </div>
                 </>
               )}
 
               <div className="flex gap-2">
-                <Button onClick={editing && !isAdmin ? handleOwnerUpdate : handleSave} disabled={saving}>
+                <Button onClick={handleSubmit(onSave)} disabled={saving}>
                   {saving ? "Saving..." : editing ? "Update" : isAdmin ? "Create" : "Submit for Approval"}
                 </Button>
-                <Button variant="outline" onClick={() => { setEditing(null); setShowForm(false); resetForm() }}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => { setEditing(null); setShowForm(false); resetForm() }}>Cancel</Button>
               </div>
 
               {editing && editing.owner_id && editing.status === "pending" && isAdmin && (
@@ -492,7 +538,6 @@ export default function BannersPage() {
                                 <ImageIcon className="size-5" />
                               </div>
                             )}
-                            {/* Hover preview */}
                             {b.image && (
                               <div className="pointer-events-none absolute -top-2 left-full ml-2 z-50 hidden group-hover:block">
                                 <div className="relative h-36 w-64 rounded-lg overflow-hidden shadow-xl border border-border">

@@ -3,9 +3,11 @@
 package handlers_test
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -241,9 +243,10 @@ func TestIntegration_DashboardOwnerMetricsAndOfferIsolation(t *testing.T) {
 		ownerOffer, ownerRestaurant, testutil.TestAdminID, otherOffer, otherRestaurant, otherOwnerID).Error)
 	require.NoError(t, db.Exec(`INSERT INTO favorites (user_id, offer_id, created_at)
 		VALUES (?::uuid, ?::uuid, NOW())`, testutil.TestUserID, ownerOffer).Error)
-	require.NoError(t, db.Exec(`INSERT INTO banners (id, image, link_type, link_value, status, click_count, owner_id, created_at, updated_at)
-		VALUES (?::uuid, 'owner.jpg', 'offer', ?::text, 'approved', 7, ?::uuid, NOW(), NOW()),
-		       (?::uuid, 'other.jpg', 'offer', ?::text, 'approved', 100, ?::uuid, NOW(), NOW())`,
+	require.NoError(t, db.Exec(fmt.Sprintf(`INSERT INTO banners (id, image, link_type, link_value, status, click_count, owner_id, created_at, updated_at)
+		VALUES (?::uuid, 'owner.jpg', '%s', ?::text, 'approved', 7, ?::uuid, NOW(), NOW()),
+		       (?::uuid, 'other.jpg', '%s', ?::text, 'approved', 100, ?::uuid, NOW(), NOW())`,
+		models.BannerLinkOffer, models.BannerLinkOffer),
 		ownerBanner, ownerOffer, testutil.TestOwnerID, otherOwnerBanner, otherOffer, otherOwnerID).Error)
 
 	token := testutil.GenerateOwnerToken()
@@ -334,7 +337,7 @@ func TestIntegration_OwnerBannerApprovalLifecycle(t *testing.T) {
 
 	adminCreateBody := testutil.JSONBody(map[string]interface{}{
 		"image":      "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=1024&h=360&fit=crop",
-		"link_type":  "offer",
+		"link_type":  string(models.BannerLinkOffer),
 		"link_value": offerID,
 		"offer_id":   "00000000-0000-0000-0000-000000000999",
 		"title":      "Admin Promotion for Owner",

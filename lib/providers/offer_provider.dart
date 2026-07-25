@@ -61,6 +61,7 @@ class OfferProvider extends ChangeNotifier {
   bool _hasMore = true;
   int _total = 0;
   String? _selectedCuisine;
+  String? _selectedCategory;
   int _filterVersion = 0;
   List<Offer>? _cachedFilteredOffers;
   int _cachedFilterVersion = -1;
@@ -80,6 +81,7 @@ class OfferProvider extends ChangeNotifier {
   int get total => _total;
 
   String? get selectedCuisine => _selectedCuisine;
+  String? get selectedCategory => _selectedCategory;
 
   List<String> get allCuisineTags {
     final tags = <String>{};
@@ -87,6 +89,15 @@ class OfferProvider extends ChangeNotifier {
       tags.addAll(offer.cuisineTags);
     }
     final sorted = tags.toList()..sort();
+    return sorted;
+  }
+
+  List<String> get allCategories {
+    final ids = <String>{};
+    for (final offer in _offers) {
+      ids.addAll(offer.categoryIds);
+    }
+    final sorted = ids.toList()..sort();
     return sorted;
   }
 
@@ -105,6 +116,11 @@ class OfferProvider extends ChangeNotifier {
     if (_selectedCuisine != null) {
       results = results.where((offer) {
         return offer.cuisineTags.contains(_selectedCuisine);
+      }).toList(growable: false);
+    }
+    if (_selectedCategory != null) {
+      results = results.where((offer) {
+        return offer.categoryIds.contains(_selectedCategory);
       }).toList(growable: false);
     }
     _cachedFilteredOffers = results;
@@ -133,6 +149,20 @@ class OfferProvider extends ChangeNotifier {
   void clearCuisineFilter() {
     if (_selectedCuisine == null) return;
     _selectedCuisine = null;
+    _filterVersion++;
+    notifyListeners();
+  }
+
+  void filterByCategory(String? categoryId) {
+    if (_selectedCategory == categoryId) return;
+    _selectedCategory = categoryId;
+    _filterVersion++;
+    notifyListeners();
+  }
+
+  void clearCategoryFilter() {
+    if (_selectedCategory == null) return;
+    _selectedCategory = null;
     _filterVersion++;
     notifyListeners();
   }

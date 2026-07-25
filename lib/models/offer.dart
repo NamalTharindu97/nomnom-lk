@@ -18,6 +18,7 @@ class Offer {
     required this.imageUrls,
     required this.endDate,
     this.cuisineTags = const [],
+    this.categoryIds = const [],
     this.isFavorite = false,
     this.instagramUrl,
     this.facebookUrl,
@@ -40,6 +41,7 @@ class Offer {
   final List<String> imageUrls;
   final DateTime endDate;
   final List<String> cuisineTags;
+  final List<String> categoryIds;
   final bool isFavorite;
   final String? instagramUrl;
   final String? facebookUrl;
@@ -94,6 +96,7 @@ class Offer {
       offerPrice: (json['offer_price'] as num).toDouble(),
       imageUrls: (json['image_urls'] as List?)?.cast<String>() ?? [],
       cuisineTags: (json['restaurant']['cuisine_tags'] as List?)?.cast<String>() ?? [],
+      categoryIds: (json['category_ids'] as List?)?.cast<String>() ?? [],
       endDate: DateTime.parse(json['end_date'] as String),
       isFavorite: json['is_favorited'] as bool? ?? false,
       instagramUrl: (json['restaurant'] as Map<String, dynamic>?)?['instagram_url'] as String?,
@@ -115,6 +118,7 @@ class Offer {
       'original_price': originalPrice,
       'offer_price': offerPrice,
       'image_urls': imageUrls,
+      'category_ids': categoryIds,
       'end_date': endDate.toIso8601String(),
       'is_favorited': isFavorite,
       'restaurant': {
@@ -145,6 +149,7 @@ class Offer {
     double? offerPrice,
     List<String>? imageUrls,
     List<String>? cuisineTags,
+    List<String>? categoryIds,
     DateTime? endDate,
     bool? isFavorite,
     String? instagramUrl,
@@ -167,6 +172,7 @@ class Offer {
       offerPrice: offerPrice ?? this.offerPrice,
       imageUrls: imageUrls ?? this.imageUrls,
       cuisineTags: cuisineTags ?? this.cuisineTags,
+      categoryIds: categoryIds ?? this.categoryIds,
       endDate: endDate ?? this.endDate,
       isFavorite: isFavorite ?? this.isFavorite,
       instagramUrl: instagramUrl ?? this.instagramUrl,

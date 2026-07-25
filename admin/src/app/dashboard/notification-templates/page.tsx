@@ -12,6 +12,9 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { EmptyState } from "@/components/empty-state"
 import { TableSkeleton } from "@/components/table-skeleton"
 import { notify } from "@/components/ui/toast"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +28,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Plus, Pencil, Trash2, Mail } from "lucide-react"
 
+const templateSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  title: z.string().min(1, "Title is required"),
+  body: z.string().min(1, "Body is required"),
+})
+
+type TemplateForm = z.infer<typeof templateSchema>
+
 interface Template {
   id: string
   name: string
@@ -37,11 +48,22 @@ export default function NotificationTemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Template | null>(null)
-  const [name, setName] = useState("")
-  const [title, setTitle] = useState("")
-  const [body, setBody] = useState("")
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Template | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TemplateForm>({
+    resolver: zodResolver(templateSchema),
+    defaultValues: {
+      name: "",
+      title: "",
+      body: "",
+    },
+  })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -59,30 +81,22 @@ export default function NotificationTemplatesPage() {
 
   function startCreate() {
     setEditing(null)
-    setName("")
-    setTitle("")
-    setBody("")
+    reset({ name: "", title: "", body: "" })
   }
 
   function startEdit(t: Template) {
     setEditing(t)
-    setName(t.name)
-    setTitle(t.title)
-    setBody(t.body)
+    reset({ name: t.name, title: t.title, body: t.body })
   }
 
-  async function handleSave() {
-    if (!name || !title || !body) {
-      notify("All fields are required", "error")
-      return
-    }
+  async function onSave(data: TemplateForm) {
     setSaving(true)
     try {
       if (editing) {
-        await api.put(`/admin/notification-templates/${editing.id}`, { name, title, body })
+        await api.put(`/admin/notification-templates/${editing.id}`, data)
         notify("Template updated", "success")
       } else {
-        await api.post("/admin/notification-templates", { name, title, body })
+        await api.post("/admin/notification-templates", data)
         notify("Template created", "success")
       }
       startCreate()
@@ -120,32 +134,32 @@ export default function NotificationTemplatesPage() {
                 <Label htmlFor="tname">Template Name</Label>
                 <Input
                   id="tname"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...register("name")}
                   placeholder="e.g., Welcome Message"
                 />
+                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="ttitle">Title</Label>
                 <Input
                   id="ttitle"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  {...register("title")}
                   placeholder="Hello {{name}}!"
                 />
+                {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="tbody">Body</Label>
                 <Textarea
                   id="tbody"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
+                  {...register("body")}
                   placeholder="Check out our new offer at {{restaurant}}..."
                   rows={4}
                 />
+                {errors.body && <p className="text-xs text-destructive">{errors.body.message}</p>}
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSubmit(onSave)} disabled={saving}>
                   {saving ? "Saving..." : editing ? "Update" : "Create"}
                 </Button>
                 {editing && (

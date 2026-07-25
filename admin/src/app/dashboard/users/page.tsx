@@ -41,7 +41,7 @@ interface User {
 }
 
 const PER_PAGE = 10
-const ROLES = ["user", "restaurant_owner", "admin"]
+export const ROLES = ["user", "restaurant_owner", "admin"] as const
 const ROLE_FILTERS = ["all", "user", "restaurant_owner", "admin"]
 
 

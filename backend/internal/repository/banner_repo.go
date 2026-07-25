@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -50,8 +51,8 @@ func (r *BannerRepo) FindAllActive() ([]models.Banner, error) {
 	err := r.db.Where("status = ?", models.BannerApproved).
 		Where("(start_date IS NULL OR start_date <= ?)", now).
 		Where("(end_date IS NULL OR end_date >= ?)", now).
-		Where(`(
-			(link_type = 'offer' AND EXISTS (
+		Where(fmt.Sprintf(`(
+			(link_type = '%s' AND EXISTS (
 				SELECT 1 FROM offers o
 				JOIN restaurants r ON r.id = o.restaurant_id
 				WHERE (o.id = banners.offer_id OR o.id::text = banners.link_value)
@@ -61,12 +62,12 @@ func (r *BannerRepo) FindAllActive() ([]models.Banner, error) {
 				  AND (o.publish_at IS NULL OR o.publish_at <= ?)
 				  AND r.status = 'approved'
 			)) OR
-			(link_type = 'restaurant' AND EXISTS (
+			(link_type = '%s' AND EXISTS (
 				SELECT 1 FROM restaurants r
 				WHERE r.id::text = banners.link_value AND r.status = 'approved'
 			)) OR
-			link_type = 'external'
-		)`, now, now, now).
+			link_type = '%s'
+		)`, models.BannerLinkOffer, models.BannerLinkRestaurant, models.BannerLinkExternal), now, now, now).
 		Order("sort_order ASC, created_at DESC").
 		Find(&banners).Error
 	return banners, err
@@ -122,8 +123,8 @@ func (r *BannerRepo) IncrementClickCount(id uuid.UUID) error {
 		Where("status = ?", models.BannerApproved).
 		Where("(start_date IS NULL OR start_date <= ?)", now).
 		Where("(end_date IS NULL OR end_date >= ?)", now).
-		Where(`(
-			(link_type = 'offer' AND EXISTS (
+		Where(fmt.Sprintf(`(
+			(link_type = '%s' AND EXISTS (
 				SELECT 1 FROM offers o JOIN restaurants r ON r.id = o.restaurant_id
 				WHERE (o.id = banners.offer_id OR o.id::text = banners.link_value)
 				  AND o.status = 'approved'
@@ -132,10 +133,10 @@ func (r *BannerRepo) IncrementClickCount(id uuid.UUID) error {
 				  AND (o.publish_at IS NULL OR o.publish_at <= ?)
 				  AND r.status = 'approved'
 			)) OR
-			(link_type = 'restaurant' AND EXISTS (
+			(link_type = '%s' AND EXISTS (
 				SELECT 1 FROM restaurants r WHERE r.id::text = banners.link_value AND r.status = 'approved'
-			)) OR link_type = 'external'
-		)`, now, now, now).
+			)) OR link_type = '%s'
+		)`, models.BannerLinkOffer, models.BannerLinkRestaurant, models.BannerLinkExternal), now, now, now).
 		UpdateColumn("click_count", gorm.Expr("click_count + 1"))
 	if result.Error != nil {
 		return result.Error
@@ -148,7 +149,7 @@ func (r *BannerRepo) IncrementClickCount(id uuid.UUID) error {
 
 func (r *BannerRepo) DeactivateByOfferID(offerID uuid.UUID) error {
 	return r.db.Model(&models.Banner{}).
-		Where("offer_id = ? OR (link_type = 'offer' AND link_value = ?)", offerID, offerID.String()).
+		Where(fmt.Sprintf("offer_id = ? OR (link_type = '%s' AND link_value = ?)", models.BannerLinkOffer), offerID, offerID.String()).
 		Update("status", models.BannerRejected).Error
 }
 
@@ -174,27 +175,27 @@ func (r *BannerRepo) CountStatsByOwner(ownerID uuid.UUID) (*OwnerBannerMetrics, 
 		args = append(args, ownerID, ownerID, ownerID)
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		WITH attributed AS (
 			SELECT DISTINCT b.id, b.status, b.click_count, b.start_date, b.end_date,
 				CASE
-					WHEN b.link_type = 'external' THEN TRUE
-					WHEN b.link_type = 'offer' THEN o.id IS NOT NULL
+					WHEN b.link_type = '%s' THEN TRUE
+					WHEN b.link_type = '%s' THEN o.id IS NOT NULL
 						AND o.status = 'approved'
 						AND (o.start_date IS NULL OR o.start_date <= NOW())
 						AND o.end_date >= NOW()
 						AND (o.publish_at IS NULL OR o.publish_at <= NOW())
 						AND offer_restaurant.status = 'approved'
-					WHEN b.link_type = 'restaurant' THEN direct_restaurant.status = 'approved'
+					WHEN b.link_type = '%s' THEN direct_restaurant.status = 'approved'
 					ELSE FALSE
 				END AS target_public
 			FROM banners b
-			LEFT JOIN offers o ON b.link_type = 'offer'
+			LEFT JOIN offers o ON b.link_type = '%s'
 				AND (o.id = b.offer_id OR o.id::text = b.link_value)
 			LEFT JOIN restaurants offer_restaurant ON offer_restaurant.id = o.restaurant_id
-			LEFT JOIN restaurants direct_restaurant ON b.link_type = 'restaurant'
+			LEFT JOIN restaurants direct_restaurant ON b.link_type = '%s'
 				AND direct_restaurant.id::text = b.link_value
-			` + ownerFilter + `
+			%s
 		)
 		SELECT
 			COUNT(*) AS total,
@@ -203,7 +204,10 @@ func (r *BannerRepo) CountStatsByOwner(ownerID uuid.UUID) (*OwnerBannerMetrics, 
 			COALESCE(SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END), 0) AS rejected,
 			COALESCE(SUM(click_count), 0) AS total_clicks,
 			COALESCE(SUM(CASE WHEN status = 'approved' AND target_public AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW()) THEN click_count ELSE 0 END), 0) AS active_clicks
-		FROM attributed`
+		FROM attributed`,
+		models.BannerLinkExternal, models.BannerLinkOffer, models.BannerLinkRestaurant,
+		models.BannerLinkOffer, models.BannerLinkRestaurant,
+		ownerFilter)
 	if err := r.db.Raw(query, args...).Scan(metrics).Error; err != nil {
 		return nil, err
 	}

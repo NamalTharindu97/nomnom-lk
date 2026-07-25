@@ -46,7 +46,7 @@ const ACTION_OPTIONS: ActionOption[] = [
   { value: "login", label: "Login / Logout" },
   { value: "register", label: "Register" },
 ]
-const ENTITY_OPTIONS = ["all", "restaurant", "offer", "user", "notification", "coupon", "category", "template", "device", "upload"]
+const ENTITY_OPTIONS = ["all", "restaurant", "offer", "user", "notification", "coupon", "category", "template", "device", "upload", "banner", "cuisine_tag"]
 const ROLE_OPTIONS = ["all", "admin", "restaurant_owner"]
 
 export default function AuditLogPage() {

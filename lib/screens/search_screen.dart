@@ -328,41 +328,45 @@ class _SearchRestaurantTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.xs),
-      child: Container(
-        padding: const EdgeInsets.all(Spacings.sm + 2),
-        decoration: BoxDecoration(
-          color: context.colors.surface,
-          borderRadius: BorderRadius.circular(8),
-           border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.curry.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => Navigator.of(context).pop(),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(Spacings.sm + 2),
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(8),
+             border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.curry.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.store_rounded, color: AppColors.curry, size: 22),
               ),
-              child: const Icon(Icons.store_rounded, color: AppColors.curry, size: 22),
-            ),
-            const SizedBox(width: Spacings.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    restaurant.name,
-                    style: textTheme.titleSmall?.copyWith(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: Spacings.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      restaurant.name,
+                      style: textTheme.titleSmall?.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: context.colors.muted),
-          ],
+              Icon(Icons.chevron_right_rounded, color: context.colors.muted),
+            ],
+          ),
         ),
       ),
     );

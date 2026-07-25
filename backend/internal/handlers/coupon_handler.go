@@ -48,9 +48,9 @@ func (h *CouponHandler) Create(c *gin.Context) {
 		return
 	}
 
-	dt := "percentage"
+	dt := models.DiscountPercentage
 	if req.DiscountType != "" {
-		dt = req.DiscountType
+		dt = models.DiscountType(req.DiscountType)
 	}
 
 	coupon := &models.Coupon{
@@ -101,9 +101,9 @@ func (h *CouponHandler) Update(c *gin.Context) {
 	}
 
 	coupon.Code = req.Code
-	coupon.DiscountType = req.DiscountType
+	coupon.DiscountType = models.DiscountType(req.DiscountType)
 	if coupon.DiscountType == "" {
-		coupon.DiscountType = "percentage"
+		coupon.DiscountType = models.DiscountPercentage
 	}
 	coupon.DiscountValue = req.DiscountValue
 	coupon.MinOrderAmount = req.MinOrderAmount

@@ -83,7 +83,7 @@ func (h *BannerHandler) applyTarget(banner *models.Banner, linkType, linkValue s
 	}
 
 	switch linkType {
-	case "offer":
+	case string(models.BannerLinkOffer):
 		id, err := uuid.Parse(linkValue)
 		if err != nil {
 			return fmt.Errorf("invalid offer id")
@@ -95,7 +95,7 @@ func (h *BannerHandler) applyTarget(banner *models.Banner, linkType, linkValue s
 		if requirePublic && !isOfferPublic(offer, time.Now()) {
 			return fmt.Errorf("offer is not currently public")
 		}
-		banner.LinkType = "offer"
+		banner.LinkType = models.BannerLinkOffer
 		banner.LinkValue = id.String()
 		banner.OfferID = &id
 		if offer.Restaurant != nil {
@@ -104,7 +104,7 @@ func (h *BannerHandler) applyTarget(banner *models.Banner, linkType, linkValue s
 				banner.SponsorName = offer.Restaurant.Name
 			}
 		}
-	case "restaurant":
+	case string(models.BannerLinkRestaurant):
 		id, err := uuid.Parse(linkValue)
 		if err != nil {
 			return fmt.Errorf("invalid restaurant id")
@@ -116,19 +116,19 @@ func (h *BannerHandler) applyTarget(banner *models.Banner, linkType, linkValue s
 		if requirePublic && restaurant.Status != models.RestaurantApproved {
 			return fmt.Errorf("restaurant is not currently public")
 		}
-		banner.LinkType = "restaurant"
+		banner.LinkType = models.BannerLinkRestaurant
 		banner.LinkValue = id.String()
 		banner.OfferID = nil
 		banner.OwnerID = restaurant.OwnerID
 		if strings.TrimSpace(banner.SponsorName) == "" {
 			banner.SponsorName = restaurant.Name
 		}
-	case "external":
+	case string(models.BannerLinkExternal):
 		parsed, err := url.ParseRequestURI(linkValue)
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
 			return fmt.Errorf("invalid external URL")
 		}
-		banner.LinkType = "external"
+		banner.LinkType = models.BannerLinkExternal
 		banner.LinkValue = parsed.String()
 		banner.OfferID = nil
 		banner.OwnerID = nil
@@ -328,7 +328,7 @@ func (h *BannerHandler) Approve(c *gin.Context) {
 		response.ValidationError(c, []response.ErrorDetail{{Field: "image", Message: err.Error()}})
 		return
 	}
-	if err := h.applyTarget(banner, banner.LinkType, banner.LinkValue, true); err != nil {
+	if err := h.applyTarget(banner, string(banner.LinkType), banner.LinkValue, true); err != nil {
 		response.ValidationError(c, []response.ErrorDetail{{Field: "link_value", Message: err.Error()}})
 		return
 	}
@@ -414,7 +414,7 @@ func (h *BannerHandler) CreateOwner(c *gin.Context) {
 		Title:  req.Title,
 		Status: models.BannerPending,
 	}
-	if err := h.applyTarget(banner, "offer", req.OfferID, false); err != nil {
+	if err := h.applyTarget(banner, string(models.BannerLinkOffer), req.OfferID, false); err != nil {
 		response.ValidationError(c, []response.ErrorDetail{{Field: "offer_id", Message: err.Error()}})
 		return
 	}
@@ -478,7 +478,7 @@ func (h *BannerHandler) UpdateOwner(c *gin.Context) {
 		response.ValidationError(c, []response.ErrorDetail{{Field: "image", Message: err.Error()}})
 		return
 	}
-	if err := h.applyTarget(banner, "offer", req.OfferID, false); err != nil {
+	if err := h.applyTarget(banner, string(models.BannerLinkOffer), req.OfferID, false); err != nil {
 		response.ValidationError(c, []response.ErrorDetail{{Field: "offer_id", Message: err.Error()}})
 		return
 	}

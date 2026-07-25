@@ -15,10 +15,18 @@ const (
 	BannerRejected BannerStatus = "rejected"
 )
 
+type BannerLinkType string
+
+const (
+	BannerLinkOffer      BannerLinkType = "offer"
+	BannerLinkRestaurant BannerLinkType = "restaurant"
+	BannerLinkExternal   BannerLinkType = "external"
+)
+
 type Banner struct {
 	ID          uuid.UUID    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	Image       string       `gorm:"not null" json:"image"`
-	LinkType    string       `gorm:"not null;size:20" json:"link_type"`
+	LinkType    BannerLinkType `gorm:"not null;size:20" json:"link_type"`
 	LinkValue   string       `gorm:"not null;size:255" json:"link_value"`
 	Title       string       `gorm:"size:100" json:"title,omitempty"`
 	SponsorName string       `gorm:"size:100" json:"sponsor_name,omitempty"`

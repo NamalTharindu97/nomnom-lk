@@ -254,3 +254,12 @@ func (h *NotificationHandler) SendPush(c *gin.Context) {
 
 	response.Success(c, gin.H{"message": "push notification sent"})
 }
+
+func (h *NotificationHandler) ListCategories(c *gin.Context) {
+	categories := []gin.H{
+		{"key": "new_offers", "label": "New Offers", "description": "Get notified when new offers are added"},
+		{"key": "price_drops", "label": "Price Drops", "description": "Get notified when offer prices drop"},
+		{"key": "openings", "label": "Restaurant Openings", "description": "Get notified when new restaurants open"},
+	}
+	response.Success(c, categories)
+}

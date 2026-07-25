@@ -7,10 +7,17 @@ import (
 	"gorm.io/gorm"
 )
 
+type DiscountType string
+
+const (
+	DiscountPercentage DiscountType = "percentage"
+	DiscountFixed      DiscountType = "fixed"
+)
+
 type Coupon struct {
 	ID              uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	Code            string     `gorm:"size:50;not null;uniqueIndex" json:"code"`
-	DiscountType    string     `gorm:"size:20;not null;default:percentage" json:"discount_type"`
+	DiscountType    DiscountType `gorm:"size:20;not null;default:percentage" json:"discount_type"`
 	DiscountValue   float64    `gorm:"not null" json:"discount_value"`
 	MinOrderAmount  float64    `gorm:"default:0" json:"min_order_amount"`
 	MaxUses         int        `gorm:"default:0" json:"max_uses"`
