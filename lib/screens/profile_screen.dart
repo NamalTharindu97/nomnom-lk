@@ -597,7 +597,7 @@ class _SignOutButton extends StatelessWidget {
             : const Icon(Icons.logout_rounded),
         label: Text(
           isGuest ? AppLocalizations.of(context)!.loginSignInButton : AppLocalizations.of(context)!.generalLogout,
-          style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+          style: textTheme.bodyLarge?.copyWith(color: null, fontWeight: FontWeight.w700),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.chili,

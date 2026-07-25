@@ -183,7 +183,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
       appBar: AppBar(
         title: Text(
           offer.restaurantName,
-          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          style: textTheme.titleMedium?.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.w800),
         ),
       ),
       body: SingleChildScrollView(

@@ -29,7 +29,7 @@ class FollowSection extends StatelessWidget {
       children: [
         Text(
           t.offerFollow,
-          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          style: textTheme.titleMedium?.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
         Text(

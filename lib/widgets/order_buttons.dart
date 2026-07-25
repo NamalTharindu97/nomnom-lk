@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/context_colors.dart';
 import '../utils/spacings.dart';
 
 enum OrderPlatform {
@@ -66,6 +67,7 @@ class OrderButtonsSection extends StatelessWidget {
             Text(
               t.offerOrderNow,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
             ),
