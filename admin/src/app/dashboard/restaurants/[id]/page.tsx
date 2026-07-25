@@ -31,6 +31,7 @@ export default function RestaurantDetailPage() {
   const router = useRouter()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [loading, setLoading] = useState(true)
+  const [platformMap, setPlatformMap] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const id = params.id as string
@@ -40,6 +41,14 @@ export default function RestaurantDetailPage() {
       .then((res) => setRestaurant(res.data))
       .catch(() => setRestaurant(null))
       .finally(() => setLoading(false))
+    api.get<{ slug: string; display_name: string }[]>("/admin/order-platforms")
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : (data as any)?.data || []
+        const map: Record<string, string> = {}
+        arr.forEach((p: any) => { map[p.slug] = p.display_name })
+        setPlatformMap(map)
+      })
+      .catch(() => {})
   }, [params.id])
 
   if (loading) {
@@ -197,7 +206,7 @@ export default function RestaurantDetailPage() {
                 <span className="text-sm text-muted-foreground">Ordering Platforms</span>
                 <div className="mt-1 flex gap-1 flex-wrap">
                   {restaurant.order_platforms.map((p) => (
-                    <Badge key={p} variant="secondary">{p === "uber_eats" ? "Uber Eats" : "PickMe"}</Badge>
+                    <Badge key={p} variant="secondary">{platformMap[p] || p}</Badge>
                   ))}
                 </div>
               </div>

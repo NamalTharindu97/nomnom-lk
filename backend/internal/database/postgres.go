@@ -47,6 +47,7 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 		&models.Category{},
 		&models.Banner{},
 		&models.CuisineTag{},
+		&models.OrderPlatform{},
 	); err != nil {
 		log.Fatalf("Failed to auto-migrate: %v", err)
 	}
@@ -143,6 +144,10 @@ func runIndexMigrations(db *gorm.DB) {
 		        (gen_random_uuid(), 'Healthy', NOW()),
 		        (gen_random_uuid(), 'Mexican', NOW()),
 		        (gen_random_uuid(), 'Tacos', NOW())
+		 ON CONFLICT (name) DO NOTHING`,
+		`INSERT INTO order_platforms (id, name, slug, display_name, primary_color, deep_link_scheme, created_at)
+		 VALUES (gen_random_uuid(), 'Uber Eats', 'uber_eats', 'Uber Eats', '#06C167', 'ubereats://', NOW()),
+		        (gen_random_uuid(), 'PickMe', 'pickme', 'PickMe', '#00B14F', 'pickme://', NOW())
 		 ON CONFLICT (name) DO NOTHING`,
 	}
 	for _, stmt := range statements {

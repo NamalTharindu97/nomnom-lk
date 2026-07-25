@@ -33,6 +33,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	couponRepo := repository.NewCouponRepo(db)
 	categoryRepo := repository.NewCategoryRepo(db)
 	cuisineTagRepo := repository.NewCuisineTagRepo(db)
+	orderPlatformRepo := repository.NewOrderPlatformRepo(db)
 
 	// Services
 	auditService := services.NewAuditService(auditLogRepo)
@@ -73,6 +74,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	couponHandler := handlers.NewCouponHandler(couponRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	cuisineTagHandler := handlers.NewCuisineTagHandler(cuisineTagRepo)
+	orderPlatformHandler := handlers.NewOrderPlatformHandler(orderPlatformRepo)
 	bannerHandler := handlers.NewBannerHandler(bannerRepo, offerRepo, restaurantRepo, auditService, sseService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditService)
@@ -314,6 +316,10 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.POST("/cuisine-tags", cuisineTagHandler.Create)
 			adminGroup.PUT("/cuisine-tags/:id", cuisineTagHandler.Update)
 			adminGroup.DELETE("/cuisine-tags/:id", cuisineTagHandler.Delete)
+			adminGroup.GET("/order-platforms", orderPlatformHandler.List)
+			adminGroup.POST("/order-platforms", orderPlatformHandler.Create)
+			adminGroup.PUT("/order-platforms/:id", orderPlatformHandler.Update)
+			adminGroup.DELETE("/order-platforms/:id", orderPlatformHandler.Delete)
 			adminGroup.GET("/banners", bannerHandler.List)
 			adminGroup.POST("/banners", bannerHandler.Create)
 			adminGroup.PUT("/banners/:id", bannerHandler.Update)

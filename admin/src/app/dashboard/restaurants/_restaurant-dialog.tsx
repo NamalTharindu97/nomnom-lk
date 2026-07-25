@@ -46,6 +46,15 @@ interface CuisineTag {
   name: string
 }
 
+interface OrderPlatformItem {
+  id: string
+  name: string
+  slug: string
+  display_name: string
+  primary_color: string
+  deep_link_scheme: string
+}
+
 interface RestaurantDialogProps {
   open: boolean
   onClose: () => void
@@ -62,6 +71,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   const [owners, setOwners] = useState<OwnerOption[]>([])
   const [allTags, setAllTags] = useState<{ id: string; name: string }[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [orderPlatforms, setOrderPlatforms] = useState<OrderPlatformItem[]>([])
 
   const isEdit = !!restaurant
 
@@ -91,6 +101,9 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
     if (open) {
       api.get<CuisineTag[]>("/admin/cuisine-tags")
         .then((data) => setAllTags(Array.isArray(data) ? data : (data as any)?.data || []))
+        .catch(() => {})
+      api.get<OrderPlatformItem[]>("/admin/order-platforms")
+        .then((data) => setOrderPlatforms(Array.isArray(data) ? data : (data as any)?.data || []))
         .catch(() => {})
     }
   }, [open, isAdmin])
@@ -304,20 +317,20 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
                 <div className="grid gap-2">
                   <Label>Ordering Platforms</Label>
                   <div className="flex items-center gap-6 pt-1">
-                    {["uber_eats", "pickme"].map((platform) => (
-                      <label key={platform} className="flex items-center gap-2 text-sm cursor-pointer">
+                    {orderPlatforms.map((platform) => (
+                      <label key={platform.id} className="flex items-center gap-2 text-sm cursor-pointer">
                         <Checkbox
-                          checked={(watch("order_platforms") || []).includes(platform)}
+                          checked={(watch("order_platforms") || []).includes(platform.slug)}
                           onCheckedChange={(checked) => {
                             const current = watch("order_platforms") || []
                             if (checked) {
-                              setValue("order_platforms", [...current, platform], { shouldDirty: true })
+                              setValue("order_platforms", [...current, platform.slug], { shouldDirty: true })
                             } else {
-                              setValue("order_platforms", current.filter((p) => p !== platform), { shouldDirty: true })
+                              setValue("order_platforms", current.filter((p) => p !== platform.slug), { shouldDirty: true })
                             }
                           }}
                         />
-                        {platform === "uber_eats" ? "Uber Eats" : "PickMe"}
+                        {platform.display_name}
                       </label>
                     ))}
                   </div>
