@@ -129,7 +129,7 @@ func (s *AuthService) authenticatePassword(email, password string) (*models.User
 			lockUntil := time.Now().Add(30 * time.Minute)
 			user.LockedUntil = &lockUntil
 		}
-		s.userRepo.Update(user)
+		_ = s.userRepo.Update(user)
 
 		return nil, errors.New("invalid email or password")
 	}
@@ -144,7 +144,7 @@ func (s *AuthService) authenticatePassword(email, password string) (*models.User
 
 	user.FailedLoginAttempts = 0
 	user.LockedUntil = nil
-	s.userRepo.Update(user)
+	_ = s.userRepo.Update(user)
 
 	return user, nil
 }

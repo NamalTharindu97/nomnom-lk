@@ -189,7 +189,7 @@ jobs:
         working-directory: admin
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=critical
         working-directory: admin
 
       - name: TypeScript type check

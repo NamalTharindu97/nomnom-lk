@@ -73,7 +73,7 @@ func RateLimitByEmail(rdb *redis.Client, limit int, window time.Duration, prefix
 		var body struct {
 			Email string `json:"email"`
 		}
-		json.Unmarshal(data, &body)
+		_ = json.Unmarshal(data, &body)
 		if body.Email == "" {
 			c.Next()
 			return
