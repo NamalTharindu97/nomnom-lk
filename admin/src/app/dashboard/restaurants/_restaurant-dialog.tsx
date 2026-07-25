@@ -19,7 +19,7 @@ import { useAuth } from "@/hooks/use-auth"
 const restaurantSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase, alphanumeric, with dashes"),
-  cuisine_tags: z.string().optional(),
+  cuisine_tags: z.array(z.string()).optional(),
   description: z.string().optional(),
   contact_phone: z.string().optional(),
   owner_id: z.string().optional(),
@@ -41,6 +41,11 @@ interface OwnerOption {
   email: string
 }
 
+interface CuisineTag {
+  id: string
+  name: string
+}
+
 interface RestaurantDialogProps {
   open: boolean
   onClose: () => void
@@ -55,6 +60,8 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [owners, setOwners] = useState<OwnerOption[]>([])
+  const [allTags, setAllTags] = useState<{ id: string; name: string }[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const isEdit = !!restaurant
 
@@ -68,7 +75,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   } = useForm<FormData>({
     resolver: zodResolver(restaurantSchema),
     defaultValues: {
-      name: "", slug: "", cuisine_tags: "", description: "",
+      name: "", slug: "", cuisine_tags: [], description: "",
       contact_phone: "", owner_id: "", name_si: "", name_ta: "",
       description_si: "", description_ta: "",
       instagram_url: "", facebook_url: "", website_url: "", order_platforms: [],
@@ -81,14 +88,20 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         .then((res) => setOwners(res.data || []))
         .catch(() => {})
     }
+    if (open) {
+      api.get<CuisineTag[]>("/admin/cuisine-tags")
+        .then((data) => setAllTags(Array.isArray(data) ? data : (data as any)?.data || []))
+        .catch(() => {})
+    }
   }, [open, isAdmin])
 
   useEffect(() => {
     if (restaurant) {
+      const tags = restaurant.cuisine_tags || []
       reset({
         name: restaurant.name || "",
         slug: restaurant.slug || "",
-        cuisine_tags: (restaurant.cuisine_tags || []).join(", "),
+        cuisine_tags: tags,
         description: restaurant.description || "",
         contact_phone: restaurant.contact_phone || "",
         owner_id: restaurant.owner_id || "",
@@ -101,9 +114,11 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         website_url: restaurant.website_url || "",
         order_platforms: restaurant.order_platforms || [],
       })
+      setSelectedTags(tags)
       setCoverPreview(restaurant.cover_image || null)
     } else {
       reset()
+      setSelectedTags([])
       setCoverFile(null)
       setCoverPreview(null)
     }
@@ -148,7 +163,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
 
       const body: Record<string, any> = {
         ...data,
-        cuisine_tags: data.cuisine_tags ? data.cuisine_tags.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+        cuisine_tags: selectedTags,
       }
       if (isAdmin && data.owner_id && data.owner_id !== "__none") body.owner_id = data.owner_id
       else delete body.owner_id
@@ -203,8 +218,29 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cuisine_tags">Cuisine Tags (comma-separated)</Label>
-              <Input id="cuisine_tags" {...register("cuisine_tags")} />
+              <Label>Cuisine Tags</Label>
+              <div className="max-h-[160px] overflow-y-auto border rounded-md p-3 space-y-2">
+                {allTags.length === 0 && <p className="text-sm text-muted-foreground">No cuisine tags defined yet. Go to Cuisine Tags page to add some.</p>}
+                {allTags.map((tag) => (
+                  <div key={tag.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`tag-${tag.id}`}
+                      checked={selectedTags.includes(tag.name)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedTags([...selectedTags, tag.name])
+                          setValue("cuisine_tags", [...selectedTags, tag.name])
+                        } else {
+                          const next = selectedTags.filter((t) => t !== tag.name)
+                          setSelectedTags(next)
+                          setValue("cuisine_tags", next)
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`tag-${tag.id}`} className="font-normal cursor-pointer">{tag.name}</Label>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>

@@ -32,6 +32,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	scheduledNotificationRepo := repository.NewScheduledNotificationRepo(db)
 	couponRepo := repository.NewCouponRepo(db)
 	categoryRepo := repository.NewCategoryRepo(db)
+	cuisineTagRepo := repository.NewCuisineTagRepo(db)
 
 	// Services
 	auditService := services.NewAuditService(auditLogRepo)
@@ -71,6 +72,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	templateHandler := handlers.NewTemplateHandler(templateRepo)
 	couponHandler := handlers.NewCouponHandler(couponRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
+	cuisineTagHandler := handlers.NewCuisineTagHandler(cuisineTagRepo)
 	bannerHandler := handlers.NewBannerHandler(bannerRepo, offerRepo, restaurantRepo, auditService, sseService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditService)
@@ -308,6 +310,10 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.POST("/categories", categoryHandler.Create)
 			adminGroup.PUT("/categories/:id", categoryHandler.Update)
 			adminGroup.DELETE("/categories/:id", categoryHandler.Delete)
+			adminGroup.GET("/cuisine-tags", cuisineTagHandler.List)
+			adminGroup.POST("/cuisine-tags", cuisineTagHandler.Create)
+			adminGroup.PUT("/cuisine-tags/:id", cuisineTagHandler.Update)
+			adminGroup.DELETE("/cuisine-tags/:id", cuisineTagHandler.Delete)
 			adminGroup.GET("/banners", bannerHandler.List)
 			adminGroup.POST("/banners", bannerHandler.Create)
 			adminGroup.PUT("/banners/:id", bannerHandler.Update)

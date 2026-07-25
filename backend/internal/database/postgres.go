@@ -46,6 +46,7 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 		&models.Coupon{},
 		&models.Category{},
 		&models.Banner{},
+		&models.CuisineTag{},
 	); err != nil {
 		log.Fatalf("Failed to auto-migrate: %v", err)
 	}
@@ -122,6 +123,27 @@ func runIndexMigrations(db *gorm.DB) {
 		`ALTER TABLE restaurants DROP COLUMN IF EXISTS address`,
 		`ALTER TABLE restaurants DROP COLUMN IF EXISTS latitude`,
 		`ALTER TABLE restaurants DROP COLUMN IF EXISTS longitude`,
+		`INSERT INTO cuisine_tags (id, name, created_at)
+		 VALUES (gen_random_uuid(), 'Pizza', NOW()),
+		        (gen_random_uuid(), 'Italian', NOW()),
+		        (gen_random_uuid(), 'Fast Food', NOW()),
+		        (gen_random_uuid(), 'Fried Chicken', NOW()),
+		        (gen_random_uuid(), 'Burgers', NOW()),
+		        (gen_random_uuid(), 'Bakery', NOW()),
+		        (gen_random_uuid(), 'Cakes', NOW()),
+		        (gen_random_uuid(), 'Pastries', NOW()),
+		        (gen_random_uuid(), 'Snacks', NOW()),
+		        (gen_random_uuid(), 'Desserts', NOW()),
+		        (gen_random_uuid(), 'Sweets', NOW()),
+		        (gen_random_uuid(), 'Rice Bowls', NOW()),
+		        (gen_random_uuid(), 'Asian', NOW()),
+		        (gen_random_uuid(), 'Noodles', NOW()),
+		        (gen_random_uuid(), 'American', NOW()),
+		        (gen_random_uuid(), 'Sandwiches', NOW()),
+		        (gen_random_uuid(), 'Healthy', NOW()),
+		        (gen_random_uuid(), 'Mexican', NOW()),
+		        (gen_random_uuid(), 'Tacos', NOW())
+		 ON CONFLICT (name) DO NOTHING`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {
