@@ -76,7 +76,6 @@ export class RestaurantDialog {
   readonly dialog: Locator
   readonly nameInput: Locator
   readonly slugInput: Locator
-  readonly addressInput: Locator
   readonly phoneInput: Locator
   readonly cuisineTagsInput: Locator
   readonly descriptionInput: Locator
@@ -98,7 +97,6 @@ export class RestaurantDialog {
     this.dialog = page.getByRole("dialog")
     this.nameInput = page.getByLabel("Name").first()
     this.slugInput = page.getByLabel("Slug")
-    this.addressInput = page.getByLabel("Address")
     this.phoneInput = page.getByLabel("Phone")
     this.cuisineTagsInput = page.getByLabel("Cuisine Tags (comma-separated)")
     this.descriptionInput = page.locator("#description")
@@ -130,10 +128,6 @@ export class RestaurantDialog {
 
   async fillSlug(slug: string) {
     await this.slugInput.fill(slug)
-  }
-
-  async fillAddress(address: string) {
-    await this.addressInput.fill(address)
   }
 
   async fillPhone(phone: string) {
