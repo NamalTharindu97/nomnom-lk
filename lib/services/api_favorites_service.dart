@@ -7,7 +7,9 @@ class ApiFavoritesService {
   final ApiClient _client;
 
   Future<List<Offer>> fetchFavorites() async {
-    final response = await _client.get('/favorites');
+    final response = await _client.get('/favorites', queryParameters: {
+      'per_page': 100,
+    });
     final data = response['data'] as List;
     return data
         .map((json) => Offer.fromJson(json as Map<String, dynamic>))

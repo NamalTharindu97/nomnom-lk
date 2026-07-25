@@ -269,8 +269,10 @@ class OfferProvider extends ChangeNotifier {
     try {
       if (wasFavorite) {
         await _favoritesService.removeFavorite(offerId);
+        await _favoriteStore.removeFavorite(offerId);
       } else {
         await _favoritesService.addFavorite(offerId);
+        await _favoriteStore.addFavorite(offerId);
       }
     } catch (_) {
       if (hasOffer) {
