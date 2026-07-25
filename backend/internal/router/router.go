@@ -114,11 +114,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		authGroup.Use(middleware.RateLimit(rdb, 20, 1*time.Minute, "rl:auth"))
 		{
 			authGroup.POST("/register", authHandler.Register)
-			authGroup.POST("/login", middleware.RateLimitByEmail(rdb, 5, 15*time.Minute, "rl:login:email"), authHandler.Login)
+			authGroup.POST("/login", middleware.RateLimitByEmail(rdb, 10, 15*time.Minute, "rl:login:email"), authHandler.Login)
 			authGroup.POST("/firebase", authHandler.FirebaseLogin)
 			authGroup.POST("/refresh", authHandler.Refresh)
 			authGroup.POST("/logout", middleware.Auth(cfg.JWT.Secret), middleware.AuditTrail(auditService), authHandler.Logout)
-			authGroup.POST("/browser/login", middleware.RateLimitByEmail(rdb, 5, 15*time.Minute, "rl:login:email"), authHandler.BrowserLogin)
+			authGroup.POST("/browser/login", middleware.RateLimitByEmail(rdb, 10, 15*time.Minute, "rl:login:email"), authHandler.BrowserLogin)
 			authGroup.POST("/browser/refresh", middleware.RequireBrowserCSRF(), authHandler.BrowserRefresh)
 			authGroup.POST("/browser/logout", middleware.RequireBrowserCSRF(), authHandler.BrowserLogout)
 		}

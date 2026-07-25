@@ -36,25 +36,19 @@ func TestIntegration_LoginLockout_AfterTenFailures(t *testing.T) {
 	rdb := testutil.GetTestRDB()
 	ctx := context.Background()
 
-	makeBody := func() *bytes.Buffer {
+	tryLogin := func(expectedStatus int) {
 		b, _ := json.Marshal(map[string]string{"email": email, "password": "wrong-password"})
-		return bytes.NewBuffer(b)
+		w = testutil.PerformRequest(engine, http.MethodPost, "/api/v1/auth/login", bytes.NewBuffer(b), "")
+		assert.Equal(t, expectedStatus, w.Code)
 	}
 
-	for i := 1; i <= 5; i++ {
-		w = testutil.PerformRequest(engine, http.MethodPost, "/api/v1/auth/login", makeBody(), "")
-		assert.Equal(t, http.StatusUnauthorized, w.Code, "attempt %d/5", i)
-	}
-
-	rdb.Del(ctx, "rl:login:email:"+email)
-	for i := 6; i <= 10; i++ {
-		w = testutil.PerformRequest(engine, http.MethodPost, "/api/v1/auth/login", makeBody(), "")
-		assert.Equal(t, http.StatusUnauthorized, w.Code, "attempt %d/10", i)
+	for i := 1; i <= 10; i++ {
+		tryLogin(http.StatusUnauthorized)
 	}
 
 	rdb.Del(ctx, "rl:login:email:"+email)
-	w = testutil.PerformRequest(engine, http.MethodPost, "/api/v1/auth/login", makeBody(), "")
-	assert.Equal(t, http.StatusLocked, w.Code)
+
+	tryLogin(http.StatusLocked)
 }
 
 func TestIntegration_LoginLockout_ResetOnSuccess(t *testing.T) {
@@ -104,7 +98,7 @@ func TestIntegration_RateLimitByEmail_LoginThrottled(t *testing.T) {
 		return bytes.NewBuffer(b)
 	}
 
-	for i := 1; i <= 5; i++ {
+	for i := 1; i <= 10; i++ {
 		w := testutil.PerformRequest(engine, http.MethodPost, "/api/v1/auth/login", makeBody(), "")
 		assert.NotEqual(t, http.StatusTooManyRequests, w.Code, "attempt %d should pass", i)
 	}
