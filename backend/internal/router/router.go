@@ -238,7 +238,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		}
 
 		dashboardGroup := v1.Group("/dashboard")
-		dashboardGroup.Use(middleware.RateLimit(rdb, 30, 1*time.Minute, "rl:dashboard"))
+		dashboardGroup.Use(middleware.RateLimit(rdb, 60, 1*time.Minute, "rl:dashboard"))
 		dashboardGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		dashboardGroup.Use(middleware.RequireDashboardAccess())
 		dashboardGroup.Use(middleware.RequireActive(userRepo))
@@ -263,7 +263,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		}
 
 		adminGroup := v1.Group("/admin")
-		adminGroup.Use(middleware.RateLimit(rdb, 20, 1*time.Minute, "rl:admin"))
+		adminGroup.Use(middleware.RateLimit(rdb, 60, 1*time.Minute, "rl:admin"))
 		adminGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		adminGroup.Use(middleware.RequireActive(userRepo))
 		adminGroup.Use(middleware.RequireRole("admin"))
