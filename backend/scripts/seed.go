@@ -143,6 +143,7 @@ func main() {
 			InstagramURL: "https://www.instagram.com/breadtalk_srilanka/",
 			FacebookURL: "https://www.facebook.com/BreadTalkSriLanka/",
 			WebsiteURL: "https://www.breadtalk.lk/",
+			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Keells", NameSi: "කීල්ස්", NameTa: "கீல்ஸ்",
@@ -152,6 +153,7 @@ func main() {
 			InstagramURL: "https://www.instagram.com/keells_srilanka/",
 			FacebookURL: "https://www.facebook.com/KeellsSriLanka/",
 			WebsiteURL: "https://www.keells.lk/",
+			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Fab", NameSi: "ෆැබ්", NameTa: "ஃபேப்",
@@ -160,6 +162,7 @@ func main() {
 			CuisineTags: []string{"Bakery", "Cakes", "Desserts"}, ImageSeed: "fab", OwnerEmail: "fab@nomnom.lk",
 			InstagramURL: "https://www.instagram.com/fab_srilanka/",
 			FacebookURL: "https://www.facebook.com/FabSriLanka/",
+			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Popeyes", NameSi: "පොප්අයිස්", NameTa: "பாப்ஐஸ்",
@@ -178,6 +181,7 @@ func main() {
 			CuisineTags: []string{"Rice Bowls", "Asian", "Noodles"}, ImageSeed: "solo-bowl", OwnerEmail: "solobowl@nomnom.lk",
 			InstagramURL: "https://www.instagram.com/solobowl_lk/",
 			FacebookURL: "https://www.facebook.com/SoloBowlLK/",
+			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Spar", NameSi: "ස්පාර්", NameTa: "ஸ்பார்",
@@ -185,6 +189,7 @@ func main() {
 			Address: "15 Station Road, Colombo 10", Latitude: 6.9300, Longitude: 79.8650,
 			CuisineTags: []string{"Desserts", "Cakes", "Sweets"}, ImageSeed: "spar", OwnerEmail: "spar@nomnom.lk",
 			FacebookURL: "https://www.facebook.com/SparSriLanka/",
+			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Street Burger", NameSi: "ස්ට්‍රීට් බර්ගර්", NameTa: "ஸ்ட்ரீட் பர்கர்",
@@ -203,6 +208,7 @@ func main() {
 			InstagramURL: "https://www.instagram.com/subway_srilanka/",
 			FacebookURL: "https://www.facebook.com/SubwaySriLanka/",
 			WebsiteURL: "https://www.subway.lk/",
+			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Taco Bell", NameSi: "ටැකෝ බෙල්", NameTa: "டாகோ பெல்",

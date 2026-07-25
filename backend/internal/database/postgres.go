@@ -116,6 +116,9 @@ func runIndexMigrations(db *gorm.DB) {
 				ALTER TABLE users ADD COLUMN locked_until TIMESTAMPTZ;
 			END IF;
 		END $$`,
+		`UPDATE restaurants
+		 SET order_platforms = order_platforms || '["uber_eats","pickme"]'::jsonb
+		 WHERE order_platforms IS NULL OR jsonb_array_length(order_platforms) = 0`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {
