@@ -55,16 +55,27 @@ android {
 
     buildTypes {
         release {
-            if (!hasReleaseSigning) {
-                throw GradleException("Release signing configuration not found. Ensure android/key.properties exists with storeFile, storePassword, keyAlias, and keyPassword.")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                null
             }
-            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    tasks.configureEach {
+        if (name.startsWith("package") && name.contains("Release")) {
+            doFirst {
+                if (!hasReleaseSigning) {
+                    throw GradleException("Release signing configuration not found. Ensure android/key.properties exists with storeFile, storePassword, keyAlias, and keyPassword.")
+                }
+            }
         }
     }
 }
