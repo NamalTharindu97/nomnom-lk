@@ -4,6 +4,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -449,7 +450,13 @@ func TestIntegration_LoginLockout_AfterTenFailures(t *testing.T) {
 	db := testutil.GetTestDB()
 	db.Exec("UPDATE users SET email_verified_at = NOW() WHERE email = ?", email)
 
+	rdb := testutil.GetTestRDB()
+	ctx := context.Background()
+
 	for i := 1; i <= 10; i++ {
+		if i == 6 {
+			rdb.Del(ctx, "rl:login:email:"+email)
+		}
 		loginBody, _ := json.Marshal(map[string]string{
 			"email":    email,
 			"password": "wrong-password",
@@ -517,7 +524,13 @@ func TestIntegration_LoginLockout_BrowserLoginAlsoLocked(t *testing.T) {
 	db.Exec(`INSERT INTO users (id, email, name, password_hash, role, is_active, email_verified_at, created_at, updated_at)
 		VALUES (gen_random_uuid(), ?, 'Owner User', '$2a$10$dummyhashfordummyuser123456789012345678901234567890', 'restaurant_owner', true, NOW(), NOW(), NOW())`, email)
 
+	rdb := testutil.GetTestRDB()
+	ctx := context.Background()
+
 	for i := 1; i <= 10; i++ {
+		if i == 6 {
+			rdb.Del(ctx, "rl:login:email:"+email)
+		}
 		loginBody, _ := json.Marshal(map[string]string{
 			"email":    email,
 			"password": "wrong-password",

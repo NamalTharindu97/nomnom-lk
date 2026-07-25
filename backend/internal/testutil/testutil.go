@@ -152,6 +152,10 @@ func GetTestDB() *gorm.DB {
 	return initDB
 }
 
+func GetTestRDB() *redis.Client {
+	return initRDB
+}
+
 func SeedTestData(db *gorm.DB) error {
 	type Restaurant struct {
 		Name string
