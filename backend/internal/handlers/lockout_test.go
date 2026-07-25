@@ -91,6 +91,13 @@ func TestIntegration_RateLimitByEmail_LoginThrottled(t *testing.T) {
 	engine, _, err := testutil.Setup()
 	require.NoError(t, err)
 
+	rdb := testutil.GetTestRDB()
+	ctx := context.Background()
+	keys, _ := rdb.Keys(ctx, "rl:*").Result()
+	for _, k := range keys {
+		rdb.Del(ctx, k)
+	}
+
 	email := fmt.Sprintf("ratelimit-email-%d@test.com", time.Now().UnixNano())
 
 	makeBody := func() *bytes.Buffer {
