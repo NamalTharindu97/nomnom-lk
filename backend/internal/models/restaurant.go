@@ -26,9 +26,6 @@ type Restaurant struct {
 	Name         string           `gorm:"not null;size:255" json:"name"`
 	Slug         string           `gorm:"uniqueIndex;not null;size:255" json:"slug"`
 	Description  *string          `gorm:"type:text" json:"description,omitempty"`
-	Address      string           `gorm:"not null;type:text" json:"address"`
-	Latitude     *float64         `gorm:"type:decimal(10,7)" json:"latitude,omitempty"`
-	Longitude    *float64         `gorm:"type:decimal(10,7)" json:"longitude,omitempty"`
 	ContactPhone *string          `gorm:"size:20" json:"contact_phone,omitempty"`
 	CuisineTags  JSONStringSlice  `gorm:"type:jsonb;default:'[]'" json:"cuisine_tags"`
 	CoverImage   *string          `gorm:"type:text" json:"cover_image,omitempty"`
@@ -58,9 +55,6 @@ func (r *Restaurant) BeforeCreate(tx *gorm.DB) error {
 func (r *Restaurant) Validate() error {
 	if r.Name == "" {
 		return errors.New("restaurant name is required")
-	}
-	if r.Address == "" {
-		return errors.New("restaurant address is required")
 	}
 	return nil
 }

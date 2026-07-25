@@ -119,6 +119,9 @@ func runIndexMigrations(db *gorm.DB) {
 		`UPDATE restaurants
 		 SET order_platforms = order_platforms || '["uber_eats","pickme"]'::jsonb
 		 WHERE order_platforms IS NULL OR jsonb_array_length(order_platforms) = 0`,
+		`ALTER TABLE restaurants DROP COLUMN IF EXISTS address`,
+		`ALTER TABLE restaurants DROP COLUMN IF EXISTS latitude`,
+		`ALTER TABLE restaurants DROP COLUMN IF EXISTS longitude`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {

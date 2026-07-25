@@ -281,16 +281,6 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                 animation: _animation,
                 index: 6,
                 child: InfoCard(
-                  icon: Icons.location_on_rounded,
-                  title: t.offerLocation,
-                  value: offer.location,
-                ),
-              ),
-              const SizedBox(height: Spacings.sm),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 7,
-                child: InfoCard(
                   icon: Icons.local_offer_rounded,
                   title: t.offerDiscountLabel,
                   value: offer.discountLabelLocalized(

@@ -146,9 +146,6 @@ func (s *DashboardService) CreateRestaurant(req *request.CreateRestaurantRequest
 	restaurant := &models.Restaurant{
 		Name:         req.Name,
 		Description:  strPtr(req.Description),
-		Address:      req.Address,
-		Latitude:     req.Latitude,
-		Longitude:    req.Longitude,
 		ContactPhone: strPtr(req.ContactPhone),
 		CuisineTags:  req.CuisineTags,
 		CoverImage:   strPtr(req.CoverImage),
@@ -196,15 +193,6 @@ func (s *DashboardService) UpdateRestaurant(id uuid.UUID, ownerID uuid.UUID, req
 	}
 	if req.Description != nil {
 		restaurant.Description = req.Description
-	}
-	if req.Address != nil {
-		restaurant.Address = *req.Address
-	}
-	if req.Latitude != nil {
-		restaurant.Latitude = req.Latitude
-	}
-	if req.Longitude != nil {
-		restaurant.Longitude = req.Longitude
 	}
 	if req.ContactPhone != nil {
 		restaurant.ContactPhone = req.ContactPhone

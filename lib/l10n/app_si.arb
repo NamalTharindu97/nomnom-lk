@@ -67,7 +67,6 @@
   "offerDetailsTitle": "දීමනා විස්තර",
   "offerOriginalPrice": "පැරණි මිල",
   "offerOfferPrice": "දැන් මිල",
-  "offerLocation": "ස්ථානය",
   "offerValidUntil": "{date} දක්වා වලංගුයි",
   "@offerValidUntil": {"placeholders": {"date": {"type": "String"}}},
   "offerShare": "බෙදාගන්න",

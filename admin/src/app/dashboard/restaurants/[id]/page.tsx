@@ -15,9 +15,6 @@ interface Restaurant {
   name: string
   slug: string
   description: string
-  address: string
-  latitude: number
-  longitude: number
   contact_phone: string
   cuisine_tags: string[]
   cover_image: string
@@ -146,22 +143,12 @@ export default function RestaurantDetailPage() {
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div>
-                <span className="text-sm text-muted-foreground">Address</span>
-                <p className="font-medium">{restaurant.address}</p>
-              </div>
               {restaurant.contact_phone && (
                 <div>
                   <span className="text-sm text-muted-foreground">Contact</span>
                   <p className="font-medium">{restaurant.contact_phone}</p>
                 </div>
               )}
-              <div>
-                <span className="text-sm text-muted-foreground">Coordinates</span>
-                <p className="font-medium">
-                  {restaurant.latitude?.toFixed(4)}, {restaurant.longitude?.toFixed(4)}
-                </p>
-              </div>
               <div>
                 <span className="text-sm text-muted-foreground">Cuisine Tags</span>
                 <div className="mt-1 flex gap-1 flex-wrap">

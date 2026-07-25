@@ -206,9 +206,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get offerOfferPrice => 'இப்போதைய விலை';
 
   @override
-  String get offerLocation => 'இருப்பிடம்';
-
-  @override
   String offerValidUntil(String date) {
     return '$date வரை செல்லுபடியாகும்';
   }

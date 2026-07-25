@@ -16,11 +16,9 @@ class Offer {
     required this.originalPrice,
     required this.offerPrice,
     required this.imageUrls,
-    required this.location,
     required this.endDate,
     this.cuisineTags = const [],
     this.isFavorite = false,
-    this.distanceKm,
     this.instagramUrl,
     this.facebookUrl,
     this.websiteUrl,
@@ -40,11 +38,9 @@ class Offer {
   final double originalPrice;
   final double offerPrice;
   final List<String> imageUrls;
-  final String location;
   final DateTime endDate;
   final List<String> cuisineTags;
   final bool isFavorite;
-  final double? distanceKm;
   final String? instagramUrl;
   final String? facebookUrl;
   final String? websiteUrl;
@@ -98,10 +94,8 @@ class Offer {
       offerPrice: (json['offer_price'] as num).toDouble(),
       imageUrls: (json['image_urls'] as List?)?.cast<String>() ?? [],
       cuisineTags: (json['restaurant']['cuisine_tags'] as List?)?.cast<String>() ?? [],
-      location: json['restaurant']['address'] as String? ?? '',
       endDate: DateTime.parse(json['end_date'] as String),
       isFavorite: json['is_favorited'] as bool? ?? false,
-      distanceKm: (json['distance_km'] as num?)?.toDouble(),
       instagramUrl: (json['restaurant'] as Map<String, dynamic>?)?['instagram_url'] as String?,
       facebookUrl: (json['restaurant'] as Map<String, dynamic>?)?['facebook_url'] as String?,
       websiteUrl: (json['restaurant'] as Map<String, dynamic>?)?['website_url'] as String?,
@@ -123,13 +117,11 @@ class Offer {
       'image_urls': imageUrls,
       'end_date': endDate.toIso8601String(),
       'is_favorited': isFavorite,
-      'distance_km': distanceKm,
       'restaurant': {
         'id': restaurantId,
         'name': restaurantName,
         'slug': restaurantSlug,
         'cuisine_tags': cuisineTags,
-        'address': location,
         'instagram_url': instagramUrl,
         'facebook_url': facebookUrl,
         'website_url': websiteUrl,
@@ -153,10 +145,8 @@ class Offer {
     double? offerPrice,
     List<String>? imageUrls,
     List<String>? cuisineTags,
-    String? location,
     DateTime? endDate,
     bool? isFavorite,
-    double? distanceKm,
     String? instagramUrl,
     String? facebookUrl,
     String? websiteUrl,
@@ -177,10 +167,8 @@ class Offer {
       offerPrice: offerPrice ?? this.offerPrice,
       imageUrls: imageUrls ?? this.imageUrls,
       cuisineTags: cuisineTags ?? this.cuisineTags,
-      location: location ?? this.location,
       endDate: endDate ?? this.endDate,
       isFavorite: isFavorite ?? this.isFavorite,
-      distanceKm: distanceKm ?? this.distanceKm,
       instagramUrl: instagramUrl ?? this.instagramUrl,
       facebookUrl: facebookUrl ?? this.facebookUrl,
       websiteUrl: websiteUrl ?? this.websiteUrl,

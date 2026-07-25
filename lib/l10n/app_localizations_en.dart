@@ -206,9 +206,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offerOfferPrice => 'Now';
 
   @override
-  String get offerLocation => 'Location';
-
-  @override
   String offerValidUntil(String date) {
     return 'Valid until $date';
   }

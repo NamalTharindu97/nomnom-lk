@@ -206,9 +206,6 @@ class AppLocalizationsSi extends AppLocalizations {
   String get offerOfferPrice => 'දැන් මිල';
 
   @override
-  String get offerLocation => 'ස්ථානය';
-
-  @override
   String offerValidUntil(String date) {
     return '$date දක්වා වලංගුයි';
   }

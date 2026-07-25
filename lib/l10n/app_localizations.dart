@@ -475,12 +475,6 @@ abstract class AppLocalizations {
   /// **'Now'**
   String get offerOfferPrice;
 
-  /// No description provided for @offerLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Location'**
-  String get offerLocation;
-
   /// No description provided for @offerValidUntil.
   ///
   /// In en, this message translates to:

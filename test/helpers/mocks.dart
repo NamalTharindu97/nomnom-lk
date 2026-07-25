@@ -92,7 +92,6 @@ Offer makeOffer({
     originalPrice: originalPrice,
     offerPrice: offerPrice,
     imageUrls: [],
-    location: 'Colombo',
     endDate: DateTime.now().add(const Duration(days: 7)),
     cuisineTags: cuisine != null ? [cuisine] : [],
   );
@@ -106,7 +105,6 @@ Restaurant makeRestaurant({
     id: id,
     name: name,
     slug: 'test-restaurant',
-    address: 'Colombo',
     description: 'Test restaurant description',
     cuisineTags: [],
     status: 'approved',

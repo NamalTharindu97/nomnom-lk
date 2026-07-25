@@ -37,7 +37,6 @@ interface Restaurant {
   id: string
   name: string
   slug: string
-  address: string
   cuisine_tags: string[]
   status: string
   owner_id: string
@@ -140,7 +139,7 @@ export default function RestaurantsPage() {
             <p className="text-muted-foreground">{isOwner ? "Manage your restaurants" : "Manage restaurant listings"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Address", "Cuisine", "Status"], restaurants.map(r => [r.name, r.address || "", (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
+            <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Cuisine", "Status"], restaurants.map(r => [r.name, (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
               <Download className="mr-2 size-4" />
               Export CSV
             </Button>

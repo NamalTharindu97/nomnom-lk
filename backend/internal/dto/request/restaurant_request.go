@@ -9,9 +9,6 @@ type CreateRestaurantRequest struct {
 	Description   string                 `json:"description,omitempty"`
 	DescriptionSi string                 `json:"description_si,omitempty"`
 	DescriptionTa string                 `json:"description_ta,omitempty"`
-	Address       string                 `json:"address" binding:"required"`
-	Latitude      *float64               `json:"latitude,omitempty"`
-	Longitude     *float64               `json:"longitude,omitempty"`
 	ContactPhone  string                 `json:"contact_phone,omitempty"`
 	CuisineTags   models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    string                 `json:"cover_image,omitempty"`
@@ -29,9 +26,6 @@ type UpdateRestaurantRequest struct {
 	Description   *string                 `json:"description,omitempty"`
 	DescriptionSi *string                 `json:"description_si,omitempty"`
 	DescriptionTa *string                 `json:"description_ta,omitempty"`
-	Address       *string                 `json:"address,omitempty"`
-	Latitude      *float64                `json:"latitude,omitempty"`
-	Longitude     *float64                `json:"longitude,omitempty"`
 	ContactPhone  *string                 `json:"contact_phone,omitempty"`
 	CuisineTags   *models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    *string                 `json:"cover_image,omitempty"`

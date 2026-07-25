@@ -44,7 +44,6 @@ func (h *FavoriteHandler) List(c *gin.Context) {
 				"id":              o.RestaurantID,
 				"name":            o.Restaurant.Name,
 				"slug":            o.Restaurant.Slug,
-				"address":         o.Restaurant.Address,
 				"cuisine_tags":    o.Restaurant.CuisineTags,
 				"cover_image":     o.Restaurant.CoverImage,
 				"instagram_url":   o.Restaurant.InstagramURL,

@@ -88,32 +88,16 @@ class OfferCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: Spacings.xs),
-                    Text(
-                      offer.restaurantName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: context.colors.textSecondary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: Spacings.xs),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.location_on_rounded,
-                          color: AppColors.ocean,
-                          size: 18,
-                        ),
-                        const SizedBox(width: Spacings.xxs),
                         Expanded(
                           child: Text(
-                            offer.location,
+                            offer.restaurantName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: context.colors.muted,
-                              fontWeight: FontWeight.w600,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: context.colors.textSecondary,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),

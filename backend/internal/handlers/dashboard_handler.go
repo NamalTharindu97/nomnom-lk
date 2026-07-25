@@ -333,7 +333,6 @@ func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context) gin.H {
 		"id":              r.ID,
 		"name":            r.Name,
 		"slug":            r.Slug,
-		"address":         r.Address,
 		"description":     r.Description,
 		"contact_phone":   r.ContactPhone,
 		"cuisine_tags":    r.CuisineTags,
@@ -364,9 +363,6 @@ func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context) gin.H 
 		"name":            r.Name,
 		"slug":            r.Slug,
 		"description":     r.Description,
-		"address":         r.Address,
-		"latitude":        r.Latitude,
-		"longitude":       r.Longitude,
 		"contact_phone":   r.ContactPhone,
 		"cuisine_tags":    r.CuisineTags,
 		"cover_image":     r.CoverImage,
@@ -393,7 +389,6 @@ func dashboardOfferToMap(o *models.Offer, c *gin.Context) gin.H {
 	if o.Restaurant != nil {
 		restaurant["name"] = o.Restaurant.Name
 		restaurant["slug"] = o.Restaurant.Slug
-		restaurant["address"] = o.Restaurant.Address
 		restaurant["instagram_url"] = o.Restaurant.InstagramURL
 		restaurant["facebook_url"] = o.Restaurant.FacebookURL
 		restaurant["website_url"] = o.Restaurant.WebsiteURL

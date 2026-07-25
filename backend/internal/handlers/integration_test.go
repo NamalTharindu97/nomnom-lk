@@ -231,9 +231,9 @@ func TestIntegration_DashboardOwnerMetricsAndOfferIsolation(t *testing.T) {
 
 	require.NoError(t, db.Exec(`INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
 		VALUES (?::uuid, 'other-owner@test.com', 'Other Owner', 'restaurant_owner', true, NOW(), NOW())`, otherOwnerID).Error)
-	require.NoError(t, db.Exec(`INSERT INTO restaurants (id, name, slug, status, address, owner_id, created_at, updated_at)
-		VALUES (?::uuid, 'Scoped Owner Restaurant', 'scoped-owner-restaurant', 'approved', 'Owner address', ?::uuid, NOW(), NOW()),
-		       (?::uuid, 'Other Owner Restaurant', 'other-owner-restaurant', 'approved', 'Other address', ?::uuid, NOW(), NOW())`,
+	require.NoError(t, db.Exec(`INSERT INTO restaurants (id, name, slug, status, owner_id, created_at, updated_at)
+		VALUES (?::uuid, 'Scoped Owner Restaurant', 'scoped-owner-restaurant', 'approved', ?::uuid, NOW(), NOW()),
+		       (?::uuid, 'Other Owner Restaurant', 'other-owner-restaurant', 'approved', ?::uuid, NOW(), NOW())`,
 		ownerRestaurant, testutil.TestOwnerID, otherRestaurant, otherOwnerID).Error)
 	require.NoError(t, db.Exec(`INSERT INTO offers (id, restaurant_id, title, original_price, offer_price, status, end_date, created_by, view_count, created_at, updated_at)
 		VALUES (?::uuid, ?::uuid, 'Owner Usage Offer', 1000, 700, 'approved', NOW() + INTERVAL '5 days', ?::uuid, 12, NOW(), NOW()),
@@ -292,8 +292,8 @@ func TestIntegration_OwnerBannerApprovalLifecycle(t *testing.T) {
 	cleanup()
 	t.Cleanup(cleanup)
 
-	require.NoError(t, db.Exec(`INSERT INTO restaurants (id, name, slug, status, address, owner_id, created_at, updated_at)
-		VALUES (?::uuid, 'Banner Lifecycle Restaurant', 'banner-lifecycle-restaurant', 'approved', 'Owner address', ?::uuid, NOW(), NOW())`,
+	require.NoError(t, db.Exec(`INSERT INTO restaurants (id, name, slug, status, owner_id, created_at, updated_at)
+		VALUES (?::uuid, 'Banner Lifecycle Restaurant', 'banner-lifecycle-restaurant', 'approved', ?::uuid, NOW(), NOW())`,
 		restaurantID, testutil.TestOwnerID).Error)
 	require.NoError(t, db.Exec(`INSERT INTO offers (id, restaurant_id, title, original_price, offer_price, status, start_date, end_date, created_by, created_at, updated_at)
 		VALUES (?::uuid, ?::uuid, 'Banner Lifecycle Offer', 1000, 700, 'approved', NOW() - INTERVAL '1 day', NOW() + INTERVAL '5 days', ?::uuid, NOW(), NOW())`,
@@ -369,8 +369,8 @@ func TestIntegration_OfferDetail_HasSocialLinks(t *testing.T) {
 	db := testutil.GetTestDB()
 	require.NotNil(t, db)
 
-	db.Exec(`INSERT INTO restaurants (id, name, slug, status, address, instagram_url, facebook_url, website_url, order_platforms, created_at, updated_at)
-		VALUES (gen_random_uuid(), 'Social Test Restaurant', 'social-test', 'approved', '123 Test St', 'https://instagram.com/test', 'https://facebook.com/test', 'https://test.com', '["uber_eats","pickme"]'::jsonb, NOW(), NOW())`)
+	db.Exec(`INSERT INTO restaurants (id, name, slug, status, instagram_url, facebook_url, website_url, order_platforms, created_at, updated_at)
+		VALUES (gen_random_uuid(), 'Social Test Restaurant', 'social-test', 'approved', 'https://instagram.com/test', 'https://facebook.com/test', 'https://test.com', '["uber_eats","pickme"]'::jsonb, NOW(), NOW())`)
 
 	db.Exec(`INSERT INTO offers (id, title, description, original_price, offer_price, status, restaurant_id, start_date, end_date, created_at, updated_at)
 		VALUES (gen_random_uuid(), 'Social Test Offer', 'desc', 1000, 700, 'approved', (SELECT id FROM restaurants WHERE slug = 'social-test'), NOW(), NOW() + INTERVAL '7 days', NOW(), NOW())`)

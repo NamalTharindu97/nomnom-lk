@@ -19,7 +19,6 @@ import { useAuth } from "@/hooks/use-auth"
 const restaurantSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase, alphanumeric, with dashes"),
-  address: z.string().min(1, "Address is required"),
   cuisine_tags: z.string().optional(),
   description: z.string().optional(),
   contact_phone: z.string().optional(),
@@ -69,7 +68,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   } = useForm<FormData>({
     resolver: zodResolver(restaurantSchema),
     defaultValues: {
-      name: "", slug: "", address: "", cuisine_tags: "", description: "",
+      name: "", slug: "", cuisine_tags: "", description: "",
       contact_phone: "", owner_id: "", name_si: "", name_ta: "",
       description_si: "", description_ta: "",
       instagram_url: "", facebook_url: "", website_url: "", order_platforms: [],
@@ -89,7 +88,6 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       reset({
         name: restaurant.name || "",
         slug: restaurant.slug || "",
-        address: restaurant.address || "",
         cuisine_tags: (restaurant.cuisine_tags || []).join(", "),
         description: restaurant.description || "",
         contact_phone: restaurant.contact_phone || "",
@@ -199,11 +197,6 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" {...register("address")} />
-                {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
-              </div>
               <div className="grid gap-2">
                 <Label htmlFor="contact_phone">Phone</Label>
                 <Input id="contact_phone" {...register("contact_phone")} />

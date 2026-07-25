@@ -271,7 +271,8 @@ func (h *OfferHandler) offerToMap(o *models.Offer, c *gin.Context) gin.H {
 			"id":              o.RestaurantID,
 			"name":            o.Restaurant.Name,
 			"slug":            o.Restaurant.Slug,
-			"address":         o.Restaurant.Address,
+			"cuisine_tags":    o.Restaurant.CuisineTags,
+			"cover_image":     o.Restaurant.CoverImage,
 			"instagram_url":   o.Restaurant.InstagramURL,
 			"facebook_url":    o.Restaurant.FacebookURL,
 			"website_url":     o.Restaurant.WebsiteURL,
@@ -310,7 +311,6 @@ func (h *OfferHandler) offerDetailToMap(o *models.Offer, c *gin.Context) gin.H {
 	m["created_at"] = o.CreatedAt
 
 	restDetail := m["restaurant"].(gin.H)
-	restDetail["address"] = o.Restaurant.Address
 	restDetail["cuisine_tags"] = o.Restaurant.CuisineTags
 	restDetail["cover_image"] = o.Restaurant.CoverImage
 

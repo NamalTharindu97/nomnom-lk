@@ -68,7 +68,6 @@
   "offerDetailsTitle": "Offer Details",
   "offerOriginalPrice": "Was",
   "offerOfferPrice": "Now",
-  "offerLocation": "Location",
   "offerValidUntil": "Valid until {date}",
   "@offerValidUntil": {"placeholders": {"date": {"type": "String"}}},
   "offerShare": "Share",

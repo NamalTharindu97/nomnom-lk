@@ -358,15 +358,6 @@ class _SearchRestaurantTile extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  if (restaurant.address.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      restaurant.address,
-                      style: textTheme.bodySmall?.copyWith(color: context.colors.muted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
                 ],
               ),
             ),

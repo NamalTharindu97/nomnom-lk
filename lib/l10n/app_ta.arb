@@ -67,7 +67,6 @@
   "offerDetailsTitle": "சலுகை விவரங்கள்",
   "offerOriginalPrice": "பழைய விலை",
   "offerOfferPrice": "இப்போதைய விலை",
-  "offerLocation": "இருப்பிடம்",
   "offerValidUntil": "{date} வரை செல்லுபடியாகும்",
   "@offerValidUntil": {"placeholders": {"date": {"type": "String"}}},
   "offerShare": "பகிர்க",

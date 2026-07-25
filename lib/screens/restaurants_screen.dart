@@ -187,12 +187,6 @@ class _RestaurantCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Spacings.xxs),
-            Text(
-              restaurant.address,
-              style: textTheme.bodyMedium?.copyWith(
-                color: context.colors.muted,
-              ),
-            ),
             if (restaurant.cuisineTags.isNotEmpty) ...[
               const SizedBox(height: Spacings.xs),
                   Wrap(
