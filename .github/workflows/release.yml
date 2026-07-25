@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.environment == 'production' && 'master' || 'staging' }}
+          fetch-depth: 0
+
+      - name: Record build metadata
+        id: meta
+        run: |
+          echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          echo "sha_short=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "env=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+      sha_short: ${{ steps.meta.outputs.sha_short }}
+      environment: ${{ steps.meta.outputs.env }}
+
+  build-aab:
+    name: Build AAB (${{ inputs.environment }})
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: https://nomnom-backend-7iq0.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.7"
+          channel: "stable"
+          cache: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Restore keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > /tmp/nomnom-upload.keystore
+          mkdir -p android
+          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=/tmp/nomnom-upload.keystore" >> android/key.properties
+
+      - name: Verify signing fingerprint
+        run: |
+          echo "Expected SHA-1: ${{ secrets.ANDROID_KEY_SHA1 }}"
+          keytool -list -v -keystore /tmp/nomnom-upload.keystore \
+            -storepass "${{ secrets.ANDROID_STORE_PASSWORD }}" \
+            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" | grep SHA1
+
+      - name: Build AAB
+        run: |
+          flutter build appbundle --release \
+            --dart-define=API_BASE_URL=${{ secrets.PRODUCTION_API_URL }} \
+            --dart-define=APP_ENV=${{ inputs.environment }} \
+            --dart-define=BUILD_SHA=${{ needs.validate.outputs.sha_short }}
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nomnom-lk-${{ needs.validate.outputs.environment }}-${{ needs.validate.outputs.sha_short }}.aab
+          path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload mapping artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-${{ needs.validate.outputs.environment }}-${{ needs.validate.outputs.sha_short }}
+          path: build/app/outputs/mapping/release/mapping.txt
+
+      - name: Upload symbols artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: symbols-${{ needs.validate.outputs.environment }}-${{ needs.validate.outputs.sha_short }}
+          path: build/app/intermediates/merged_native_libs/release/out/lib/

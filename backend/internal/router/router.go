@@ -114,11 +114,11 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		authGroup.Use(middleware.RateLimit(rdb, 20, 1*time.Minute, "rl:auth"))
 		{
 			authGroup.POST("/register", authHandler.Register)
-			authGroup.POST("/login", authHandler.Login)
+			authGroup.POST("/login", middleware.RateLimitByEmail(rdb, 5, 15*time.Minute, "rl:login:email"), authHandler.Login)
 			authGroup.POST("/firebase", authHandler.FirebaseLogin)
 			authGroup.POST("/refresh", authHandler.Refresh)
 			authGroup.POST("/logout", middleware.Auth(cfg.JWT.Secret), middleware.AuditTrail(auditService), authHandler.Logout)
-			authGroup.POST("/browser/login", authHandler.BrowserLogin)
+			authGroup.POST("/browser/login", middleware.RateLimitByEmail(rdb, 5, 15*time.Minute, "rl:login:email"), authHandler.BrowserLogin)
 			authGroup.POST("/browser/refresh", middleware.RequireBrowserCSRF(), authHandler.BrowserRefresh)
 			authGroup.POST("/browser/logout", middleware.RequireBrowserCSRF(), authHandler.BrowserLogout)
 		}
@@ -238,6 +238,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		}
 
 		dashboardGroup := v1.Group("/dashboard")
+		dashboardGroup.Use(middleware.RateLimit(rdb, 30, 1*time.Minute, "rl:dashboard"))
 		dashboardGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		dashboardGroup.Use(middleware.RequireDashboardAccess())
 		dashboardGroup.Use(middleware.RequireActive(userRepo))
@@ -262,6 +263,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		}
 
 		adminGroup := v1.Group("/admin")
+		adminGroup.Use(middleware.RateLimit(rdb, 20, 1*time.Minute, "rl:admin"))
 		adminGroup.Use(middleware.Auth(cfg.JWT.Secret))
 		adminGroup.Use(middleware.RequireActive(userRepo))
 		adminGroup.Use(middleware.RequireRole("admin"))

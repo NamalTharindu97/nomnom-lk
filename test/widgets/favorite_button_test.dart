@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:nomnom_lk/l10n/app_localizations.dart';
-import '../../lib/providers/offer_provider.dart';
-import '../../lib/widgets/favorite_button.dart';
+import 'package:nomnom_lk/providers/offer_provider.dart';
+import 'package:nomnom_lk/widgets/favorite_button.dart';
 import '../helpers/mocks.dart';
 
 Widget buildTestApp(OfferProvider provider) {

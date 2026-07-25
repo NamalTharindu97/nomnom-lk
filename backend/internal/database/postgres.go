@@ -107,6 +107,15 @@ func runIndexMigrations(db *gorm.DB) {
 		 ON offers(end_date) WHERE status = 'approved'`,
 		`CREATE INDEX IF NOT EXISTS idx_offers_restaurant_id
 		 ON offers(restaurant_id)`,
+		`DO $$
+		BEGIN
+			IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='failed_login_attempts') THEN
+				ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0;
+			END IF;
+			IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='locked_until') THEN
+				ALTER TABLE users ADD COLUMN locked_until TIMESTAMPTZ;
+			END IF;
+		END $$`,
 	}
 	for _, stmt := range statements {
 		if err := db.Exec(stmt).Error; err != nil {

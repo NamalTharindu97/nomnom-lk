@@ -154,7 +154,7 @@ encrypted recovery copies even though GitHub Secrets is the operational source.
 
 ---
 
-## Phase Status Summary (2026-07-23)
+## Phase Status Summary (2026-07-24)
 
 | Phase | Status | Date |
 |---|---|---|
@@ -164,8 +164,14 @@ encrypted recovery copies even though GitHub Secrets is the operational source.
 | 3 | **Done** | 2026-07-23 |
 | 4 | **Pending** — blocked by Phase 0 | — |
 | 5 | **Done** | 2026-07-23 |
-| 6 | **In Progress** | today |
-| 7-13 | **Pending** | — |
+| 6 | **Done** | 2026-07-24 |
+| 7 | **Done** | 2026-07-24 |
+| 8 | **Done** | 2026-07-24 |
+| 9 | **Done** | 2026-07-24 |
+| 10 | **Done** | 2026-07-24 |
+| 11 | **Pending** | — |
+| 12 | **Pending** | — |
+| 13 | **Done** | 2026-07-24 |
 | P50 (Git + CI) | **Done** — staging/master branches, ci.yml, deploy-staging.yml, promote-production.yml | 2026-07-23 |
 
 ---

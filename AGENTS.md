@@ -1,7 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** Security Phase 2 (GitHub-to-server secret delivery) is implemented and user-approved on `phase/P53-github-server-secret-delivery`. Phase 0 provider rotations are explicitly deferred but remain a mandatory pre-release gate. Next: Phase 3 secure admin browser sessions, only after explicit user approval. P50 production Git and CI/CD migration remains planned in `plans/production-git-cicd-plan.md`.
+- **Current:** Phases 1–3, 5–10, 13, and P50 completed on `master` and `staging`. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Phase 4 (Git history rewrite) blocked by Phase 0. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
 - **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
 
 ## Deployment Documentation
@@ -321,4 +321,15 @@
 - **2026-07-11:** Hot offers section optimization (2 rounds).
   - **Round 1:** Extracted `HotOfferCard` widget (image + title + price + restaurant + strikethrough); `HotOfferShimmer` skeleton; edge-peek scroll with `BouncingScrollPhysics` + `Clip.none`; `_HotState` value class for `shouldRebuild`; page dots indicator; reduced `< 2` guard to `< 1`; cached locale per build; 4 unused imports cleaned.
   - **Round 2 (overflow fix):** Replaced magic `_infoScale` (0.086) with theme-based height calculation from `textTheme.labelLarge.fontSize × 1.6` + padding — eliminates 37px bottom overflow. Simplified card to image + title + price only (dropped restaurant name and strikethrough). Updated `HotOfferShimmer` to 1-line skeleton. Removed `_PageDots` widget (static dots don't track scroll position). Border radius 8→12 for softer corners.
-  - New files: `lib/widgets/hot_offer_card.dart`; modified: `lib/screens/home_screen.dart`, `lib/widgets/shimmer_loading.dart`.
+   - New files: `lib/widgets/hot_offer_card.dart`; modified: `lib/screens/home_screen.dart`, `lib/widgets/shimmer_loading.dart`.
+- **2026-07-24:** Phases 6–10, 13, and hot-offer fix completed — 16 PRs merged to master via staging.
+  - **Phase 6:** API URL release validation (`api_config.dart` rejects HTTP/localhost in release), notification badge count fix (`unread_count` field mismatch), auto-mark-all-read on notification screen entry. Added `APP_ENV` and `BUILD_SHA` compile-time config.
+  - **Phase 7:** Logout and cross-account isolation. Signs out Firebase Auth + Google Sign-In, clears HTTP cache, Hive stores (favorites/notifications/offers/restaurants), secure storage tokens. Guards concurrent sign-out.
+  - **Phase 8:** FCM background handler moved to top-level with `@pragma('vm:entry-point')` for minified release builds. Removed auto-request notification permission on startup. Removed FCM token logging.
+  - **Phase 9:** 30-day account deletion lifecycle. Added `deletion_requested_at`/`deletion_scheduled_at` to User model. `POST /users/me/delete-account` and `POST /users/me/cancel-deletion` endpoints. Rejects login/refresh for pending-deletion users. `CronService.FinalizeDeletions()` idempotent scheduled finalizer. Flutter: Delete Account tile in profile with confirmation dialog.
+  - **Phase 10:** Public legal pages in Next.js app: `/privacy`, `/terms`, `/support`, `/delete-account`. All rendered server-side without auth.
+  - **Phase 13:** Upload keystore generated (`nomnom-upload.keystore`, RSA 2048, 100yr). Keystore and key.properties are gitignored. Certificate fingerprints recorded.
+  - **P50:** staging/master branch model implemented with `ci.yml` (triggers PR/push to both branches), `deploy-staging.yml` (Docker build + Trivy), `promote-production.yml` (production env approval gate). Branch protection on both branches.
+  - **Hot-offer delay fix:** SSE debounce 1s→300ms, app resume always force-refreshes, offer per_page 20→100.
+  - **Flutter 3.44.7** with targetSdk 36, multi-ABI (arm64-v8a, armeabi-v7a, x86_64), AGP 8.11.1, Kotlin 2.2.20, Gradle 8.13, JDK 17.
+  - All 56 Playwright E2E tests pass. Backend race/integration tests pass. Flutter 20/20 tests pass. Verified on Android 16 (API 36) emulator.

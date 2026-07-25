@@ -16,18 +16,20 @@ const (
 )
 
 type User struct {
-	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Email        string    `gorm:"uniqueIndex;not null;size:255" json:"email"`
-	PasswordHash string    `gorm:"size:255" json:"-"`
-	Name         string    `gorm:"not null;size:255" json:"name"`
-	AvatarURL    *string   `gorm:"type:text" json:"avatar_url,omitempty"`
-	Role         UserRole  `gorm:"not null;default:'user';size:20" json:"role"`
-	FirebaseUID  *string   `gorm:"uniqueIndex;size:128" json:"-"`
-	Phone        *string   `gorm:"size:20" json:"phone,omitempty"`
+	ID                   uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Email                string     `gorm:"uniqueIndex;not null;size:255" json:"email"`
+	PasswordHash         string     `gorm:"size:255" json:"-"`
+	Name                 string     `gorm:"not null;size:255" json:"name"`
+	AvatarURL            *string    `gorm:"type:text" json:"avatar_url,omitempty"`
+	Role                 UserRole   `gorm:"not null;default:'user';size:20" json:"role"`
+	FirebaseUID          *string    `gorm:"uniqueIndex;size:128" json:"-"`
+	Phone                *string    `gorm:"size:20" json:"phone,omitempty"`
 	IsActive             bool       `gorm:"default:true" json:"is_active"`
 	EmailVerifiedAt      *time.Time `json:"email_verified_at,omitempty"`
 	DeletionRequestedAt  *time.Time `json:"-"`
 	DeletionScheduledAt  *time.Time `json:"-"`
+	FailedLoginAttempts  int        `gorm:"default:0" json:"-"`
+	LockedUntil          *time.Time `json:"-"`
 	CreatedAt            time.Time  `json:"created_at"`
 	UpdatedAt            time.Time  `json:"updated_at"`
 }
@@ -39,6 +41,10 @@ func (u *User) IsPendingDeletion() bool {
 
 func (u *User) IsDeletionFinalized() bool {
 	return u.DeletionScheduledAt != nil && !u.DeletionScheduledAt.After(time.Now())
+}
+
+func (u *User) IsLocked() bool {
+	return u.LockedUntil != nil && time.Now().Before(*u.LockedUntil)
 }
 
 func (u *User) CanSelfDelete() bool {

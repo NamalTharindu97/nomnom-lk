@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -44,6 +47,56 @@ func RateLimit(rdb *redis.Client, limit int, window time.Duration, prefix string
 				"error": gin.H{
 					"code":    "RATE_LIMITED",
 					"message": "Too many requests, please try again later",
+				},
+			})
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func RateLimitByEmail(rdb *redis.Client, limit int, window time.Duration, prefix string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if rdb == nil {
+			c.Next()
+			return
+		}
+
+		data, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			c.Next()
+			return
+		}
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(data))
+
+		var body struct {
+			Email string `json:"email"`
+		}
+		json.Unmarshal(data, &body)
+		if body.Email == "" {
+			c.Next()
+			return
+		}
+
+		key := prefix + ":" + body.Email
+		ctx := context.Background()
+
+		count, err := rdb.Incr(ctx, key).Result()
+		if err != nil {
+			c.Next()
+			return
+		}
+
+		if count == 1 {
+			rdb.Expire(ctx, key, window)
+		}
+
+		if count > int64(limit) {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error": gin.H{
+					"code":    "RATE_LIMITED",
+					"message": "Too many login attempts, please try again later",
 				},
 			})
 			return

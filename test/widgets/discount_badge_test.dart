@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../lib/widgets/discount_badge.dart';
+import 'package:nomnom_lk/widgets/discount_badge.dart';
 
 void main() {
   group('DiscountBadge', () {

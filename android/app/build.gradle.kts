@@ -55,11 +55,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (hasReleaseSigning) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (!hasReleaseSigning) {
+                throw GradleException("Release signing configuration not found. Ensure android/key.properties exists with storeFile, storePassword, keyAlias, and keyPassword.")
             }
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

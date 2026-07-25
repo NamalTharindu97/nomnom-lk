@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../lib/widgets/stagger_item.dart';
+import 'package:nomnom_lk/widgets/stagger_item.dart';
 
 void main() {
   testWidgets('StaggerItem renders child widget',

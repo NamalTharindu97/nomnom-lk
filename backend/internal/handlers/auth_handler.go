@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -40,7 +41,9 @@ func (h *AuthHandler) BrowserLogin(c *gin.Context) {
 	result, err := h.authService.LoginDashboard(req.Email, req.Password)
 	if err != nil {
 		status := http.StatusUnauthorized
-		if err.Error() == "your account has been suspended. contact an administrator" || err.Error() == "access restricted to administrators and restaurant owners only" {
+		if strings.Contains(err.Error(), "account locked") {
+			status = http.StatusLocked
+		} else if err.Error() == "your account has been suspended. contact an administrator" || err.Error() == "access restricted to administrators and restaurant owners only" {
 			status = http.StatusForbidden
 		}
 		h.auditService.LogAction(uuid.Nil, req.Email, "", "auth.login.failed", "user", "",
@@ -170,7 +173,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	result, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
 		status := http.StatusUnauthorized
-		if err.Error() == "your account has been suspended. contact an administrator" {
+		if strings.Contains(err.Error(), "account locked") {
+			status = http.StatusLocked
+		} else if err.Error() == "your account has been suspended. contact an administrator" {
 			status = http.StatusForbidden
 		}
 		h.auditService.LogAction(uuid.Nil, req.Email, "", "auth.login.failed", "user", "",

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../lib/widgets/offer_image.dart';
+import 'package:nomnom_lk/widgets/offer_image.dart';
 
 void main() {
   group('OfferImage', () {

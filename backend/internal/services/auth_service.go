@@ -93,9 +93,18 @@ func (s *AuthService) authenticatePassword(email, password string) (*models.User
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			time.Sleep(500 * time.Millisecond)
 			return nil, errors.New("invalid email or password")
 		}
 		return nil, fmt.Errorf("failed to find user: %w", err)
+	}
+
+	if user.IsLocked() {
+		remaining := time.Until(*user.LockedUntil)
+		if remaining < time.Minute {
+			return nil, errors.New("account locked due to too many failed attempts. try again in less than 1 minute")
+		}
+		return nil, fmt.Errorf("account locked due to too many failed attempts. try again in %d minutes", int(remaining.Minutes()))
 	}
 
 	if !user.IsActive {
@@ -107,6 +116,21 @@ func (s *AuthService) authenticatePassword(email, password string) (*models.User
 	}
 
 	if !hash.CheckPassword(password, user.PasswordHash) {
+		if user.FailedLoginAttempts > 0 {
+			delay := time.Duration(user.FailedLoginAttempts) * 500 * time.Millisecond
+			if delay > 5*time.Second {
+				delay = 5 * time.Second
+			}
+			time.Sleep(delay)
+		}
+
+		user.FailedLoginAttempts++
+		if user.FailedLoginAttempts >= 10 {
+			lockUntil := time.Now().Add(30 * time.Minute)
+			user.LockedUntil = &lockUntil
+		}
+		s.userRepo.Update(user)
+
 		return nil, errors.New("invalid email or password")
 	}
 
@@ -117,6 +141,10 @@ func (s *AuthService) authenticatePassword(email, password string) (*models.User
 	if user.IsPendingDeletion() {
 		return nil, errors.New("account deletion is pending. cancel the request to restore access")
 	}
+
+	user.FailedLoginAttempts = 0
+	user.LockedUntil = nil
+	s.userRepo.Update(user)
 
 	return user, nil
 }
@@ -131,16 +159,23 @@ func (s *AuthService) SendVerificationCode(email string) error {
 		return errors.New("email already verified")
 	}
 
+	ctx := context.Background()
+	cooldownKey := fmt.Sprintf("verify:cooldown:%s", email)
+	if s.rdb.Exists(ctx, cooldownKey).Val() > 0 {
+		return errors.New("please wait before requesting another code")
+	}
+
 	code, err := s.emailService.GenerateCode()
 	if err != nil {
 		return fmt.Errorf("failed to generate code: %w", err)
 	}
 
-	ctx := context.Background()
 	key := fmt.Sprintf("verify:%s", email)
 	if err := s.rdb.Set(ctx, key, code, 10*time.Minute).Err(); err != nil {
 		return fmt.Errorf("failed to store code: %w", err)
 	}
+
+	s.rdb.Set(ctx, cooldownKey, "1", 60*time.Second)
 
 	if err := s.emailService.SendVerificationCode(email, code); err != nil {
 		return err

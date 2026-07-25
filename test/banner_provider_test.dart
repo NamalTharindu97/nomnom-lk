@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/models/banner.dart';
-import '../lib/providers/banner_provider.dart';
+import 'package:nomnom_lk/models/banner.dart';
+import 'package:nomnom_lk/providers/banner_provider.dart';
 import 'helpers/mocks.dart';
 
 void main() {

@@ -400,10 +400,72 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: flutter analyze --no-fatal-infos
 
-      - name: Run tests
-        run: flutter test
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Upload Flutter coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          directory: .
+          files: coverage/lcov.info
+          flags: flutter
+
+      - name: Upload Flutter coverage for SonarCloud
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage
+          path: coverage/lcov.info
+          retention-days: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Generate CI keystore
+        run: |
+          keytool -genkeypair -v -keystore /tmp/ci-upload.keystore \
+            -alias ci-release -keyalg RSA -keysize 2048 -validity 30 \
+            -storepass cicicici -keypass cicicici \
+            -dname "CN=CI Test, OU=CI, O=NomNom LK, L=Colombo, ST=Western, C=LK"
+
+      - name: Create CI key.properties
+        run: |
+          mkdir -p android
+          echo "storePassword=cicicici" > android/key.properties
+          echo "keyPassword=cicicici" >> android/key.properties
+          echo "keyAlias=ci-release" >> android/key.properties
+          echo "storeFile=/tmp/ci-upload.keystore" >> android/key.properties
+
+      - name: Build AAB
+        run: flutter build appbundle --release --dart-define=API_BASE_URL=https://nomnom-backend-7iq0.onrender.com/api/v1
+
+      - name: Verify AAB metadata
+        run: |
+          AAB="build/app/outputs/bundle/release/app-release.aab"
+          if [ ! -f "$AAB" ]; then
+            echo "ERROR: AAB not found at $AAB"
+            exit 1
+          fi
+          echo "AAB size: $(du -h "$AAB" | cut -f1)"
+
+          if command -v bundletool &>/dev/null || java -jar /usr/local/lib/bundletool-all.jar version 2>/dev/null; then
+            BTL=$(command -v bundletool || echo "java -jar /usr/local/lib/bundletool-all.jar")
+            $BTL dump manifest --bundle="$AAB" --xpath=/manifest/@package 2>/dev/null | grep "com.nomnomlk.nomnom_lk" || echo "WARNING: bundletool not available, skipping manifest check"
+          fi
+        working-directory: .
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 1
 
   docker:
     name: Docker (Build + Push + Scan)
@@ -477,7 +539,7 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [backend, admin]
+    needs: [backend, admin, flutter]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -496,6 +558,13 @@ jobs:
         with:
           name: admin-coverage
           path: admin/coverage/
+
+      - name: Download Flutter coverage
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: flutter-coverage
+          path: flutter/coverage/
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v5

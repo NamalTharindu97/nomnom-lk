@@ -1,15 +1,15 @@
-import '../../lib/models/banner.dart';
-import '../../lib/models/offer.dart';
-import '../../lib/models/paginated_response.dart';
-import '../../lib/models/restaurant.dart';
-import '../../lib/services/api_banner_service.dart';
-import '../../lib/services/api_favorites_service.dart';
-import '../../lib/services/api_offer_service.dart';
-import '../../lib/services/api_restaurant_service.dart';
-import '../../lib/services/connectivity_service.dart';
-import '../../lib/services/local/favorite_store.dart';
-import '../../lib/services/local/offer_store.dart';
-import '../../lib/services/local/restaurant_store.dart';
+import 'package:nomnom_lk/models/banner.dart';
+import 'package:nomnom_lk/models/offer.dart';
+import 'package:nomnom_lk/models/paginated_response.dart';
+import 'package:nomnom_lk/models/restaurant.dart';
+import 'package:nomnom_lk/services/api_banner_service.dart';
+import 'package:nomnom_lk/services/api_favorites_service.dart';
+import 'package:nomnom_lk/services/api_offer_service.dart';
+import 'package:nomnom_lk/services/api_restaurant_service.dart';
+import 'package:nomnom_lk/services/connectivity_service.dart';
+import 'package:nomnom_lk/services/local/favorite_store.dart';
+import 'package:nomnom_lk/services/local/offer_store.dart';
+import 'package:nomnom_lk/services/local/restaurant_store.dart';
 
 class MockConnectivityService implements ConnectivityService {
   @override

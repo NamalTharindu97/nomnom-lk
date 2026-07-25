@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:nomnom_lk/l10n/app_localizations.dart';
-import '../../lib/providers/offer_provider.dart';
-import '../../lib/providers/restaurant_provider.dart';
-import '../../lib/screens/search_screen.dart';
+import 'package:nomnom_lk/providers/offer_provider.dart';
+import 'package:nomnom_lk/providers/restaurant_provider.dart';
+import 'package:nomnom_lk/screens/search_screen.dart';
 import '../helpers/mocks.dart';
 
 Widget buildTestApp({
