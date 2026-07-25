@@ -29,6 +29,7 @@ type AdminHandler struct {
 	deviceTokenRepo  *repository.DeviceTokenRepo
 	auditLogRepo     *repository.AuditLogRepo
 	auditService     *services.AuditService
+	sseService       *services.SSEService
 }
 
 func NewAdminHandler(
@@ -41,6 +42,7 @@ func NewAdminHandler(
 	deviceTokenRepo *repository.DeviceTokenRepo,
 	auditLogRepo *repository.AuditLogRepo,
 	auditService *services.AuditService,
+	sseService *services.SSEService,
 ) *AdminHandler {
 	return &AdminHandler{
 		restaurantRepo:   restaurantRepo,
@@ -52,6 +54,7 @@ func NewAdminHandler(
 		deviceTokenRepo:  deviceTokenRepo,
 		auditLogRepo:     auditLogRepo,
 		auditService:     auditService,
+		sseService:       sseService,
 	}
 }
 
@@ -154,15 +157,24 @@ func (h *AdminHandler) BulkRestaurants(c *gin.Context) {
 			response.InternalError(c, "failed to approve restaurants")
 			return
 		}
+		for _, id := range req.IDs {
+			h.sseService.Emit("restaurant.updated", gin.H{"id": id, "slug": ""})
+		}
 	case "reject":
 		if err := h.restaurantRepo.BulkUpdateStatus(req.IDs, models.RestaurantRejected); err != nil {
 			response.InternalError(c, "failed to reject restaurants")
 			return
 		}
+		for _, id := range req.IDs {
+			h.sseService.Emit("restaurant.rejected", gin.H{"id": id, "slug": ""})
+		}
 	case "delete":
 		if err := h.restaurantRepo.BulkDelete(req.IDs); err != nil {
 			response.InternalError(c, "failed to delete restaurants")
 			return
+		}
+		for _, id := range req.IDs {
+			h.sseService.Emit("restaurant.deleted", gin.H{"id": id})
 		}
 	default:
 		response.ValidationError(c, []response.ErrorDetail{
@@ -196,15 +208,27 @@ func (h *AdminHandler) BulkOffers(c *gin.Context) {
 			response.InternalError(c, "failed to approve offers")
 			return
 		}
+		for _, id := range req.IDs {
+			h.sseService.Emit("offer.approved", gin.H{"id": id, "title": ""})
+			h.sseService.Emit("banner.updated", gin.H{"offer_id": id})
+		}
 	case "reject":
 		if err := h.offerRepo.BulkUpdateStatus(req.IDs, models.OfferRejected); err != nil {
 			response.InternalError(c, "failed to reject offers")
 			return
 		}
+		for _, id := range req.IDs {
+			h.sseService.Emit("offer.rejected", gin.H{"id": id, "title": ""})
+			h.sseService.Emit("banner.updated", gin.H{"offer_id": id})
+		}
 	case "delete":
 		if err := h.offerRepo.BulkDelete(req.IDs); err != nil {
 			response.InternalError(c, "failed to delete offers")
 			return
+		}
+		for _, id := range req.IDs {
+			h.sseService.Emit("offer.deleted", gin.H{"id": id})
+			h.sseService.Emit("banner.updated", gin.H{"offer_id": id})
 		}
 	default:
 		response.ValidationError(c, []response.ErrorDetail{

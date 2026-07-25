@@ -61,7 +61,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	userHandler := handlers.NewUserHandler(userRepo, auditService)
 	dashboardService := services.NewDashboardService(restaurantRepo, offerRepo, bannerRepo, rdb)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService, sseService, auditService, bannerRepo)
-	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo, bannerRepo, couponRepo, deviceTokenRepo, auditLogRepo, auditService)
+	adminHandler := handlers.NewAdminHandler(restaurantRepo, offerRepo, userRepo, notificationRepo, bannerRepo, couponRepo, deviceTokenRepo, auditLogRepo, auditService, sseService)
 	restaurantHandler := handlers.NewRestaurantHandler(restaurantService, sseService, auditService)
 	offerHandler := handlers.NewOfferHandler(offerService, sseService, auditService, bannerRepo)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService, sseService)

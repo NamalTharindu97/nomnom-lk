@@ -273,6 +273,7 @@ class _SseListenerState extends State<_SseListener>
 
   void _handleEvent(SSEEvent event) {
     _hasSseConnection = true;
+    debugPrint('SSE event: ${event.event} ${event.data}');
     switch (event.event) {
       case 'offer.created':
       case 'offer.approved':
@@ -287,6 +288,7 @@ class _SseListenerState extends State<_SseListener>
       case 'restaurant.approved':
       case 'restaurant.updated':
       case 'restaurant.deleted':
+      case 'restaurant.rejected':
         _needsRestaurantRefresh = true;
         break;
       case 'banner.created':
@@ -295,6 +297,10 @@ class _SseListenerState extends State<_SseListener>
       case 'banner.rejected':
       case 'banner.deleted':
         _needsBannerRefresh = true;
+        break;
+      case 'favorite.added':
+      case 'favorite.removed':
+        _needsOfferRefresh = true;
         break;
     }
     _debounce?.cancel();
