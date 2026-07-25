@@ -103,7 +103,7 @@ func (r *OfferRepo) FindAll(status, queryStr string, page, perPage int, sort str
 
 	err := query.
 		Preload("Restaurant", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, name, slug, address, cuisine_tags, cover_image, instagram_url, facebook_url, website_url, order_platforms")
+			return db.Select("id, name, slug, cuisine_tags, cover_image, instagram_url, facebook_url, website_url, order_platforms")
 		}).
 		Offset((page - 1) * perPage).
 		Limit(perPage).
@@ -250,7 +250,7 @@ func (r *OfferRepo) FindAllByOwner(ownerID uuid.UUID, status, queryStr string, p
 
 	err := query.
 		Preload("Restaurant", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, name, slug, address, cuisine_tags, cover_image, instagram_url, facebook_url, website_url, order_platforms")
+			return db.Select("id, name, slug, cuisine_tags, cover_image, instagram_url, facebook_url, website_url, order_platforms")
 		}).
 		Offset((page - 1) * perPage).
 		Limit(perPage).
