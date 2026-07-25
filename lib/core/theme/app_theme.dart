@@ -157,7 +157,7 @@ class AppTheme {
     ).copyWith(
       primary: AppColors.curry,
       secondary: AppColors.ocean,
-      tertiary: const Color(0xFF3E8D39),
+      tertiary: AppColors.lime,
       surface: AppColors.lightSurface,
       error: AppColors.chili,
     );
@@ -193,7 +193,7 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.lightSurfaceAlt,
-        selectedColor: const Color(0xFFE38D12),
+        selectedColor: AppColors.curry,
         disabledColor: AppColors.lightSurface,
         labelStyle: const TextStyle(fontWeight: FontWeight.w700),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

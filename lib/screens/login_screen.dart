@@ -278,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: context.colors.background,
+                                          color: Theme.of(context).brightness == Brightness.dark ? context.colors.background : Colors.white,
                                         ),
                                       )
                                     : const Icon(Icons.g_mobiledata_rounded, size: 28),

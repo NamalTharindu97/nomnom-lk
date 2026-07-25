@@ -285,7 +285,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.background),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).brightness == Brightness.dark ? context.colors.background : Colors.white),
                         )
                       : const Icon(Icons.check_rounded),
                   label: Text(loc.editProfileSave),

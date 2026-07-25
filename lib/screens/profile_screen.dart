@@ -108,7 +108,9 @@ class _ProfileHeader extends StatelessWidget {
                           child: Text(
                             user.name.isEmpty ? '?' : user.name.substring(0, 1).toUpperCase(),
                             style: textTheme.headlineMedium?.copyWith(
-                              color: colors.background,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? colors.background
+                                  : Colors.white,
                               fontWeight: FontWeight.w900,
                             ),
                           ),

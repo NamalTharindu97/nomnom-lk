@@ -375,7 +375,9 @@ class _DiscountPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.lightTextPrimary,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? context.colors.background
+                  : Colors.white,
               fontWeight: FontWeight.w900,
             ),
       ),

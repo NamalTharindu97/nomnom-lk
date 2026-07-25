@@ -154,7 +154,9 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     child: Icon(
                       Icons.restaurant_menu_rounded,
-                      color: context.colors.background,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? context.colors.background
+                          : Colors.white,
                       size: 44,
                     ),
                   ),

@@ -573,7 +573,9 @@ class _FilterChipState extends State<_FilterChip>
             widget.label,
             style: textTheme.labelMedium?.copyWith(
               color: widget.isSelected
-                  ? context.colors.background
+                  ? (Theme.of(context).brightness == Brightness.dark
+                      ? context.colors.background
+                      : Colors.white)
                   : context.colors.textSecondary,
               fontWeight: FontWeight.w700,
             ),

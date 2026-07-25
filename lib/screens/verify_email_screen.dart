@@ -305,7 +305,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: context.colors.background,
+                                          color: Theme.of(context).brightness == Brightness.dark ? context.colors.background : Colors.white,
                                         ),
                                       )
                                     : const Icon(Icons.check_rounded, size: 22),

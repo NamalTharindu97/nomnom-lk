@@ -97,7 +97,9 @@ class _EmptyStateState extends State<EmptyState>
                 label: Text(widget.retryLabel ?? AppLocalizations.of(context)!.retryLabel),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.curry,
-                  foregroundColor: context.colors.background,
+                  foregroundColor: Theme.of(context).brightness == Brightness.dark
+                      ? context.colors.background
+                      : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

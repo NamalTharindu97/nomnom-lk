@@ -35,7 +35,9 @@ class AppLogo extends StatelessWidget {
           ),
           child: Icon(
             Icons.restaurant_menu_rounded,
-            color: context.colors.background,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? context.colors.background
+                : Colors.white,
             size: compact ? 22 : 30,
           ),
         ),

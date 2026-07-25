@@ -48,7 +48,11 @@ class FavoriteButton extends StatelessWidget {
                 backgroundColor:
                     isFavorite ? AppColors.chili : AppColors.curry,
                 foregroundColor:
-                    isFavorite ? context.colors.textPrimary : context.colors.background,
+                    isFavorite
+                        ? context.colors.textPrimary
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? context.colors.background
+                            : Colors.white),
               ),
             ),
           );
