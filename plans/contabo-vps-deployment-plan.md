@@ -1,190 +1,161 @@
-# Contabo VPS Deployment Plan
+# Contabo VPS Deployment Plan (Staging-First)
 
 ## Goal
 
-Migrate NomNom LK from Render.com free tier to a self-managed Contabo VPS
-with Caddy reverse proxy, Docker Compose orchestration, encrypted backups,
-and GitHub Actions CI/CD.
+Deploy NomNom LK to a Contabo VPS as a staging environment first (no domain
+required), then later add the domain and go production.
 
-## Pre-Purchase (Phase 0)
+## Why Staging-First
 
-### Domain
-- Purchase `nomnom.lk` from `.lk` registry or reseller
-- Subdomains: `api.nomnom.lk`, `admin.nomnom.lk`
+- No domain purchase needed upfront — use VPS IP directly
+- Test everything on real infrastructure before production
+- Fix issues in staging while Render keeps running
+- Add domain and TLS later as a single cutover step
 
-### VPS
+---
+
+## Phase A: Purchase & Configure VPS
+
+### A.1 — Buy VPS
 - Contabo Cloud VPS S: 4 vCPU, 8 GB RAM, 200 GB SSD (~$5.50/mo)
 - Region: Singapore
 - OS: Ubuntu 24.04 LTS
+- No domain needed — use public IP
 
-### Initial VPS Setup
+### A.2 — Initial Setup
 - SSH key-only (disable password auth)
-- Tailscale for admin access (no open SSH port)
-- UFW: allow 80/tcp, 443/tcp, 443/udp only
-- Unattended security updates enabled
+- UFW: allow 22/tcp, 8080/tcp, 3000/tcp
+- Unattended security updates
+- Install Docker Engine + `docker compose` plugin
 
-### DNS
-- `api.nomnom.lk` → VPS public IP
-- `admin.nomnom.lk` → VPS public IP
-- Low TTL (300s) for migration flexibility
-
----
-
-## Phase 1: Infrastructure
-
-### Docker
-- Docker Engine from official repo
-- `docker compose` plugin
-- Daemon: `live-restore: true`, log rotation
-
-### `/etc/nomnom/` Layout
+### A.3 — Server Layout
 ```
 /etc/nomnom/
   compose/       → compose.yml
-  config/        → Caddyfile, redis.conf
-  secrets/       → 0700 dirs, 0400 files per service
+  config/        → redis.conf
+  secrets/       → 0700 dirs, 0400 files
   secrets.previous/
 ```
 
-### Containers
-- Pin all images by immutable digest (not `:latest`)
-- Caddy 2, PostgreSQL 16-alpine, Redis 7-alpine
-- Our backend/admin images tagged with Git SHA from CI
+---
 
-### PostgreSQL
-- TLS cert for intra-Docker connections
-- Cert + key outside Git, restricted to postgres UID
-- DB user + database via init scripts
+## Phase B: Simplified Compose (Staging — No Caddy)
 
-### Redis
-- ACL file from password (no plaintext in config)
-- ACL file mounted as Docker secret
+Since we don't have a domain, remove Caddy and expose backend/admin ports directly.
+Simpler compose for staging:
 
-### Caddy
-- Let's Encrypt for `api.nomnom.lk` + `admin.nomnom.lk`
-- TLS 1.3, HTTP → HTTPS redirect
-- HSTS, CSP, X-Frame-Options, Referrer-Policy headers
+```
+Services:
+  backend   → port 8080 exposed
+  admin     → port 3000 exposed  
+  postgres  → internal only
+  redis     → internal only
+```
+
+### B.1 — Access URLs
+- Backend: `http://<VPS-IP>:8080/health`
+- Admin: `http://<VPS-IP>:3000/login`
+
+### B.2 — Deploy
+- Copy compose + config files to VPS
+- Run `install-secrets.sh` to set up secrets
+- `docker compose up -d`
+- Verify both services are healthy
+
+### B.3 — Staging Differences from Production
+| Aspect | Staging (No Domain) | Production (With Domain) |
+|--------|--------------------|--------------------------|
+| Access | `http://<IP>:8080`, `http://<IP>:3000` | `https://api.nomnom.lk`, `https://admin.nomnom.lk` |
+| Proxy | None (direct ports) | Caddy (TLS + reverse proxy) |
+| TLS | None | Let's Encrypt via Caddy |
+| Ports | 22, 8080, 3000 | 80, 443 only |
+| Networks | Single internal | edge, app, data, egress |
+| Security | Basic (UFW + SSH key) | Full (read-only FS, cap drop) |
 
 ---
 
-## Phase 2: Application
+## Phase C: CI/CD Pipeline
 
-### Backend
-- `_FILE` suffixed env vars → Docker secrets
-- 8 secrets: DB password, Redis password, JWT secret, Firebase creds, R2 keys, SMTP password, admin bootstrap password
-- Health check: `/health`
-- Log to stdout only
+### C.1 — GitHub Actions
+- `deploy-vps-secrets.yml`: Streams production secrets to VPS via SSH
+- `deploy-staging.yml`: Build Docker images, push to Docker Hub, SSH → VPS → `docker compose up -d`
+- `promote-production.yml`: Staging SHA → production env approval → deploy to production VPS
 
-### Admin
-- Proxy target: `http://backend:8080` (internal)
-- `NEXT_PUBLIC_API_URL=/api/v1` (same-origin via Caddy)
-- Read-only FS except `/tmp` + Next.js cache
+### C.2 — Workflow
+```
+Push to staging → CI builds images → pushes to Docker Hub → SSH to VPS → pulls images → docker compose up -d
+```
 
-### Verify
-- `https://api.nomnom.lk/health` → 200
-- `https://admin.nomnom.lk/login` → 200
-- Firebase login, SSE, FCM push, R2 upload all work
-
----
-
-## Phase 3: Secret Delivery
-
-### GitHub Actions
-- `deploy-vps-secrets.yml` streams secrets via SSH to `install-secrets.sh`
-- Production environment protected with manual approval
-- PR/fork workflows cannot access production secrets
-
-### install-secrets.sh
-- Writes secrets atomically to `/etc/nomnom/secrets/`
-- Permissions: 0600 (private), 0400 (read-only)
-- Validates non-empty, triggers `docker compose restart`
+### C.3 — Rollback
+```
+docker compose up -d --no-build --pull always BACKEND_IMAGE=<previous-sha> ADMIN_IMAGE=<previous-sha>
+```
 
 ---
 
-## Phase 4: Data Migration (Render → Contabo)
+## Phase D: Production Cutover (Add Domain Later)
 
-### Pre-migration
-- Count all entities on Render: restaurants, offers, users, favorites, notifications
-- Record sample data for verification
+### D.1 — Purchase Domain
+- Buy `nomnom.lk` from `.lk` registry
+- Subdomains: `api.nomnom.lk`, `admin.nomnom.lk`
 
-### PostgreSQL
-- Initial dump: `pg_dump` from Render → restore to Contabo
-- Stop Render backend, final data-only dump
-- Verify all row counts match
+### D.2 — Enable Caddy
+- Add Caddy to compose (from `deploy/vps/compose.yml`)
+- Caddy auto-requests Let's Encrypt certificates
+- Close ports 8080, 3000 — route through Caddy
+- TLS 1.3, HSTS, security headers
 
-### Redis
-- No persistent data migration needed (ephemeral: sessions, rate limits, codes)
-- Verify Redis healthy on Contabo
+### D.3 — DNS Cutover
+- Point domain DNS to VPS IP
+- Update Firebase authorized domains
+- Update Flutter app API URL
+- Disable Render, keep as cold standby 1 week
 
-### R2
-- No migration (stays on Cloudflare, same bucket)
-- Verify images load in app + admin
-
-### Post-migration
-- Admin login, dashboard loads, counts match
-- Flutter app: browse, search, favorites, notifications all work
-- Push notification test
-- Keep Render as fallback for 48h
+### D.4 — Backups & Monitoring
+- PostgreSQL daily backups to R2 (age encrypted)
+- Uptime Robot on `api.nomnom.lk/health`
+- Systemd timer for backup + log rotation
 
 ---
 
-## Phase 5: CI/CD Pipeline
-
-### CD Workflows
-- `deploy-staging.yml`: Build + Trivy → push SHA-tagged images → SSH → `docker compose up -d` on staging VPS
-- `promote-production.yml`: Staging SHA → production env approval → promote to production VPS
-
-### Container Updates
-- Staging deploys on every push to `staging` branch
-- Production uses immutable SHA tags
-- Rollback: `docker compose up -d` with previous SHA
-
-### Render Cutover
-- Point DNS to Contabo VPS IP
-- Wait for DNS propagation
-- Disable Render auto-deploy
-- Keep Render as cold standby 1 week
-- Delete Render resources after confirmation
-
----
-
-## Phase 6: Backups & Monitoring
-
-### Encrypted Backups
-- `pg_dump` → age encrypt → upload to R2 backup bucket
-- Systemd timer: daily at 3 AM
-- Retention: 7 daily, 4 weekly, 3 monthly
-- Restore via `restore-vps-production.yml` (manual approval)
-
-### Monitoring
-- Docker health checks on all services
-- Caddy access logs
-- Backend structured JSON to stdout
-- Optional: Uptime Robot on `/health`
-
-### Alerts
-- `restart: unless-stopped` on all containers
-- Caddy auto-renew TLS (built-in)
-- Log rotation for disk space
-
----
-
-## Phase 7: Cleanup
-
-- Delete Render PostgreSQL, Redis, backend, admin services
-- Remove Render-specific build args from admin Dockerfile
-- Update `render.yaml` with migration note
-- Document: SSH access, Tailscale, secret locations, restore procedure
-- Update Firebase authorized domains for `api.nomnom.lk`, `admin.nomnom.lk`
+## Phase E: Cleanup
+- Delete Render services
+- Document: SSH access, secrets, restore procedure
 
 ---
 
 ## Prerequisites Checklist
 
-- [ ] `nomnom.lk` domain purchased
-- [ ] Contabo VPS purchased (Singapore, Ubuntu 24.04)
+### For Staging (Buy Now)
+- [ ] Contabo VPS S purchased (Singapore, Ubuntu 24.04)
 - [ ] SSH key pair generated
-- [ ] Tailscale account configured
 - [ ] GitHub production environment with all secrets
-- [ ] R2 backup bucket + separate credentials created
+
+### For Production (Buy Later)
+- [ ] `nomnom.lk` domain purchased
 - [ ] Phase 0 provider rotations completed
+- [ ] R2 backup bucket + separate credentials
+
+---
+
+## Current Pre-Built Assets
+
+| Asset | Purpose | Status |
+|-------|---------|--------|
+| `deploy/vps/compose.yml` | Full prod compose with Caddy | ✅ Ready |
+| `deploy/vps/Caddyfile` | Reverse proxy config | ✅ Ready (for prod) |
+| `deploy/vps/config/redis.conf` | Redis ACL config | ✅ Ready |
+| `scripts/vps/install-secrets.sh` | Secret delivery | ✅ Ready |
+| `scripts/vps/deploy.sh` | Docker compose up | ✅ Ready |
+| `scripts/vps/backup-postgres.sh` | Encrypted backups | ✅ Ready |
+| `scripts/vps/restore-postgres.sh` | Backup restore | ✅ Ready |
+| `scripts/vps/package-secrets.sh` | Secret packaging | ✅ Ready |
+| `.github/workflows/deploy-vps-secrets.yml` | CI secret delivery | ✅ Ready |
+| `.github/workflows/restore-vps-production.yml` | CI restore workflow | ✅ Ready |
+
+## What Needs Creation
+
+| Asset | Purpose |
+|-------|---------|
+| `deploy/vps/compose.staging.yml` | Simplified compose without Caddy for staging |
+| `scripts/vps/deploy-staging.sh` | Deploy script for staging |

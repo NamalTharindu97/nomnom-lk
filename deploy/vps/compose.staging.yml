@@ -1,0 +1,139 @@
+# Staging compose — no Caddy, direct port exposure
+# For production, use deploy/vps/compose.yml instead
+
+name: nomnom-staging
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-docker.io/namal97/nomnom-backend:latest}
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ENVIRONMENT: staging
+      SERVER_PORT: "8080"
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${DATABASE_USER:-nomnom}
+      DATABASE_PASSWORD_FILE: /run/secrets/database_password
+      DATABASE_NAME: ${DATABASE_NAME:-nomnom}
+      DATABASE_SSLMODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 720h
+      R2_REGION: auto
+      R2_ACCESS_KEY_FILE: /run/secrets/r2_access_key
+      R2_SECRET_KEY_FILE: /run/secrets/r2_secret_key
+      R2_BUCKET: ${R2_BUCKET:-nomnom-images}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_SECURE: "true"
+      R2_FORCE_PATH_STYLE: "false"
+      R2_PREFIX: staging
+      BROWSER_COOKIE_SECURE: "false"
+      CORS_ORIGINS: "*"
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      SMTP_FROM: ${SMTP_FROM:-"NomNom LK <noreply@nomnom.lk>"}
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase_credentials
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@nomnom.lk}
+      ADMIN_PASSWORD_FILE: /run/secrets/admin_password
+    secrets:
+      - database_password
+      - redis_password
+      - jwt_secret
+      - r2_access_key
+      - r2_secret_key
+      - smtp_password
+      - firebase_credentials
+      - admin_password
+    networks:
+      - nomnom
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  admin:
+    image: ${ADMIN_IMAGE:-docker.io/namal97/nomnom-admin:latest}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      API_PROXY_TARGET: http://backend:8080
+      NEXT_PUBLIC_API_URL: /api/v1
+      PORT: "3000"
+    networks:
+      - nomnom
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-nomnom}
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+      POSTGRES_DB: ${DATABASE_NAME:-nomnom}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - nomnom
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-nomnom}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redisdata:/data
+      - redis_acl:/run/secrets/redis_users_acl
+    networks:
+      - nomnom
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  nomnom:
+
+volumes:
+  pgdata:
+  redisdata:
+
+secrets:
+  database_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/database_password
+  redis_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/redis_password
+  jwt_secret:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/jwt_secret
+  r2_access_key:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/r2_access_key
+  r2_secret_key:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/r2_secret_key
+  smtp_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/smtp_password
+  firebase_credentials:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/firebase_credentials
+  admin_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/admin_password
+  redis_acl:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/redis_users_acl
