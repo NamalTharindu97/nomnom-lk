@@ -150,6 +150,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
   late final AnimationController _controller;
   late final Animation<double> _animation;
   List<PlatformData> _platforms = const [];
+  List<SocialPlatformData> _socialPlatforms = const [];
 
   @override
   void initState() {
@@ -169,9 +170,14 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
   Future<void> _loadPlatforms() async {
     try {
       final client = ApiClient();
-      final service = ApiPlatformService(client);
-      final list = await service.fetchPlatforms();
-      if (mounted) setState(() => _platforms = list);
+      final opService = ApiPlatformService(client);
+      final spService = ApiSocialPlatformService(client);
+      final ops = await opService.fetchPlatforms();
+      final sps = await spService.fetchPlatforms();
+      if (mounted) setState(() {
+        _platforms = ops;
+        _socialPlatforms = sps;
+      });
     } catch (_) {}
   }
 
@@ -317,6 +323,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                   index: 9,
                   child: FollowSection(
                     socialLinks: offer.socialLinks,
+                    platforms: _socialPlatforms,
                   ),
                 ),
               ],

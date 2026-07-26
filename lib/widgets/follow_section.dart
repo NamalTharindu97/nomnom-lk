@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/social_link.dart';
+import '../services/api_platform_service.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 
 class FollowSection extends StatelessWidget {
   final List<SocialLink> socialLinks;
+  final List<SocialPlatformData> platforms;
 
   const FollowSection({
     super.key,
     this.socialLinks = const [],
+    this.platforms = const [],
   });
 
   @override
@@ -35,10 +39,9 @@ class FollowSection extends StatelessWidget {
         const SizedBox(height: 12),
         for (var i = 0; i < socialLinks.length; i++) ...[
           _SocialPillButton(
-            icon: _iconForPlatform(socialLinks[i].platform),
-            label: _labelForPlatform(socialLinks[i].platform, t),
-            color: _colorForPlatform(socialLinks[i].platform),
-            url: socialLinks[i].url,
+            link: socialLinks[i],
+            platform: _findPlatform(socialLinks[i].platform),
+            t: t,
           ),
           if (i < socialLinks.length - 1) const SizedBox(height: 8),
         ],
@@ -46,63 +49,33 @@ class FollowSection extends StatelessWidget {
     );
   }
 
-  static IconData _iconForPlatform(String platform) {
-    switch (platform) {
-      case 'instagram':
-        return Icons.camera_alt_rounded;
-      case 'facebook':
-        return Icons.facebook_rounded;
-      case 'website':
-        return Icons.language_rounded;
-      default:
-        return Icons.link_rounded;
-    }
-  }
-
-  static String _labelForPlatform(String platform, AppLocalizations t) {
-    switch (platform) {
-      case 'instagram':
-        return t.offerVisitInstagram;
-      case 'facebook':
-        return t.offerVisitFacebook;
-      case 'website':
-        return t.offerVisitWebsite;
-      default:
-        return t.offerVisitWebsite;
-    }
-  }
-
-  static Color _colorForPlatform(String platform) {
-    switch (platform) {
-      case 'instagram':
-        return const Color(0xFFE4405F);
-      case 'facebook':
-        return const Color(0xFF1877F2);
-      case 'website':
-        return AppColors.curry;
-      default:
-        return AppColors.curry;
-    }
+  SocialPlatformData? _findPlatform(String slug) {
+    return platforms.cast<SocialPlatformData?>().firstWhere(
+      (p) => p?.slug == slug,
+      orElse: () => null,
+    );
   }
 }
 
 class _SocialPillButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final String url;
+  final SocialLink link;
+  final SocialPlatformData? platform;
+  final AppLocalizations t;
 
   const _SocialPillButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.url,
+    required this.link,
+    required this.platform,
+    required this.t,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = _parseColor(platform?.primaryColor ?? '#E38D12');
+    final label = platform?.displayName ?? link.platform;
+    final logoUrl = platform?.logoUrl;
+
     return GestureDetector(
-      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      onTap: () => launchUrl(Uri.parse(link.url), mode: LaunchMode.externalApplication),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -113,7 +86,7 @@ class _SocialPillButton extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
+            _buildLogo(logoUrl, label, color),
             const SizedBox(width: 12),
             Text(
               label,
@@ -123,14 +96,44 @@ class _SocialPillButton extends StatelessWidget {
                   ),
             ),
             const Spacer(),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: color,
-            ),
+            Icon(Icons.chevron_right_rounded, size: 20, color: color),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildLogo(String? logoUrl, String label, Color color) {
+    if (logoUrl != null && logoUrl.isNotEmpty) {
+      return Container(
+        width: 36, height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.network(ApiConfig.resolveUrl(logoUrl), fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => _fallbackBadge(label, color)),
+        ),
+      );
+    }
+    return _fallbackBadge(label, color);
+  }
+
+  Widget _fallbackBadge(String label, Color color) {
+    final initials = label.isNotEmpty ? label[0].toUpperCase() : '?';
+    return Container(
+      width: 36, height: 36,
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+      child: Center(child: Text(initials, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900))),
+    );
+  }
+}
+
+Color _parseColor(String hex) {
+  final cleaned = hex.replaceFirst('#', '');
+  if (cleaned.length == 6) return Color(int.parse('FF$cleaned', radix: 16));
+  return AppColors.curry;
 }
