@@ -281,30 +281,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: [
                 TextFormField(
                   controller: _nameController,
+                  style: TextStyle(color: colors.textPrimary),
                   decoration: InputDecoration(
                     labelText: loc.editProfileNameLabel,
                     border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.person_outline_rounded),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: colors.muted),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? loc.editProfileNameRequired : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _phoneController,
+                  style: TextStyle(color: colors.textPrimary),
                   decoration: InputDecoration(
                     labelText: loc.editProfilePhoneLabel,
                     border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.phone_outlined),
+                    prefixIcon: Icon(Icons.phone_outlined, color: colors.muted),
                   ),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   initialValue: user?.email ?? '',
+                  style: TextStyle(color: colors.textSecondary),
                   decoration: InputDecoration(
                     labelText: loc.editProfileEmailLabel,
                     border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.email_outlined),
+                    prefixIcon: Icon(Icons.email_outlined, color: colors.muted),
                   ),
                   readOnly: true,
                   enabled: false,
