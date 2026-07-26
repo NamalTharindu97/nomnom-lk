@@ -313,11 +313,15 @@ class OfferProvider extends ChangeNotifier {
 
     try {
       if (wasFavorite) {
+        debugPrint('FAV: remove $offerId');
         await _favoritesService.removeFavorite(offerId);
         await _favoriteStore.removeFavorite(offerId);
+        debugPrint('FAV: removed ok, Hive: ${_favoriteStore.getFavorites().length}');
       } else {
+        debugPrint('FAV: add $offerId');
         await _favoritesService.addFavorite(offerId);
         await _favoriteStore.addFavorite(offerId);
+        debugPrint('FAV: added ok, Hive: ${_favoriteStore.getFavorites().length}');
       }
     } catch (_) {
       if (hasOffer) {
