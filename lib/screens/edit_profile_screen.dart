@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -93,17 +94,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<String?> _uploadImage(String path) async {
     try {
-      debugPrint('upload: starting for $path');
+      debugPrint('upload: converting $path to JPEG');
+      final rawBytes = await File(path).readAsBytes();
+      final decoded = img.decodeImage(rawBytes);
+      if (decoded == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.uploadFailed)),
+          );
+        }
+        return null;
+      }
+      final jpgBytes = img.encodeJpg(decoded, quality: 85);
+      final tmpFile = File('${Directory.systemTemp.path}/avatar_upload.jpg');
+      await tmpFile.writeAsBytes(jpgBytes);
+      debugPrint('upload: converted to JPEG, size=${jpgBytes.length}');
+
       final api = context.read<ApiClient>();
       final response = await api.postMultipart(
         '/upload',
         fileField: 'file',
-        filePath: path,
+        filePath: tmpFile.path,
         queryParams: {'folder': 'avatars'},
       );
+      await tmpFile.delete();
       debugPrint('upload: response keys: ${response.keys}');
       final data = response['data'];
-      debugPrint('upload: data type: ${data.runtimeType}, url: ${data is Map ? data['url'] : "no data"}');
       if (data is Map<String, dynamic> && data['url'] is String) {
         return data['url'] as String;
       }
