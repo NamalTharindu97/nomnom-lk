@@ -34,7 +34,9 @@ func (r *FavoriteRepo) FindByUser(userID uuid.UUID, page, perPage int) ([]models
 	r.db.Model(&models.Favorite{}).Where("user_id = ?", userID).Count(&total)
 
 	err := r.db.
-		Preload("Offer.Restaurant").
+		Preload("Offer.Restaurant", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, name, slug, cuisine_tags, cover_image, social_links, order_platforms")
+		}).
 		Where("user_id = ?", userID).
 		Offset((page - 1) * perPage).
 		Limit(perPage).
