@@ -14,6 +14,7 @@ interface ImageCropDialogProps {
   total: number
   onCropComplete: (blob: Blob) => void
   onCancel: () => void
+  aspectRatio?: number
 }
 
 function createImage(url: string): Promise<HTMLImageElement> {
@@ -59,6 +60,7 @@ export default function ImageCropDialog({
   total,
   onCropComplete,
   onCancel,
+  aspectRatio,
 }: ImageCropDialogProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -107,7 +109,7 @@ export default function ImageCropDialog({
             image={imageUrl}
             crop={crop}
             zoom={zoom}
-            aspect={1 / 1}
+            aspect={aspectRatio ?? 1 / 1}
             onCropChange={handleCropChange}
             onZoomChange={handleZoomChange}
             onCropComplete={handleCropComplete}

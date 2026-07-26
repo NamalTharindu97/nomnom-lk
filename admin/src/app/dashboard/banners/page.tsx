@@ -25,6 +25,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Plus, Pencil, Trash2, Image as ImageIcon, CheckCircle, XCircle, ExternalLink, Tag, Store, Link2 } from "lucide-react"
+import ImageCropDialog from "@/components/image-crop-dialog"
 
 const bannerSchema = z.object({
   title: z.string().optional(),
@@ -83,6 +84,9 @@ export default function BannersPage() {
   const [selectedOffer, setSelectedOffer] = useState("")
   const [adminOffers, setAdminOffers] = useState<Offer[]>([])
   const [adminRestaurants, setAdminRestaurants] = useState<Restaurant[]>([])
+
+  const [cropImageUrl, setCropImageUrl] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const endpoint = isAdmin ? "/admin/banners" : "/dashboard/banners"
 
@@ -329,22 +333,31 @@ export default function BannersPage() {
     }
   }
 
-  async function handleImageUpload() {
+  function handleImageSelect() {
     const input = document.createElement("input")
     input.type = "file"
     input.accept = "image/*"
-    input.onchange = async () => {
+    input.onchange = () => {
       const file = input.files?.[0]
       if (!file) return
-      const formData = new FormData()
-      formData.append("file", file)
-      try {
-        const res = await api.upload<{ data: { url: string } }>("/upload?folder=banners", formData)
-        setValue("image_url", res.data.url, { shouldValidate: true })
-        notify("Image uploaded", "success")
-      } catch { notify("Upload failed", "error") }
+      const reader = new FileReader()
+      reader.onload = () => setCropImageUrl(reader.result as string)
+      reader.readAsDataURL(file)
     }
     input.click()
+  }
+
+  async function handleCropComplete(blob: Blob) {
+    setCropImageUrl(null)
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", blob, "banner.jpg")
+      const res = await api.upload<{ data: { url: string } }>("/upload?folder=banners", formData)
+      setValue("image_url", res.data.url, { shouldValidate: true })
+      notify("Image uploaded", "success")
+    } catch { notify("Upload failed", "error") }
+    setUploadingImage(false)
   }
 
   return (
@@ -385,7 +398,9 @@ export default function BannersPage() {
                 <Label htmlFor="image_url">Image</Label>
                 <div className="flex gap-2">
                   <Input id="image_url" {...register("image_url")} placeholder="Image URL" className="flex-1" />
-                  <Button variant="outline" type="button" onClick={handleImageUpload}>Upload</Button>
+                  <Button variant="outline" type="button" onClick={handleImageSelect} disabled={uploadingImage}>
+                    {uploadingImage ? "Uploading..." : "Upload"}
+                  </Button>
                 </div>
                 {errors.image_url && <p className="text-xs text-destructive">{errors.image_url.message}</p>}
               </div>
@@ -421,7 +436,13 @@ export default function BannersPage() {
                     <div className="grid gap-2">
                       <Label htmlFor="link_value">{currentLinkType === "offer" ? "Offer" : currentLinkType === "restaurant" ? "Restaurant" : "URL"}</Label>
                       {currentLinkType === "offer" ? (
-                        <Select value={watch("link_value")} onValueChange={(v) => setValue("link_value", v, { shouldValidate: true })}>
+                        <Select value={watch("link_value")} onValueChange={(v) => {
+                          setValue("link_value", v, { shouldValidate: true })
+                          const offer = adminOffers.find(o => o.id === v)
+                          if (offer?.restaurant_name && !watch("cta_text")) {
+                            setValue("cta_text", offer.restaurant_name)
+                          }
+                        }}>
                           <SelectTrigger id="link_value"><SelectValue placeholder="Select an offer..." /></SelectTrigger>
                           <SelectContent>
                             {adminOffers.map(o => (
@@ -453,6 +474,11 @@ export default function BannersPage() {
                     <div className="grid gap-2">
                       <Label htmlFor="display_order">Display Order</Label>
                       <Input id="display_order" type="number" {...register("display_order", { valueAsNumber: true })} />
+                      <p className="text-xs text-muted-foreground">
+                        {banners.length > 0
+                          ? `${banners.length} banner${banners.length !== 1 ? "s" : ""} exist. Higher numbers appear first.`
+                          : "No existing banners. 0 = first position."}
+                      </p>
                       {errors.display_order && <p className="text-xs text-destructive">{errors.display_order.message}</p>}
                     </div>
                   </div>
@@ -586,6 +612,17 @@ export default function BannersPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ImageCropDialog
+        open={!!cropImageUrl}
+        imageUrl={cropImageUrl || ""}
+        fileName="banner.jpg"
+        index={0}
+        total={1}
+        aspectRatio={1024 / 360}
+        onCropComplete={handleCropComplete}
+        onCancel={() => setCropImageUrl(null)}
+      />
     </ErrorBoundary>
   )
 }

@@ -1,7 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** Phases 1–3, 5–10, 13, and P50 completed on `master` and `staging`. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Phase 4 (Git history rewrite) blocked by Phase 0. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
+- **Current:** Phase 12 (rate limiting + CI AAB) + UX improvements (Batches 1-6) completed on `phase/12-rate-limit-ci-aab`. Working on `master` and `staging`. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Phase 4 (Git history rewrite) blocked by Phase 0. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
 - **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
 
 ## Deployment Documentation
@@ -332,4 +332,58 @@
   - **P50:** staging/master branch model implemented with `ci.yml` (triggers PR/push to both branches), `deploy-staging.yml` (Docker build + Trivy), `promote-production.yml` (production env approval gate). Branch protection on both branches.
   - **Hot-offer delay fix:** SSE debounce 1s→300ms, app resume always force-refreshes, offer per_page 20→100.
   - **Flutter 3.44.7** with targetSdk 36, multi-ABI (arm64-v8a, armeabi-v7a, x86_64), AGP 8.11.1, Kotlin 2.2.20, Gradle 8.13, JDK 17.
-  - All 56 Playwright E2E tests pass. Backend race/integration tests pass. Flutter 20/20 tests pass. Verified on Android 16 (API 36) emulator.
+   - All 56 Playwright E2E tests pass. Backend race/integration tests pass. Flutter 20/20 tests pass. Verified on Android 16 (API 36) emulator.
+- **2026-07-25:** Phase 12 (rate limiting + CI AAB) + UX improvements (Batches 1-6) on `phase/12-rate-limit-ci-aab`, deployed to Render.
+  - **Phase 12 — Rate Limiting & Brute Force Protection:**
+    - User model: Added `FailedLoginAttempts` + `LockedUntil` with `IsLocked()` method. DB migration.
+    - Per-email login rate limiter: Redis-backed, 10 attempts per email per 15 min on `/auth/login` and `/auth/browser/login`.
+    - Account lockout: 10 failed password attempts → 30 min lock (HTTP 423). Resets on successful login.
+    - Progressive delay: failed attempts get `attempts × 500ms` delay, capped at 5s. Non-existent emails get 500ms.
+    - Verification code resend cooldown: 60s Redis TTL server-side.
+    - Route rate limits: Dashboard 60/min, Admin 60/min, Auth 20/min, Upload 10/min.
+  - **Phase 12 — CI AAB Build:**
+    - Flutter analyze: removed `--no-fatal-warnings`. Fixed 23 relative-lib imports in tests.
+    - AAB build in CI PR jobs with ephemeral keystore + bundletool metadata verification.
+    - Flutter coverage uploaded to Codecov + SonarCloud.
+    - Release signing: `build.gradle.kts` fails fast without `key.properties`.
+    - New `release.yml`: env-gated production AAB with keystore restore + fingerprint verify.
+  - **Favorites Fix:**
+    - FavoriteHandler.List now returns complete offer fields (cuisine_tags, address, etc.) matching public `/offers`.
+    - toggleFavorite persists to Hive FavoriteStore immediately.
+    - fetchFavorites passes per_page=100.
+  - **Remove Restaurant Location (31 files):**
+    - Dropped `address`, `latitude`, `longitude` columns from DB + model.
+    - Removed from all API responses, search haversine logic, seed data, DTOs.
+    - Flutter: removed location/distanceKm from Offer model, address from Restaurant model. Location row removed from offer card. Location InfoCard removed from offer details.
+    - Admin: removed address field from create/edit form, detail page, CSV export.
+    - i18n: removed offerLocation from en/si/ta ARB files.
+    - Rationale: chains like KFC have 20+ branches — single address misleading. Order buttons use GPS.
+  - **Dark Mode Text Readability (17 files):**
+    - Fixed 12 locations where `context.colors.background` (cream) was used on orange backgrounds (invisible in light mode).
+    - Added explicit `color:` to Order Now, Follow Us, Details headers, AppBar titles.
+    - Social button labels now use textPrimary instead of brand colors (Instagram pink/Facebook blue failed WCAG AA).
+    - InfoCard labels upgraded from muted to textSecondary. Verification code input has explicit color.
+    - AppTheme hardcoded hex → AppColors constants.
+  - **SSE Real-Time Fixes:**
+    - AdminHandler now has sseService. Bulk approve/reject/delete emits SSE per record.
+    - Flutter added missing event cases: restaurant.rejected, favorite.added, favorite.removed.
+    - Added debugPrint logging for all SSE events.
+  - **Predefined Cuisine Tags (Option A):**
+    - New CuisineTag model + admin CRUD page at `/dashboard/cuisine-tags`. 19 tags seeded.
+    - Restaurant dialog: checkbox multi-select from predefined list instead of free-text input.
+    - Public `GET /cuisine-tags` endpoint. Flutter filter chips work from API.
+  - **Order Platforms CRUD:**
+    - New OrderPlatform model (name, slug, display_name, primary_color, deep_link_scheme).
+    - Admin page at `/dashboard/order-platforms`. Seeded Uber Eats + PickMe.
+    - Restaurant dialog: platforms loaded from API, no more hardcoded `["uber_eats","pickme"]`.
+    - Restaurant detail page: badges use API-driven display names instead of fragile ternary.
+  - **UX Batches 2-6:**
+    - Flutter categories: categoryIds on Offer, allCategories getter, CategoryFilterChips on home screen.
+    - BannerLinkType + CouponDiscountType typed Go enums.
+    - Banner + Template forms converted to react-hook-form + zod.
+    - Public `GET /notification-categories` endpoint (3 categories).
+    - Audit log added banner + cuisine_tag. Search tiles tappable. ROLES constant shared.
+    - Fixed circular dependency crash on users page (extracted ROLES to lib/constants.ts).
+  - **Plans written:** `contabo-vps-deployment-plan.md`, `remove-restaurant-location-plan.md`.
+  - **Deployment:** Render uses `linux/amd64` (not arm64). Deploy via `render deploys create` CLI + manual Docker push.
+  - **Debug APK:** `build/app/outputs/flutter-apk/app-debug.apk` (199MB), connected to Render production backend.

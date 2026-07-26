@@ -170,7 +170,7 @@ encrypted recovery copies even though GitHub Secrets is the operational source.
 | 9 | **Done** | 2026-07-24 |
 | 10 | **Done** | 2026-07-24 |
 | 11 | **Pending** | — |
-| 12 | **Pending** | — |
+| 12 | **Done** | 2026-07-25 |
 | 13 | **Done** | 2026-07-24 |
 | P50 (Git + CI) | **Done** — staging/master branches, ci.yml, deploy-staging.yml, promote-production.yml | 2026-07-23 |
 

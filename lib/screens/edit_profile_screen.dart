@@ -104,7 +104,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return data['url'] as String;
       }
       return null;
-    } catch (_) {
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload error: $e')),
+        );
+      }
       return null;
     }
   }
@@ -288,7 +293,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).brightness == Brightness.dark ? context.colors.background : Colors.white),
                         )
                       : const Icon(Icons.check_rounded),
-                  label: Text(loc.editProfileSave),
+                  label: Text(_isSaving ? 'Saving...' : loc.editProfileSave),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
