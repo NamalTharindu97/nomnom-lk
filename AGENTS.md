@@ -1,7 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** Phase 12 (rate limiting + CI AAB) + UX improvements (Batches 1-6) completed on `phase/12-rate-limit-ci-aab`. Working on `master` and `staging`. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Phase 4 (Git history rewrite) blocked by Phase 0. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
+- **Current:** Phase 12 + UX Batches 1-6 merged to `staging` and `master`. Deployed to Render. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
 - **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
 
 ## Deployment Documentation
