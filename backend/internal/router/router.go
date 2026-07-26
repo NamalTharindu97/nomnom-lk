@@ -200,6 +200,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 
 		v1.GET("/cuisine-tags", cuisineTagHandler.List)
 		v1.GET("/notification-categories", notificationHandler.ListCategories)
+		v1.GET("/order-platforms", orderPlatformHandler.List)
 
 		bannersGroup := v1.Group("/banners")
 		{

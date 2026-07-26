@@ -14,6 +14,7 @@ type OrderPlatform struct {
 	DisplayName    string    `gorm:"not null;size:100" json:"display_name"`
 	PrimaryColor   string    `gorm:"not null;size:9" json:"primary_color"`
 	DeepLinkScheme string    `gorm:"not null;size:100" json:"deep_link_scheme"`
+	LogoURL        *string   `gorm:"type:text" json:"logo_url,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 

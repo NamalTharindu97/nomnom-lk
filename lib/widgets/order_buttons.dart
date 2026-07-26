@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
@@ -39,6 +41,18 @@ String _platformUri(OrderPlatform platform) {
   };
 }
 
+String _storeUrl(OrderPlatform platform) {
+  final isAndroid = Platform.isAndroid;
+  return switch (platform) {
+    OrderPlatform.uberEats => isAndroid
+        ? 'https://play.google.com/store/apps/details?id=com.ubercab.eats'
+        : 'https://apps.apple.com/app/uber-eats-food-delivery/id1058959277',
+    OrderPlatform.pickMe => isAndroid
+        ? 'https://play.google.com/store/apps/details?id=com.pickme.pickme'
+        : 'https://apps.apple.com/app/pickme/id1196019644',
+  };
+}
+
 class OrderButtonsSection extends StatelessWidget {
   final List<String> platforms;
 
@@ -76,7 +90,7 @@ class OrderButtonsSection extends StatelessWidget {
         const SizedBox(height: Spacings.sm),
         for (int i = 0; i < parsed.length; i++) ...[
           if (i > 0) const SizedBox(height: Spacings.xs),
-          _PlatformButton(platform: parsed[i], t: t),
+          _PlatformButton(platform: parsed[i]),
         ],
       ],
     );
@@ -85,15 +99,12 @@ class OrderButtonsSection extends StatelessWidget {
 
 class _PlatformButton extends StatelessWidget {
   final OrderPlatform platform;
-  final AppLocalizations t;
 
-  const _PlatformButton({
-    required this.platform,
-    required this.t,
-  });
+  const _PlatformButton({required this.platform});
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final label = switch (platform) {
       OrderPlatform.uberEats => t.offerOrderUberEats,
       OrderPlatform.pickMe => t.offerOrderPickMe,
@@ -107,16 +118,7 @@ class _PlatformButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () async {
-            final uri = Uri.parse(_platformUri(platform));
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            } else if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(t.offerNoAppFound)),
-              );
-            }
-          },
+          onTap: () => _handleTap(context, platform, label, t),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -141,6 +143,49 @@ class _PlatformButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _handleTap(
+    BuildContext context,
+    OrderPlatform platform,
+    String label,
+    AppLocalizations t,
+  ) async {
+    final uri = Uri.parse(_platformUri(platform));
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+    if (!context.mounted) return;
+    _showInstallDialog(context, platform, label);
+  }
+
+  void _showInstallDialog(
+    BuildContext context,
+    OrderPlatform platform,
+    String label,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$label not installed'),
+        content: Text('Install $label from the store to order?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              launchUrl(Uri.parse(_storeUrl(platform)),
+                  mode: LaunchMode.externalApplication);
+            },
+            child: const Text('Install'),
+          ),
+        ],
       ),
     );
   }

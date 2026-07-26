@@ -32,10 +32,11 @@ func (h *OrderPlatformHandler) List(c *gin.Context) {
 }
 
 type orderPlatformRequest struct {
-	Name           string `json:"name" binding:"required,max=100"`
-	DisplayName    string `json:"display_name" binding:"required,max=100"`
-	PrimaryColor   string `json:"primary_color" binding:"required,max=9"`
-	DeepLinkScheme string `json:"deep_link_scheme" binding:"required,max=100"`
+	Name           string  `json:"name" binding:"required,max=100"`
+	DisplayName    string  `json:"display_name" binding:"required,max=100"`
+	PrimaryColor   string  `json:"primary_color" binding:"required,max=9"`
+	DeepLinkScheme string  `json:"deep_link_scheme" binding:"required,max=100"`
+	LogoURL        *string `json:"logo_url,omitempty"`
 }
 
 func (h *OrderPlatformHandler) Create(c *gin.Context) {
@@ -58,6 +59,7 @@ func (h *OrderPlatformHandler) Create(c *gin.Context) {
 		DisplayName:    req.DisplayName,
 		PrimaryColor:   req.PrimaryColor,
 		DeepLinkScheme: req.DeepLinkScheme,
+		LogoURL:        req.LogoURL,
 	}
 
 	if err := h.repo.Create(platform); err != nil {
@@ -81,7 +83,7 @@ func (h *OrderPlatformHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Update(id, req.Name, req.DisplayName, req.PrimaryColor, req.DeepLinkScheme); err != nil {
+	if err := h.repo.Update(id, req.Name, req.DisplayName, req.PrimaryColor, req.DeepLinkScheme, req.LogoURL); err != nil {
 		response.InternalError(c, "failed to update order platform")
 		return
 	}

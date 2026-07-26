@@ -25,6 +25,7 @@ interface OrderPlatform {
   display_name: string
   primary_color: string
   deep_link_scheme: string
+  logo_url: string | null
   created_at: string
 }
 
@@ -41,6 +42,7 @@ export default function OrderPlatformsPage() {
   const [displayName, setDisplayName] = useState("")
   const [primaryColor, setPrimaryColor] = useState("#06C167")
   const [deepLinkScheme, setDeepLinkScheme] = useState("")
+  const [logoUrl, setLogoUrl] = useState("")
 
   const loadPlatforms = useCallback(async () => {
     try {
@@ -60,6 +62,7 @@ export default function OrderPlatformsPage() {
     setDisplayName("")
     setPrimaryColor("#06C167")
     setDeepLinkScheme("")
+    setLogoUrl("")
     setEditId(null)
     setShowForm(false)
   }
@@ -76,12 +79,14 @@ export default function OrderPlatformsPage() {
         await api.put(`/admin/order-platforms/${editId}`, {
           name: trimmed, display_name: displayName.trim(),
           primary_color: primaryColor, deep_link_scheme: deepLinkScheme.trim(),
+          logo_url: logoUrl.trim() || null,
         })
         notify("Platform updated", "success")
       } else {
         await api.post("/admin/order-platforms", {
           name: trimmed, display_name: displayName.trim(),
           primary_color: primaryColor, deep_link_scheme: deepLinkScheme.trim(),
+          logo_url: logoUrl.trim() || null,
         })
         notify("Platform created", "success")
       }
@@ -154,6 +159,37 @@ export default function OrderPlatformsPage() {
                   <Input value={deepLinkScheme} onChange={(e) => setDeepLinkScheme(e.target.value)} placeholder="e.g. ubereats://" />
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label>Logo Image URL</Label>
+                <div className="flex gap-2">
+                  <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://... or upload" className="flex-1" />
+                  <Button variant="outline" size="sm" type="button" onClick={() => {
+                    const input = document.createElement("input")
+                    input.type = "file"
+                    input.accept = "image/*"
+                    input.onchange = async () => {
+                      const file = input.files?.[0]
+                      if (!file) return
+                      const formData = new FormData()
+                      formData.append("file", file)
+                      try {
+                        const res = await api.upload<{ data: { url: string } }>("/upload?folder=platforms", formData)
+                        setLogoUrl(res.data.url)
+                        notify("Logo uploaded", "success")
+                      } catch { notify("Upload failed", "error") }
+                    }
+                    input.click()
+                  }}>Upload</Button>
+                </div>
+                {logoUrl && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded border overflow-hidden bg-muted">
+                      <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-xs text-muted-foreground truncate flex-1">{logoUrl}</span>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2 mt-4">
                 <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
                 <Button variant="ghost" onClick={resetForm}>Cancel</Button>
@@ -203,6 +239,7 @@ export default function OrderPlatformsPage() {
                           <Button size="sm" variant="ghost" onClick={() => {
                             setEditId(p.id); setName(p.name); setDisplayName(p.display_name)
                             setPrimaryColor(p.primary_color); setDeepLinkScheme(p.deep_link_scheme)
+                            setLogoUrl(p.logo_url || "")
                             setShowForm(true)
                           }}>
                             <Pencil className="h-4 w-4" />

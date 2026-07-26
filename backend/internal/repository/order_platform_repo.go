@@ -24,12 +24,13 @@ func (r *OrderPlatformRepo) Create(platform *models.OrderPlatform) error {
 	return r.db.Create(platform).Error
 }
 
-func (r *OrderPlatformRepo) Update(id uuid.UUID, name, displayName, primaryColor, deepLinkScheme string) error {
+func (r *OrderPlatformRepo) Update(id uuid.UUID, name, displayName, primaryColor, deepLinkScheme string, logoURL *string) error {
 	return r.db.Model(&models.OrderPlatform{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"name":             name,
 		"display_name":     displayName,
 		"primary_color":    primaryColor,
 		"deep_link_scheme": deepLinkScheme,
+		"logo_url":         logoURL,
 	}).Error
 }
 
