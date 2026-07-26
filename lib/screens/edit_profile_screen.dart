@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -92,6 +93,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<String?> _uploadImage(String path) async {
     try {
+      debugPrint('upload: starting for $path');
       final api = context.read<ApiClient>();
       final response = await api.postMultipart(
         '/upload',
@@ -99,7 +101,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         filePath: path,
         queryParams: {'folder': 'avatars'},
       );
+      debugPrint('upload: response keys: ${response.keys}');
       final data = response['data'];
+      debugPrint('upload: data type: ${data.runtimeType}, url: ${data is Map ? data['url'] : "no data"}');
       if (data is Map<String, dynamic> && data['url'] is String) {
         return data['url'] as String;
       }
@@ -110,6 +114,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
       return null;
     } on Exception catch (e) {
+      debugPrint('upload: exception: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.uploadFailed)),

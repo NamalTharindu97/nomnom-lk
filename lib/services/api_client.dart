@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
@@ -62,7 +64,7 @@ class ApiClient {
   }) async {
     final token = await _storage.read(key: 'access_token');
     final multipartDio = Dio(BaseOptions(
-      baseUrl: _dio.options.baseUrl,
+      baseUrl: ApiConfig.baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {
@@ -71,11 +73,9 @@ class ApiClient {
       },
     ));
     final ext = filePath.split('.').last;
+    final bytes = await File(filePath).readAsBytes();
     final formData = FormData.fromMap({
-      fileField: await MultipartFile.fromFile(
-        filePath,
-        filename: 'avatar.$ext',
-      ),
+      fileField: MultipartFile.fromBytes(bytes, filename: 'avatar.$ext'),
     });
     final response = await multipartDio.post(path, data: formData, queryParameters: queryParams);
     final body = response.data;
