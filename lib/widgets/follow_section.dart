@@ -127,7 +127,7 @@ class _SocialPillButton extends StatelessWidget {
     return Container(
       width: 36, height: 36,
       decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-      child: Center(child: Text(initials, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900))),
+      child: Center(child: Text(initials, style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900))),
     );
   }
 }
