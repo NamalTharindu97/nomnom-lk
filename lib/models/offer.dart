@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'social_link.dart';
 
 @immutable
 class Offer {
@@ -20,9 +21,7 @@ class Offer {
     this.cuisineTags = const [],
     this.categoryIds = const [],
     this.isFavorite = false,
-    this.instagramUrl,
-    this.facebookUrl,
-    this.websiteUrl,
+    this.socialLinks = const [],
     this.orderPlatforms = const [],
   });
 
@@ -43,10 +42,23 @@ class Offer {
   final List<String> cuisineTags;
   final List<String> categoryIds;
   final bool isFavorite;
-  final String? instagramUrl;
-  final String? facebookUrl;
-  final String? websiteUrl;
+  final List<SocialLink> socialLinks;
   final List<String> orderPlatforms;
+
+  String? get instagramUrl {
+    final link = socialLinks.where((l) => l.platform == 'instagram').firstOrNull;
+    return link?.url;
+  }
+
+  String? get facebookUrl {
+    final link = socialLinks.where((l) => l.platform == 'facebook').firstOrNull;
+    return link?.url;
+  }
+
+  String? get websiteUrl {
+    final link = socialLinks.where((l) => l.platform == 'website').firstOrNull;
+    return link?.url;
+  }
 
   String get primaryImage => imageUrls.isNotEmpty ? imageUrls.first : '';
   double get saving => originalPrice - offerPrice;
@@ -99,9 +111,7 @@ class Offer {
       categoryIds: (json['category_ids'] as List?)?.cast<String>() ?? [],
       endDate: DateTime.parse(json['end_date'] as String),
       isFavorite: json['is_favorited'] as bool? ?? false,
-      instagramUrl: (json['restaurant'] as Map<String, dynamic>?)?['instagram_url'] as String?,
-      facebookUrl: (json['restaurant'] as Map<String, dynamic>?)?['facebook_url'] as String?,
-      websiteUrl: (json['restaurant'] as Map<String, dynamic>?)?['website_url'] as String?,
+      socialLinks: SocialLink.listFromJson((json['restaurant'] as Map<String, dynamic>?)?['social_links'] as List?),
       orderPlatforms: (json['restaurant'] as Map<String, dynamic>?)?['order_platforms']?.cast<String>() ?? [],
     );
   }
@@ -126,9 +136,7 @@ class Offer {
         'name': restaurantName,
         'slug': restaurantSlug,
         'cuisine_tags': cuisineTags,
-        'instagram_url': instagramUrl,
-        'facebook_url': facebookUrl,
-        'website_url': websiteUrl,
+        'social_links': SocialLink.listToJson(socialLinks),
         'order_platforms': orderPlatforms,
       },
     };
@@ -152,9 +160,7 @@ class Offer {
     List<String>? categoryIds,
     DateTime? endDate,
     bool? isFavorite,
-    String? instagramUrl,
-    String? facebookUrl,
-    String? websiteUrl,
+    List<SocialLink>? socialLinks,
     List<String>? orderPlatforms,
   }) {
     return Offer(
@@ -175,9 +181,7 @@ class Offer {
       categoryIds: categoryIds ?? this.categoryIds,
       endDate: endDate ?? this.endDate,
       isFavorite: isFavorite ?? this.isFavorite,
-      instagramUrl: instagramUrl ?? this.instagramUrl,
-      facebookUrl: facebookUrl ?? this.facebookUrl,
-      websiteUrl: websiteUrl ?? this.websiteUrl,
+      socialLinks: socialLinks ?? this.socialLinks,
       orderPlatforms: orderPlatforms ?? this.orderPlatforms,
     );
   }

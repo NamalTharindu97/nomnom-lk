@@ -170,7 +170,8 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
     try {
       final client = ApiClient();
       final service = ApiPlatformService(client);
-      _platforms = await service.fetchPlatforms();
+      final list = await service.fetchPlatforms();
+      if (mounted) setState(() => _platforms = list);
     } catch (_) {}
   }
 
@@ -185,9 +186,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
     final textTheme = Theme.of(context).textTheme;
     final offer = widget.offer;
     final hasOrderPlatforms = offer.orderPlatforms.isNotEmpty;
-    final hasSocialLinks = offer.instagramUrl != null ||
-        offer.facebookUrl != null ||
-        offer.websiteUrl != null;
+    final hasSocialLinks = offer.socialLinks.isNotEmpty;
     final t = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -317,9 +316,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                   animation: _animation,
                   index: 9,
                   child: FollowSection(
-                    instagramUrl: offer.instagramUrl,
-                    facebookUrl: offer.facebookUrl,
-                    websiteUrl: offer.websiteUrl,
+                    socialLinks: offer.socialLinks,
                   ),
                 ),
               ],

@@ -86,9 +86,6 @@ export class RestaurantDialog {
   readonly coverImageInput: Locator
   readonly cancelButton: Locator
   readonly submitButton: Locator
-  readonly instagramInput: Locator
-  readonly facebookInput: Locator
-  readonly websiteInput: Locator
   readonly uberEatsCheckbox: Locator
   readonly pickMeCheckbox: Locator
 
@@ -107,9 +104,6 @@ export class RestaurantDialog {
     this.coverImageInput = page.locator('input[type="file"]')
     this.cancelButton = page.getByRole("button", { name: "Cancel" })
     this.submitButton = page.getByRole("button", { name: /Create|Update/ })
-    this.instagramInput = page.locator("#instagram_url")
-    this.facebookInput = page.locator("#facebook_url")
-    this.websiteInput = page.locator("#website_url")
     this.uberEatsCheckbox = page.getByRole("checkbox", { name: "Uber Eats" })
     this.pickMeCheckbox = page.getByRole("checkbox", { name: "PickMe" })
   }
@@ -158,17 +152,6 @@ export class RestaurantDialog {
     await this.descriptionTaInput.fill(description)
   }
 
-  async fillInstagram(url: string) {
-    await this.instagramInput.fill(url)
-  }
-
-  async fillFacebook(url: string) {
-    await this.facebookInput.fill(url)
-  }
-
-  async fillWebsite(url: string) {
-    await this.websiteInput.fill(url)
-  }
 
   async selectUberEats() {
     await this.uberEatsCheckbox.check()

@@ -40,9 +40,7 @@ type restaurantSeed struct {
 	CuisineTags    []string
 	ImageSeed      string
 	OwnerEmail     string
-	InstagramURL   string
-	FacebookURL    string
-	WebsiteURL     string
+	SocialLinks    []models.SocialLink
 	OrderPlatforms []string
 }
 
@@ -116,93 +114,115 @@ func main() {
 			Name: "Pizza Hut", NameSi: "පිස්සා හට්", NameTa: "பிஸ்ஸா ஹட்",
 			Description: "Delicious pizzas, pasta, and Italian dishes", DescSi: "රසවත් පිස්සා, පැස්ටා, සහ ඉතාලි කෑම", DescTa: "சுவையான பிஸ்ஸா, பாஸ்தா, மற்றும் இத்தாலிய உணவுகள்",
 			CuisineTags: []string{"Pizza", "Italian", "Fast Food"}, ImageSeed: "pizza-hut", OwnerEmail: "owner@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/pizzahut_srilanka/",
-			FacebookURL:  "https://www.facebook.com/PizzaHutSriLanka/",
-			WebsiteURL:   "https://www.pizzahut.lk/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/pizzahut_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/PizzaHutSriLanka/"},
+				{Platform: "website", URL: "https://www.pizzahut.lk/"},
+			},
 			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "KFC", NameSi: "කේඑෆ්සී", NameTa: "கேஎப்சி",
 			Description: "Fried chicken, burgers, and crispy treats", DescSi: "ෆ්‍රයිඩ් චිකන්, බර්ගර්, සහ හැපෙනසුළු කෑම", DescTa: "வறுத்த கோழி, பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
 			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "kfc", OwnerEmail: "kfc@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/kfc_srilanka/",
-			FacebookURL:  "https://www.facebook.com/KFCSriLanka/",
-			WebsiteURL:   "https://www.kfc.lk/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/kfc_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/KFCSriLanka/"},
+				{Platform: "website", URL: "https://www.kfc.lk/"},
+			},
 			OrderPlatforms: []string{"pickme", "uber_eats"},
 		},
 		{
 			Name: "Bread Talk", NameSi: "බ්‍රෙඩ් ටෝක්", NameTa: "பிரெட் டாக்",
 			Description: "Freshly baked breads, cakes, and pastries", DescSi: "නැවුම් බේක් කළ පාන්, කේක්, සහ පේස්ට්‍රි", DescTa: "புதிதாக சுடப்பட்ட ரொட்டிகள், கேக்குகள், மற்றும் பேஸ்ட்ரிகள்",
 			CuisineTags: []string{"Bakery", "Cakes", "Pastries"}, ImageSeed: "bread-talk", OwnerEmail: "breadtalk@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/breadtalk_srilanka/",
-			FacebookURL: "https://www.facebook.com/BreadTalkSriLanka/",
-			WebsiteURL: "https://www.breadtalk.lk/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/breadtalk_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/BreadTalkSriLanka/"},
+				{Platform: "website", URL: "https://www.breadtalk.lk/"},
+			},
 			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Keells", NameSi: "කීල්ස්", NameTa: "கீல்ஸ்",
 			Description: "Quick bites, burgers, and crispy snacks", DescSi: "ඉක්මන් කෑම, බර්ගර්, සහ හැපෙනසුළු ස්නැක්ස්", DescTa: "விரைவு உணவுகள், பர்கர்கள், மற்றும் மிருதுவான தின்பண்டங்கள்",
 			CuisineTags: []string{"Fast Food", "Burgers", "Snacks"}, ImageSeed: "keells", OwnerEmail: "keells@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/keells_srilanka/",
-			FacebookURL: "https://www.facebook.com/KeellsSriLanka/",
-			WebsiteURL: "https://www.keells.lk/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/keells_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/KeellsSriLanka/"},
+				{Platform: "website", URL: "https://www.keells.lk/"},
+			},
 			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Fab", NameSi: "ෆැබ්", NameTa: "ஃபேப்",
 			Description: "Cakes, pastries, and sweet treats", DescSi: "කේක්, පේස්ට්‍රි, සහ පැණි රස කෑම", DescTa: "கேக்குகள், பேஸ்ட்ரிகள், மற்றும் இனிப்பு தின்பண்டங்கள்",
 			CuisineTags: []string{"Bakery", "Cakes", "Desserts"}, ImageSeed: "fab", OwnerEmail: "fab@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/fab_srilanka/",
-			FacebookURL: "https://www.facebook.com/FabSriLanka/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/fab_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/FabSriLanka/"},
+			},
 			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Popeyes", NameSi: "පොප්අයිස්", NameTa: "பாப்ஐஸ்",
 			Description: "Louisiana-style fried chicken and burgers", DescSi: "ලුසියානා විලාසිතාවේ ෆ්‍රයිඩ් චිකන් සහ බර්ගර්", DescTa: "லூசியானா பாணி வறுத்த கோழி மற்றும் பர்கர்கள்",
 			CuisineTags: []string{"Fried Chicken", "Fast Food", "Burgers"}, ImageSeed: "popeyes", OwnerEmail: "popeyes@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/popeyes_srilanka/",
-			FacebookURL:  "https://www.facebook.com/PopeyesSriLanka/",
-			WebsiteURL:   "https://www.popeyes.lk/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/popeyes_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/PopeyesSriLanka/"},
+				{Platform: "website", URL: "https://www.popeyes.lk/"},
+			},
 			OrderPlatforms: []string{"uber_eats"},
 		},
 		{
 			Name: "Solo Bowl", NameSi: "සොලෝ බෝල්", NameTa: "சோலோ பௌல்",
 			Description: "Rice bowls, noodles, and Asian fusion", DescSi: "බත් බෝල, නූඩ්ල්ස්, සහ ආසියානු ෆියුෂන්", DescTa: "சாதம் பௌல்கள், நூடுல்ஸ், மற்றும் ஆசிய கலப்பு உணவுகள்",
 			CuisineTags: []string{"Rice Bowls", "Asian", "Noodles"}, ImageSeed: "solo-bowl", OwnerEmail: "solobowl@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/solobowl_lk/",
-			FacebookURL: "https://www.facebook.com/SoloBowlLK/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/solobowl_lk/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/SoloBowlLK/"},
+			},
 			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Spar", NameSi: "ස්පාර්", NameTa: "ஸ்பார்",
 			Description: "Desserts, cakes, and sweet delights", DescSi: "අතුරුපස, කේක්, සහ පැණි රස", DescTa: "இனிப்புகள், கேக்குகள், மற்றும் இனிப்பு விருந்துகள்",
 			CuisineTags: []string{"Desserts", "Cakes", "Sweets"}, ImageSeed: "spar", OwnerEmail: "spar@nomnom.lk",
-			FacebookURL: "https://www.facebook.com/SparSriLanka/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "facebook", URL: "https://www.facebook.com/SparSriLanka/"},
+			},
 			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Street Burger", NameSi: "ස්ට්‍රීට් බර්ගර්", NameTa: "ஸ்ட்ரீட் பர்கர்",
 			Description: "Gourmet burgers, fries, and American comfort food", DescSi: "ගවර්මෙට් බර්ගර්, ෆ්‍රයිස්, සහ ඇමරිකානු සැනසිලි කෑම", DescTa: "கார்மெட் பர்கர்கள், பொரியல்கள், மற்றும் அமெரிக்க இதமான உணவுகள்",
 			CuisineTags: []string{"Burgers", "American", "Fast Food"}, ImageSeed: "street-burger", OwnerEmail: "streetburger@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/streetburgerlk/",
-			FacebookURL:  "https://www.facebook.com/StreetBurgerLK/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/streetburgerlk/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/StreetBurgerLK/"},
+			},
 			OrderPlatforms: []string{"pickme"},
 		},
 		{
 			Name: "Subway", NameSi: "සබ්වේ", NameTa: "சப்வே",
 			Description: "Fresh submarine sandwiches and salads", DescSi: "නැවුම් සබ්මැරීන් සැන්ඩ්විච් සහ සලාද", DescTa: "புதிய சப்மரைன் சாண்ட்விச்கள் மற்றும் சாலடுகள்",
 			CuisineTags: []string{"Sandwiches", "Healthy", "Fast Food"}, ImageSeed: "subway", OwnerEmail: "subway@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/subway_srilanka/",
-			FacebookURL: "https://www.facebook.com/SubwaySriLanka/",
-			WebsiteURL: "https://www.subway.lk/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/subway_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/SubwaySriLanka/"},
+				{Platform: "website", URL: "https://www.subway.lk/"},
+			},
 			OrderPlatforms: []string{"uber_eats", "pickme"},
 		},
 		{
 			Name: "Taco Bell", NameSi: "ටැකෝ බෙල්", NameTa: "டாகோ பெல்",
 			Description: "Mexican-inspired tacos, burritos, and quesadillas", DescSi: "මෙක්සිකානු ආභාසයෙන් ටැකෝ, බුරිටෝ, සහ ක්වෙසාඩිලා", DescTa: "மெக்சிகன் பாணி டாகோஸ், புரிட்டோஸ், மற்றும் குவெசடிலாஸ்",
 			CuisineTags: []string{"Mexican", "Tacos", "Fast Food"}, ImageSeed: "taco-bell", OwnerEmail: "tacbell@nomnom.lk",
-			InstagramURL: "https://www.instagram.com/tacobell_srilanka/",
-			FacebookURL:  "https://www.facebook.com/TacoBellSriLanka/",
+			SocialLinks: []models.SocialLink{
+				{Platform: "instagram", URL: "https://www.instagram.com/tacobell_srilanka/"},
+				{Platform: "facebook", URL: "https://www.facebook.com/TacoBellSriLanka/"},
+			},
 			OrderPlatforms: []string{"uber_eats"},
 		},
 	}
@@ -321,14 +341,8 @@ func main() {
 			Translations:   translations,
 			OrderPlatforms: r.OrderPlatforms,
 		}
-		if r.InstagramURL != "" {
-			rest.InstagramURL = &r.InstagramURL
-		}
-		if r.FacebookURL != "" {
-			rest.FacebookURL = &r.FacebookURL
-		}
-		if r.WebsiteURL != "" {
-			rest.WebsiteURL = &r.WebsiteURL
+		if len(r.SocialLinks) > 0 {
+			rest.SocialLinks = models.SocialLinks(r.SocialLinks)
 		}
 		if err := db.Create(&rest).Error; err != nil {
 			fmt.Printf("  ❌ Failed to create restaurant %s: %v\n", r.Name, err)

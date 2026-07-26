@@ -28,6 +28,7 @@ import {
   UserCheck,
   Image as ImageIcon,
   ShoppingCart,
+  Share2,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -43,6 +44,7 @@ const adminNavItems = [
   { href: "/dashboard/categories", label: "Categories", icon: Folder },
   { href: "/dashboard/cuisine-tags", label: "Cuisine Tags", icon: Tag },
   { href: "/dashboard/order-platforms", label: "Order Platforms", icon: ShoppingCart },
+  { href: "/dashboard/social-platforms", label: "Social Links", icon: Share2 },
   { href: "/dashboard/banners", label: "Banners", icon: ImageIcon },
   { href: "/dashboard/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -176,6 +178,7 @@ const adminOnlyPaths = [
   "/dashboard/categories",
   "/dashboard/cuisine-tags",
   "/dashboard/order-platforms",
+  "/dashboard/social-platforms",
   "/dashboard/audit-log",
 ]
 

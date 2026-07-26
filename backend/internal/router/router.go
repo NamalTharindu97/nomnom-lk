@@ -34,6 +34,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	categoryRepo := repository.NewCategoryRepo(db)
 	cuisineTagRepo := repository.NewCuisineTagRepo(db)
 	orderPlatformRepo := repository.NewOrderPlatformRepo(db)
+	socialPlatformRepo := repository.NewSocialPlatformRepo(db)
 
 	// Services
 	auditService := services.NewAuditService(auditLogRepo)
@@ -75,6 +76,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 	categoryHandler := handlers.NewCategoryHandler(categoryRepo)
 	cuisineTagHandler := handlers.NewCuisineTagHandler(cuisineTagRepo)
 	orderPlatformHandler := handlers.NewOrderPlatformHandler(orderPlatformRepo)
+	socialPlatformHandler := handlers.NewSocialPlatformHandler(socialPlatformRepo)
 	bannerHandler := handlers.NewBannerHandler(bannerRepo, offerRepo, restaurantRepo, auditService, sseService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo)
 	impersonationService := services.NewImpersonationService(userRepo, &cfg.JWT, rdb, auditService)
@@ -201,6 +203,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 		v1.GET("/cuisine-tags", cuisineTagHandler.List)
 		v1.GET("/notification-categories", notificationHandler.ListCategories)
 		v1.GET("/order-platforms", orderPlatformHandler.List)
+		v1.GET("/social-platforms", socialPlatformHandler.List)
 
 		bannersGroup := v1.Group("/banners")
 		{
@@ -324,6 +327,10 @@ func SetupRouter(cfg *config.Config, db *gorm.DB, rdb *redis.Client, log zerolog
 			adminGroup.POST("/order-platforms", orderPlatformHandler.Create)
 			adminGroup.PUT("/order-platforms/:id", orderPlatformHandler.Update)
 			adminGroup.DELETE("/order-platforms/:id", orderPlatformHandler.Delete)
+			adminGroup.GET("/social-platforms", socialPlatformHandler.List)
+			adminGroup.POST("/social-platforms", socialPlatformHandler.Create)
+			adminGroup.PUT("/social-platforms/:id", socialPlatformHandler.Update)
+			adminGroup.DELETE("/social-platforms/:id", socialPlatformHandler.Delete)
 			adminGroup.GET("/banners", bannerHandler.List)
 			adminGroup.POST("/banners", bannerHandler.Create)
 			adminGroup.PUT("/banners/:id", bannerHandler.Update)

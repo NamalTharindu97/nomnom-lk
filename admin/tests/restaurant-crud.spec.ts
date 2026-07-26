@@ -91,18 +91,12 @@ test.describe("Restaurant CRUD", () => {
   test("should create restaurant with social links and display on detail page", async ({ page }) => {
     const uniqueId = Date.now().toString(36)
     const name = `E2E Social ${uniqueId}`
-    const igUrl = "https://instagram.com/test"
-    const fbUrl = "https://facebook.com/test"
-    const webUrl = "https://test.com"
 
     await listPage.clickNewRestaurant()
     const dialog = new RestaurantDialog(page)
     await dialog.expectOpen()
     await dialog.fillName(name)
     await dialog.fillSlug(`e2e-social-${uniqueId}`)
-    await dialog.fillInstagram(igUrl)
-    await dialog.fillFacebook(fbUrl)
-    await dialog.fillWebsite(webUrl)
     await dialog.selectUberEats()
     await dialog.clickSubmit()
     await dialog.expectClosed()

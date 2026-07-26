@@ -1,13 +1,41 @@
 package models
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+type SocialLinks []SocialLink
+
+func (s *SocialLinks) Scan(src interface{}) error {
+	if src == nil {
+		*s = nil
+		return nil
+	}
+	var source string
+	switch v := src.(type) {
+	case string:
+		source = v
+	case []byte:
+		source = string(v)
+	default:
+		return fmt.Errorf("unsupported scan type for SocialLinks: %T", src)
+	}
+	return json.Unmarshal([]byte(source), s)
+}
+
+func (s SocialLinks) Value() (driver.Value, error) {
+	if s == nil {
+		return "[]", nil
+	}
+	return json.Marshal(s)
+}
 
 type RestaurantStatus string
 
@@ -29,9 +57,7 @@ type Restaurant struct {
 	ContactPhone *string          `gorm:"size:20" json:"contact_phone,omitempty"`
 	CuisineTags  JSONStringSlice  `gorm:"type:jsonb;default:'[]'" json:"cuisine_tags"`
 	CoverImage   *string          `gorm:"type:text" json:"cover_image,omitempty"`
-	InstagramURL *string          `gorm:"type:text" json:"instagram_url,omitempty"`
-	FacebookURL  *string          `gorm:"type:text" json:"facebook_url,omitempty"`
-	WebsiteURL    *string          `gorm:"type:text" json:"website_url,omitempty"`
+	SocialLinks  SocialLinks      `gorm:"type:jsonb;default:'[]'" json:"social_links"`
 	OrderPlatforms JSONStringSlice `gorm:"type:jsonb;default:'[]'" json:"order_platforms"`
 	Translations  *json.RawMessage `gorm:"type:jsonb;default:'{}'" json:"translations,omitempty"`
 	Status       RestaurantStatus `gorm:"not null;default:'pending';size:20" json:"status"`

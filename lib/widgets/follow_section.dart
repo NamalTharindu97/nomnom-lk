@@ -2,24 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
+import '../models/social_link.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 
 class FollowSection extends StatelessWidget {
-  final String? instagramUrl;
-  final String? facebookUrl;
-  final String? websiteUrl;
+  final List<SocialLink> socialLinks;
 
   const FollowSection({
     super.key,
-    this.instagramUrl,
-    this.facebookUrl,
-    this.websiteUrl,
+    this.socialLinks = const [],
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasAny = instagramUrl != null || facebookUrl != null || websiteUrl != null;
-    if (!hasAny) return const SizedBox.shrink();
+    if (socialLinks.isEmpty) return const SizedBox.shrink();
 
     final t = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
@@ -37,33 +33,56 @@ class FollowSection extends StatelessWidget {
           style: textTheme.labelMedium?.copyWith(color: context.colors.muted),
         ),
         const SizedBox(height: 12),
-        if (instagramUrl != null)
+        for (var i = 0; i < socialLinks.length; i++) ...[
           _SocialPillButton(
-            icon: Icons.camera_alt_rounded,
-            label: t.offerVisitInstagram,
-            color: const Color(0xFFE4405F),
-            url: instagramUrl!,
+            icon: _iconForPlatform(socialLinks[i].platform),
+            label: _labelForPlatform(socialLinks[i].platform, t),
+            color: _colorForPlatform(socialLinks[i].platform),
+            url: socialLinks[i].url,
           ),
-        if (instagramUrl != null && facebookUrl != null)
-          const SizedBox(height: 8),
-        if (facebookUrl != null)
-          _SocialPillButton(
-            icon: Icons.facebook_rounded,
-            label: t.offerVisitFacebook,
-            color: const Color(0xFF1877F2),
-            url: facebookUrl!,
-          ),
-        if (facebookUrl != null && websiteUrl != null)
-          const SizedBox(height: 8),
-        if (websiteUrl != null)
-          _SocialPillButton(
-            icon: Icons.language_rounded,
-            label: t.offerVisitWebsite,
-            color: AppColors.curry,
-            url: websiteUrl!,
-          ),
+          if (i < socialLinks.length - 1) const SizedBox(height: 8),
+        ],
       ],
     );
+  }
+
+  static IconData _iconForPlatform(String platform) {
+    switch (platform) {
+      case 'instagram':
+        return Icons.camera_alt_rounded;
+      case 'facebook':
+        return Icons.facebook_rounded;
+      case 'website':
+        return Icons.language_rounded;
+      default:
+        return Icons.link_rounded;
+    }
+  }
+
+  static String _labelForPlatform(String platform, AppLocalizations t) {
+    switch (platform) {
+      case 'instagram':
+        return t.offerVisitInstagram;
+      case 'facebook':
+        return t.offerVisitFacebook;
+      case 'website':
+        return t.offerVisitWebsite;
+      default:
+        return t.offerVisitWebsite;
+    }
+  }
+
+  static Color _colorForPlatform(String platform) {
+    switch (platform) {
+      case 'instagram':
+        return const Color(0xFFE4405F);
+      case 'facebook':
+        return const Color(0xFF1877F2);
+      case 'website':
+        return AppColors.curry;
+      default:
+        return AppColors.curry;
+    }
   }
 }
 

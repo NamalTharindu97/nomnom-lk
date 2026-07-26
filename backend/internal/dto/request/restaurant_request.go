@@ -12,11 +12,9 @@ type CreateRestaurantRequest struct {
 	ContactPhone  string                 `json:"contact_phone,omitempty"`
 	CuisineTags   models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    string                 `json:"cover_image,omitempty"`
-	OwnerID       *string                `json:"owner_id,omitempty"`
-	InstagramURL  string                 `json:"instagram_url,omitempty"`
-	FacebookURL   string                 `json:"facebook_url,omitempty"`
-	WebsiteURL    string                 `json:"website_url,omitempty"`
-	OrderPlatforms models.JSONStringSlice `json:"order_platforms,omitempty"`
+	OwnerID        *string                 `json:"owner_id,omitempty"`
+	SocialLinks    []models.SocialLink     `json:"social_links,omitempty"`
+	OrderPlatforms models.JSONStringSlice  `json:"order_platforms,omitempty"`
 }
 
 type UpdateRestaurantRequest struct {
@@ -29,11 +27,9 @@ type UpdateRestaurantRequest struct {
 	ContactPhone  *string                 `json:"contact_phone,omitempty"`
 	CuisineTags   *models.JSONStringSlice `json:"cuisine_tags,omitempty"`
 	CoverImage    *string                 `json:"cover_image,omitempty"`
-	OwnerID       *string                 `json:"owner_id,omitempty"`
-	InstagramURL  *string                 `json:"instagram_url,omitempty"`
-	FacebookURL   *string                 `json:"facebook_url,omitempty"`
-	WebsiteURL    *string                 `json:"website_url,omitempty"`
-	OrderPlatforms *models.JSONStringSlice `json:"order_platforms,omitempty"`
+	OwnerID        *string                  `json:"owner_id,omitempty"`
+	SocialLinks    *[]models.SocialLink     `json:"social_links,omitempty"`
+	OrderPlatforms *models.JSONStringSlice  `json:"order_platforms,omitempty"`
 }
 
 type ApproveRejectRequest struct {

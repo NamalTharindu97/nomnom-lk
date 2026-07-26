@@ -151,14 +151,8 @@ func (s *DashboardService) CreateRestaurant(req *request.CreateRestaurantRequest
 		CoverImage:   strPtr(req.CoverImage),
 		Status:       models.RestaurantPending,
 	}
-	if req.InstagramURL != "" {
-		restaurant.InstagramURL = &req.InstagramURL
-	}
-	if req.FacebookURL != "" {
-		restaurant.FacebookURL = &req.FacebookURL
-	}
-	if req.WebsiteURL != "" {
-		restaurant.WebsiteURL = &req.WebsiteURL
+	if len(req.SocialLinks) > 0 {
+		restaurant.SocialLinks = models.SocialLinks(req.SocialLinks)
 	}
 	if len(req.OrderPlatforms) > 0 {
 		restaurant.OrderPlatforms = req.OrderPlatforms
@@ -203,14 +197,8 @@ func (s *DashboardService) UpdateRestaurant(id uuid.UUID, ownerID uuid.UUID, req
 	if req.CoverImage != nil {
 		restaurant.CoverImage = req.CoverImage
 	}
-	if req.InstagramURL != nil {
-		restaurant.InstagramURL = req.InstagramURL
-	}
-	if req.FacebookURL != nil {
-		restaurant.FacebookURL = req.FacebookURL
-	}
-	if req.WebsiteURL != nil {
-		restaurant.WebsiteURL = req.WebsiteURL
+	if req.SocialLinks != nil {
+		restaurant.SocialLinks = models.SocialLinks(*req.SocialLinks)
 	}
 	if req.OrderPlatforms != nil {
 		restaurant.OrderPlatforms = *req.OrderPlatforms

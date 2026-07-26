@@ -30,6 +30,7 @@ const restaurantSchema = z.object({
   instagram_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
   facebook_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
   website_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
+  social_links: z.array(z.object({ platform: z.string(), url: z.string() })).optional(),
   order_platforms: z.array(z.string()).optional(),
 })
 
@@ -44,6 +45,14 @@ interface OwnerOption {
 interface CuisineTag {
   id: string
   name: string
+}
+
+interface SocialPlatformItem {
+  id: string
+  name: string
+  slug: string
+  display_name: string
+  primary_color: string
 }
 
 interface OrderPlatformItem {
@@ -72,6 +81,8 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
   const [allTags, setAllTags] = useState<{ id: string; name: string }[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [orderPlatforms, setOrderPlatforms] = useState<OrderPlatformItem[]>([])
+  const [socialPlatforms, setSocialPlatforms] = useState<SocialPlatformItem[]>([])
+  const [socialLinks, setSocialLinks] = useState<{ platform: string; url: string }[]>([])
 
   const isEdit = !!restaurant
 
@@ -88,7 +99,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       name: "", slug: "", cuisine_tags: [], description: "",
       contact_phone: "", owner_id: "", name_si: "", name_ta: "",
       description_si: "", description_ta: "",
-      instagram_url: "", facebook_url: "", website_url: "", order_platforms: [],
+      instagram_url: "", facebook_url: "", website_url: "", social_links: [], order_platforms: [],
     },
   })
 
@@ -104,6 +115,9 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         .catch(() => {})
       api.get<OrderPlatformItem[]>("/admin/order-platforms")
         .then((data) => setOrderPlatforms(Array.isArray(data) ? data : (data as any)?.data || []))
+        .catch(() => {})
+      api.get<SocialPlatformItem[]>("/admin/social-platforms")
+        .then((data) => setSocialPlatforms(Array.isArray(data) ? data : (data as any)?.data || []))
         .catch(() => {})
     }
   }, [open, isAdmin])
@@ -125,13 +139,16 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         instagram_url: restaurant.instagram_url || "",
         facebook_url: restaurant.facebook_url || "",
         website_url: restaurant.website_url || "",
+        social_links: restaurant.social_links || [],
         order_platforms: restaurant.order_platforms || [],
       })
       setSelectedTags(tags)
+      setSocialLinks(restaurant.social_links || [])
       setCoverPreview(restaurant.cover_image || null)
     } else {
       reset()
       setSelectedTags([])
+      setSocialLinks([])
       setCoverFile(null)
       setCoverPreview(null)
     }
@@ -177,6 +194,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       const body: Record<string, any> = {
         ...data,
         cuisine_tags: selectedTags,
+        social_links: socialLinks.filter(l => l.url.trim()),
       }
       if (isAdmin && data.owner_id && data.owner_id !== "__none") body.owner_id = data.owner_id
       else delete body.owner_id
@@ -301,18 +319,65 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
 
             <div className="border-t pt-4">
               <h4 className="text-sm font-semibold mb-3">Social & Order Links</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="instagram_url">Instagram URL</Label>
-                  <Input id="instagram_url" placeholder="https://instagram.com/..." {...register("instagram_url")} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="facebook_url">Facebook URL</Label>
-                  <Input id="facebook_url" placeholder="https://facebook.com/..." {...register("facebook_url")} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="website_url">Website URL</Label>
-                  <Input id="website_url" placeholder="https://..." {...register("website_url")} />
+              <div className="space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Social Links</Label>
+                    {socialPlatforms.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSocialLinks([...socialLinks, { platform: socialPlatforms[0].slug, url: "" }])}
+                        disabled={socialLinks.some(l => !l.platform || !l.url.trim())}
+                      >
+                        + Add
+                      </Button>
+                    )}
+                  </div>
+                  {socialLinks.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No social links added.</p>
+                  )}
+                  {socialLinks.map((link, i) => (
+                    <div key={i} className="flex items-center gap-2 mb-2">
+                      <Select
+                        value={link.platform}
+                        onValueChange={(v) => {
+                          const next = [...socialLinks]
+                          next[i] = { ...next[i], platform: v }
+                          setSocialLinks(next)
+                        }}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Platform" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {socialPlatforms.map((p) => (
+                            <SelectItem key={p.id} value={p.slug}>{p.display_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="https://..."
+                        value={link.url}
+                        onChange={(e) => {
+                          const next = [...socialLinks]
+                          next[i] = { ...next[i], url: e.target.value }
+                          setSocialLinks(next)
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSocialLinks(socialLinks.filter((_, j) => j !== i))}
+                        className="shrink-0"
+                      >
+                        <X className="size-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
                 <div className="grid gap-2">
                   <Label>Ordering Platforms</Label>

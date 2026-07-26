@@ -372,8 +372,8 @@ func TestIntegration_OfferDetail_HasSocialLinks(t *testing.T) {
 	db := testutil.GetTestDB()
 	require.NotNil(t, db)
 
-	db.Exec(`INSERT INTO restaurants (id, name, slug, status, instagram_url, facebook_url, website_url, order_platforms, created_at, updated_at)
-		VALUES (gen_random_uuid(), 'Social Test Restaurant', 'social-test', 'approved', 'https://instagram.com/test', 'https://facebook.com/test', 'https://test.com', '["uber_eats","pickme"]'::jsonb, NOW(), NOW())`)
+	db.Exec(`INSERT INTO restaurants (id, name, slug, status, social_links, order_platforms, created_at, updated_at)
+		VALUES (gen_random_uuid(), 'Social Test Restaurant', 'social-test', 'approved', '[{"platform":"instagram","url":"https://instagram.com/test"},{"platform":"facebook","url":"https://facebook.com/test"},{"platform":"website","url":"https://test.com"}]'::jsonb, '["uber_eats","pickme"]'::jsonb, NOW(), NOW())`)
 
 	db.Exec(`INSERT INTO offers (id, title, description, original_price, offer_price, status, restaurant_id, start_date, end_date, created_at, updated_at)
 		VALUES (gen_random_uuid(), 'Social Test Offer', 'desc', 1000, 700, 'approved', (SELECT id FROM restaurants WHERE slug = 'social-test'), NOW(), NOW() + INTERVAL '7 days', NOW(), NOW())`)
@@ -395,14 +395,11 @@ func TestIntegration_OfferDetail_HasSocialLinks(t *testing.T) {
 	restaurant, ok := firstItem["restaurant"].(map[string]interface{})
 	require.True(t, ok)
 
-	ig, _ := restaurant["instagram_url"].(string)
-	fb, _ := restaurant["facebook_url"].(string)
-	web, _ := restaurant["website_url"].(string)
-	platforms, _ := restaurant["order_platforms"].([]interface{})
+	socialLinks, ok := restaurant["social_links"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, socialLinks, 3)
 
-	assert.Equal(t, "https://instagram.com/test", ig)
-	assert.Equal(t, "https://facebook.com/test", fb)
-	assert.Equal(t, "https://test.com", web)
+	platforms, _ := restaurant["order_platforms"].([]interface{})
 	assert.Contains(t, platforms, "uber_eats")
 	assert.Contains(t, platforms, "pickme")
 }

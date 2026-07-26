@@ -18,9 +18,7 @@ interface Restaurant {
   contact_phone: string
   cuisine_tags: string[]
   cover_image: string
-  instagram_url: string | null
-  facebook_url: string | null
-  website_url: string | null
+  social_links: { platform: string; url: string }[]
   order_platforms: string[]
   status: string
   created_at: string
@@ -175,31 +173,17 @@ export default function RestaurantDetailPage() {
             <CardTitle>Social & Order Links</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {restaurant.instagram_url ? (
-              <div>
-                <span className="text-sm text-muted-foreground">Instagram</span>
-                <p className="font-medium">
-                  <a href={restaurant.instagram_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.instagram_url}</a>
-                </p>
-              </div>
-            ) : restaurant.facebook_url || restaurant.website_url || (restaurant.order_platforms?.length > 0) ? null : (
+            {restaurant.social_links?.length > 0 ? (
+              restaurant.social_links.map((link, i) => (
+                <div key={i}>
+                  <span className="text-sm text-muted-foreground capitalize">{link.platform}</span>
+                  <p className="font-medium">
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{link.url}</a>
+                  </p>
+                </div>
+              ))
+            ) : restaurant.order_platforms?.length > 0 ? null : (
               <p className="text-sm text-muted-foreground">No links configured</p>
-            )}
-            {restaurant.facebook_url && (
-              <div>
-                <span className="text-sm text-muted-foreground">Facebook</span>
-                <p className="font-medium">
-                  <a href={restaurant.facebook_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.facebook_url}</a>
-                </p>
-              </div>
-            )}
-            {restaurant.website_url && (
-              <div>
-                <span className="text-sm text-muted-foreground">Website</span>
-                <p className="font-medium">
-                  <a href={restaurant.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{restaurant.website_url}</a>
-                </p>
-              </div>
             )}
             {restaurant.order_platforms?.length > 0 && (
               <div>

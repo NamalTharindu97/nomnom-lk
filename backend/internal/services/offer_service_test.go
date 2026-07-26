@@ -501,18 +501,16 @@ func TestOfferService_Create_ValidatesRestaurantSocialLinks(t *testing.T) {
 	userID := uuid.New()
 	now := time.Now()
 
-	ig := "https://instagram.com/test"
-	fb := "https://facebook.com/test"
-	web := "https://test.com"
-
 	mockOffer := newMockOfferRepo()
 	mockRest := newMockRestaurantRepo()
 	mockRest.restaurants[restID] = &models.Restaurant{
-		ID:             restID,
-		Name:           "Test",
-		InstagramURL:   &ig,
-		FacebookURL:    &fb,
-		WebsiteURL:     &web,
+		ID: restID,
+		Name: "Test",
+		SocialLinks: models.SocialLinks{
+			{Platform: "instagram", URL: "https://instagram.com/test"},
+			{Platform: "facebook", URL: "https://facebook.com/test"},
+			{Platform: "website", URL: "https://test.com"},
+		},
 		OrderPlatforms: models.JSONStringSlice{"uber_eats"},
 	}
 
@@ -535,9 +533,7 @@ func TestOfferService_Create_ValidatesRestaurantSocialLinks(t *testing.T) {
 
 	restaurant := mockRest.restaurants[restID]
 	require.NotNil(t, restaurant)
-	assert.Equal(t, ig, *restaurant.InstagramURL)
-	assert.Equal(t, fb, *restaurant.FacebookURL)
-	assert.Equal(t, web, *restaurant.WebsiteURL)
+	assert.Len(t, restaurant.SocialLinks, 3)
 	assert.Contains(t, restaurant.OrderPlatforms, "uber_eats")
 }
 
@@ -546,16 +542,15 @@ func TestOfferService_Create_WithAlternateOrderPlatforms(t *testing.T) {
 	userID := uuid.New()
 	now := time.Now()
 
-	ig := "https://instagram.com/test"
-	fb := "https://facebook.com/test"
-
 	mockOffer := newMockOfferRepo()
 	mockRest := newMockRestaurantRepo()
 	mockRest.restaurants[restID] = &models.Restaurant{
-		ID:             restID,
-		Name:           "Test",
-		InstagramURL:   &ig,
-		FacebookURL:    &fb,
+		ID: restID,
+		Name: "Test",
+		SocialLinks: models.SocialLinks{
+			{Platform: "instagram", URL: "https://instagram.com/test"},
+			{Platform: "facebook", URL: "https://facebook.com/test"},
+		},
 		OrderPlatforms: models.JSONStringSlice{"uber_eats", "pickme"},
 	}
 

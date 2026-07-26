@@ -49,6 +49,7 @@ func NewPostgresDB(cfg *config.DatabaseConfig) *gorm.DB {
 		&models.Banner{},
 		&models.CuisineTag{},
 		&models.OrderPlatform{},
+		&models.SocialPlatform{},
 	); err != nil {
 		log.Fatalf("Failed to auto-migrate: %v", err)
 	}
@@ -149,6 +150,33 @@ func runIndexMigrations(db *gorm.DB) {
 		`INSERT INTO order_platforms (id, name, slug, display_name, primary_color, deep_link_scheme, created_at)
 		 VALUES (gen_random_uuid(), 'Uber Eats', 'uber_eats', 'Uber Eats', '#06C167', 'ubereats://', NOW()),
 		        (gen_random_uuid(), 'PickMe', 'pickme', 'PickMe', '#00B14F', 'pickme://', NOW())
+		 ON CONFLICT (name) DO NOTHING`,
+		// Migrate instagram_url/facebook_url/website_url to social_links JSONB
+		`DO $$
+		BEGIN
+			IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='restaurants' AND column_name='instagram_url') THEN
+				UPDATE restaurants SET social_links = (
+					SELECT jsonb_agg(link) FROM (
+						SELECT jsonb_build_object('platform', 'instagram', 'url', instagram_url) AS link
+						WHERE instagram_url IS NOT NULL AND instagram_url != ''
+						UNION ALL
+						SELECT jsonb_build_object('platform', 'facebook', 'url', facebook_url)
+						WHERE facebook_url IS NOT NULL AND facebook_url != ''
+						UNION ALL
+						SELECT jsonb_build_object('platform', 'website', 'url', website_url)
+						WHERE website_url IS NOT NULL AND website_url != ''
+					) t
+				)
+				WHERE social_links IS NULL OR jsonb_array_length(social_links) = 0;
+				ALTER TABLE restaurants DROP COLUMN IF EXISTS instagram_url;
+				ALTER TABLE restaurants DROP COLUMN IF EXISTS facebook_url;
+				ALTER TABLE restaurants DROP COLUMN IF EXISTS website_url;
+			END IF;
+		END $$`,
+		`INSERT INTO social_platforms (id, name, slug, display_name, primary_color, sort_order, created_at)
+		 VALUES (gen_random_uuid(), 'Instagram', 'instagram', 'Instagram', '#E4405F', 0, NOW()),
+		        (gen_random_uuid(), 'Facebook', 'facebook', 'Facebook', '#1877F2', 1, NOW()),
+		        (gen_random_uuid(), 'Website', 'website', 'Website', '#E38D12', 2, NOW())
 		 ON CONFLICT (name) DO NOTHING`,
 	}
 	for _, stmt := range statements {

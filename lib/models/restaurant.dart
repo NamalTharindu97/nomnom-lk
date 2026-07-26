@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'social_link.dart';
 
 @immutable
 class Restaurant {
@@ -11,9 +12,7 @@ class Restaurant {
     required this.cuisineTags,
     required this.status,
     this.coverImage,
-    this.instagramUrl,
-    this.facebookUrl,
-    this.websiteUrl,
+    this.socialLinks = const [],
     this.orderPlatforms = const [],
   });
 
@@ -25,10 +24,23 @@ class Restaurant {
   final List<String> cuisineTags;
   final String status;
   final String? coverImage;
-  final String? instagramUrl;
-  final String? facebookUrl;
-  final String? websiteUrl;
+  final List<SocialLink> socialLinks;
   final List<String> orderPlatforms;
+
+  String? get instagramUrl {
+    final link = socialLinks.where((l) => l.platform == 'instagram').firstOrNull;
+    return link?.url;
+  }
+
+  String? get facebookUrl {
+    final link = socialLinks.where((l) => l.platform == 'facebook').firstOrNull;
+    return link?.url;
+  }
+
+  String? get websiteUrl {
+    final link = socialLinks.where((l) => l.platform == 'website').firstOrNull;
+    return link?.url;
+  }
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
     return Restaurant(
@@ -41,9 +53,7 @@ class Restaurant {
           (json['cuisine_tags'] as List?)?.cast<String>() ?? [],
       status: json['status'] as String? ?? 'approved',
       coverImage: json['cover_image'] as String?,
-      instagramUrl: json['instagram_url'] as String?,
-      facebookUrl: json['facebook_url'] as String?,
-      websiteUrl: json['website_url'] as String?,
+      socialLinks: SocialLink.listFromJson(json['social_links'] as List?),
       orderPlatforms: (json['order_platforms'] as List?)?.cast<String>() ?? [],
     );
   }
@@ -58,9 +68,7 @@ class Restaurant {
       'cuisine_tags': cuisineTags,
       'status': status,
       'cover_image': coverImage,
-      'instagram_url': instagramUrl,
-      'facebook_url': facebookUrl,
-      'website_url': websiteUrl,
+      'social_links': SocialLink.listToJson(socialLinks),
       'order_platforms': orderPlatforms,
     };
   }
@@ -74,9 +82,7 @@ class Restaurant {
     List<String>? cuisineTags,
     String? status,
     String? coverImage,
-    String? instagramUrl,
-    String? facebookUrl,
-    String? websiteUrl,
+    List<SocialLink>? socialLinks,
     List<String>? orderPlatforms,
   }) {
     return Restaurant(
@@ -88,9 +94,7 @@ class Restaurant {
       cuisineTags: cuisineTags ?? this.cuisineTags,
       status: status ?? this.status,
       coverImage: coverImage ?? this.coverImage,
-      instagramUrl: instagramUrl ?? this.instagramUrl,
-      facebookUrl: facebookUrl ?? this.facebookUrl,
-      websiteUrl: websiteUrl ?? this.websiteUrl,
+      socialLinks: socialLinks ?? this.socialLinks,
       orderPlatforms: orderPlatforms ?? this.orderPlatforms,
     );
   }
