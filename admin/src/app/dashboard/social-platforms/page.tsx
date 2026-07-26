@@ -94,7 +94,21 @@ export default function SocialPlatformsPage() {
                 <div className="grid gap-2"><Label>Display Name</Label><Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="e.g. Visit Instagram" /></div>
                 <div className="grid gap-2"><Label>Primary Color</Label><div className="flex gap-2 items-center"><Input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-28" /><div className="w-8 h-8 rounded border" style={{ backgroundColor: primaryColor }} /></div></div>
                 <div className="grid gap-2"><Label>Sort Order</Label><Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} /></div>
-                <div className="grid gap-2"><Label>Logo URL</Label><Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." /></div>
+                <div className="grid gap-2"><Label>Logo URL</Label>
+                  <div className="flex gap-2"><Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://... or upload" className="flex-1" />
+                  <Button variant="outline" size="sm" type="button" onClick={() => {
+                    const input = document.createElement("input")
+                    input.type = "file"; input.accept = "image/*"
+                    input.onchange = async () => {
+                      const file = input.files?.[0]; if (!file) return
+                      const formData = new FormData(); formData.append("file", file)
+                      try { const res = await api.upload<{ data: { url: string } }>("/upload?folder=platforms", formData); setLogoUrl(res.data.url); notify("Logo uploaded", "success") }
+                      catch { notify("Upload failed", "error") }
+                    }
+                    input.click()
+                  }}>Upload</Button></div>
+                  {logoUrl && <div className="flex items-center gap-2 mt-1"><div className="w-8 h-8 rounded border overflow-hidden bg-muted"><img src={logoUrl} alt="logo" className="w-full h-full object-cover" /></div><span className="text-xs text-muted-foreground truncate">Preview</span></div>}
+                </div>
               </div>
               <div className="flex gap-2 mt-4"><Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button><Button variant="ghost" onClick={reset}>Cancel</Button></div>
             </CardContent>
