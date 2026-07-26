@@ -63,19 +63,25 @@ class ApiClient {
     final token = await _storage.read(key: 'access_token');
     final multipartDio = Dio(BaseOptions(
       baseUrl: _dio.options.baseUrl,
-      connectTimeout: _dio.options.connectTimeout,
-      receiveTimeout: _dio.options.receiveTimeout,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
       headers: {
         'Accept-Language': Intl.defaultLocale?.split('_').first ?? 'en',
         if (token != null) 'Authorization': 'Bearer $token',
       },
     ));
+    final ext = filePath.split('.').last;
     final formData = FormData.fromMap({
-      fileField: await MultipartFile.fromFile(filePath),
+      fileField: await MultipartFile.fromFile(
+        filePath,
+        filename: 'avatar.$ext',
+      ),
     });
     final response = await multipartDio.post(path, data: formData, queryParameters: queryParams);
-    if (response.data == null || response.data is! Map) return <String, dynamic>{};
-    return response.data as Map<String, dynamic>;
+    final body = response.data;
+    if (body is String) return <String, dynamic>{};
+    if (body is! Map) return <String, dynamic>{};
+    return body as Map<String, dynamic>;
   }
 
   Future<void> clearTokens() async {

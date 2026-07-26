@@ -103,11 +103,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (data is Map<String, dynamic> && data['url'] is String) {
         return data['url'] as String;
       }
-      return null;
-    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e')),
+          SnackBar(content: Text('Upload returned unexpected format: ${response.keys}')),
+        );
+      }
+      return null;
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.uploadFailed)),
         );
       }
       return null;
