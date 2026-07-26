@@ -244,7 +244,24 @@ class OfferProvider extends ChangeNotifier {
 
   Future<void> refreshOffers() async {
     await loadOffers(forceRefresh: true);
+    _applyCachedFavorites();
     await loadFavorites();
+  }
+
+  void _applyCachedFavorites() {
+    if (_offers.isEmpty) return;
+    try {
+      final cachedIds = _favoriteStore.getFavorites();
+      _offers = _offers.map((offer) {
+        return offer.copyWith(isFavorite: cachedIds.contains(offer.id));
+      }).toList(growable: false);
+      _rebuildOffersCache();
+      _filterVersion++;
+      _searchResults = _searchResults.map((offer) {
+        return offer.copyWith(isFavorite: cachedIds.contains(offer.id));
+      }).toList(growable: false);
+      _rebuildSearchCache();
+    } catch (_) {}
   }
 
   Future<void> searchOffers(String query) async {
@@ -321,24 +338,7 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> loadFavorites() async {
-    // Cache-first: apply locally stored favorites instantly
-    if (_offers.isNotEmpty) {
-      try {
-        final cachedIds = _favoriteStore.getFavorites();
-        if (cachedIds.isNotEmpty) {
-          _offers = _offers.map((offer) {
-            return offer.copyWith(isFavorite: cachedIds.contains(offer.id));
-          }).toList(growable: false);
-          _rebuildOffersCache();
-          _filterVersion++;
-          _searchResults = _searchResults.map((offer) {
-            return offer.copyWith(isFavorite: cachedIds.contains(offer.id));
-          }).toList(growable: false);
-          _rebuildSearchCache();
-          notifyListeners();
-        }
-      } catch (_) {}
-    }
+    _applyCachedFavorites();
 
     try {
       final favorites = await _favoritesService.fetchFavorites();
