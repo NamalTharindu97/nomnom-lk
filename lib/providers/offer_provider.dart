@@ -345,7 +345,9 @@ class OfferProvider extends ChangeNotifier {
     try {
       final favorites = await _favoritesService.fetchFavorites();
       final favoriteIds = favorites.map((o) => o.id).toSet();
-      await _favoriteStore.syncFromRemote(favoriteIds);
+      if (favoriteIds.isNotEmpty) {
+        await _favoriteStore.syncFromRemote(favoriteIds);
+      }
       _offers = _offers.map((offer) {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);
