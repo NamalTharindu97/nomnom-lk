@@ -27,9 +27,6 @@ const restaurantSchema = z.object({
   name_ta: z.string().optional(),
   description_si: z.string().optional(),
   description_ta: z.string().optional(),
-  instagram_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
-  facebook_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
-  website_url: z.string().url("Invalid URL").or(z.literal("")).optional(),
   social_links: z.array(z.object({ platform: z.string(), url: z.string() })).optional(),
   order_platforms: z.array(z.string()).optional(),
 })
@@ -99,7 +96,7 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
       name: "", slug: "", cuisine_tags: [], description: "",
       contact_phone: "", owner_id: "", name_si: "", name_ta: "",
       description_si: "", description_ta: "",
-      instagram_url: "", facebook_url: "", website_url: "", social_links: [], order_platforms: [],
+      social_links: [], order_platforms: [],
     },
   })
 
@@ -136,9 +133,6 @@ export default function RestaurantDialog({ open, onClose, onSaved, restaurant }:
         name_ta: restaurant.name_ta || "",
         description_si: restaurant.description_si || "",
         description_ta: restaurant.description_ta || "",
-        instagram_url: restaurant.instagram_url || "",
-        facebook_url: restaurant.facebook_url || "",
-        website_url: restaurant.website_url || "",
         social_links: restaurant.social_links || [],
         order_platforms: restaurant.order_platforms || [],
       })
