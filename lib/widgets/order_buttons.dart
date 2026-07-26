@@ -20,15 +20,15 @@ OrderPlatform? parsePlatform(String value) {
 
 Color _platformColor(OrderPlatform platform) {
   return switch (platform) {
-    OrderPlatform.uberEats => const Color(0xFF06C167),
-    OrderPlatform.pickMe => const Color(0xFF00B14F),
+    OrderPlatform.uberEats => const Color(0xFF000000),
+    OrderPlatform.pickMe => const Color(0xFFDA291C),
   };
 }
 
-IconData _platformIcon(OrderPlatform platform) {
+Color _platformAccent(OrderPlatform platform) {
   return switch (platform) {
-    OrderPlatform.uberEats => Icons.delivery_dining_rounded,
-    OrderPlatform.pickMe => Icons.local_taxi_rounded,
+    OrderPlatform.uberEats => const Color(0xFF06C167),
+    OrderPlatform.pickMe => const Color(0xFFFFC72C),
   };
 }
 
@@ -99,6 +99,7 @@ class _PlatformButton extends StatelessWidget {
       OrderPlatform.pickMe => t.offerOrderPickMe,
     };
     final brandColor = _platformColor(platform);
+    final accent = _platformAccent(platform);
 
     return SizedBox(
       width: double.infinity,
@@ -118,24 +119,33 @@ class _PlatformButton extends StatelessWidget {
             }
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(_platformIcon(platform), color: Colors.white, size: 22),
+                _BrandLogo(platform: platform),
                 const SizedBox(width: Spacings.sm),
                 Expanded(
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.white,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
                         ),
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  size: 22,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ],
             ),
@@ -143,5 +153,54 @@ class _PlatformButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _BrandLogo extends StatelessWidget {
+  final OrderPlatform platform;
+
+  const _BrandLogo({required this.platform});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (platform) {
+      OrderPlatform.uberEats => Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFF06C167),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: Text(
+              'UE',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1,
+              ),
+            ),
+          ),
+        ),
+      OrderPlatform.pickMe => Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: Text(
+              'P',
+              style: TextStyle(
+                color: Color(0xFFDA291C),
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+    };
   }
 }

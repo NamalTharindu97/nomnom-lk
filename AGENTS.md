@@ -1,8 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** Phase 12 (rate limiting + CI AAB) + UX improvements (Batches 1-6) completed on `phase/12-rate-limit-ci-aab`. Working on `master` and `staging`. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Phase 4 (Git history rewrite) blocked by Phase 0. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
-- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
+- **Current:** Phase 12 (rate limiting + CI AAB) + UX improvements (Batches 1-6) completed on `phase/12-rate-limit-ci-aab`. Deployed to Render. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Phase 4 (Git history rewrite) blocked by Phase 0. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
+- **Completed: All prior milestones** — 56 Playwright E2E tests (some pre-existing failures on staging), audit logging, impersonation, owner scoping, CI bugfixes, order platforms data-driven, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, dark mode fixes, Obsidian knowledge base, deployment plan (16 phases).
 
 ## Deployment Documentation
 - **`docs/deployment/README.md`** — Overview of what was deployed (Render resources, URLs, quick reference)
@@ -386,4 +386,10 @@
     - Fixed circular dependency crash on users page (extracted ROLES to lib/constants.ts).
   - **Plans written:** `contabo-vps-deployment-plan.md`, `remove-restaurant-location-plan.md`.
   - **Deployment:** Render uses `linux/amd64` (not arm64). Deploy via `render deploys create` CLI + manual Docker push.
-  - **Debug APK:** `build/app/outputs/flutter-apk/app-debug.apk` (199MB), connected to Render production backend.
+   - **Debug APK:** `build/app/outputs/flutter-apk/app-debug.apk` (199MB), connected to Render production backend.
+- **2026-07-26:** Edit Profile + Banner UX fixes on `phase/12-rate-limit-ci-aab`, deployed to Render.
+  - **Profile photo upload fix:** AuthInterceptor's 401 retry with `_dio.fetch()` was breaking multipart FormData (streams can only be read once). Fixed by using isolated Dio instance for uploads. Also converts HEIF/HEIC images to JPEG before upload (backend only accepts jpg/png/gif/svg).
+  - **Edit profile dark mode:** Form fields (name, phone, email) now use explicit `textPrimary`/`textSecondary` colors with muted prefix icons.
+  - **Banner creation:** Added ImageCropDialog with 1024×360 banner aspect ratio (added optional `aspectRatio` prop). Sponsor name auto-populates from selected offer's restaurant. Display order shows current banner count hint.
+  - **Favorites fix:** FavoriteHandler.List now returns complete offer fields (cuisine_tags, cover_image, etc.). toggleFavorite persists to Hive FavoriteStore immediately. fetchFavorites passes per_page=100.
+  - **ImageCropDialog:** Now accepts optional `aspectRatio` prop (default 1/1 for offers, 1024/360 for banners).
