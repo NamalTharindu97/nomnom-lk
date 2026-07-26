@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { BulkActionBar } from "@/components/bulk-action-bar"
 import { csvExport } from "@/lib/csv-export"
+import { ROLES } from "@/lib/constants"
 import { Trash2, Search, Users, Plus, Download, Pencil } from "lucide-react"
 import UserDialog from "./_user-dialog"
 
@@ -41,7 +42,6 @@ interface User {
 }
 
 const PER_PAGE = 10
-export const ROLES = ["user", "restaurant_owner", "admin"] as const
 const ROLE_FILTERS = ["all", "user", "restaurant_owner", "admin"]
 
 

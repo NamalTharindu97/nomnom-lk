@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { ROLES } from "./page"
+import { ROLES } from "@/lib/constants"
 
 const userSchema = z.object({
   email: z.string().email("Invalid email address"),
