@@ -3,58 +3,14 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
+import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
+import '../services/api_platform_service.dart';
 import '../utils/spacings.dart';
 
-enum OrderPlatform {
-  uberEats,
-  pickMe,
-}
-
-OrderPlatform? parsePlatform(String value) {
-  return switch (value) {
-    'uber_eats' => OrderPlatform.uberEats,
-    'pickme' => OrderPlatform.pickMe,
-    _ => null,
-  };
-}
-
-Color _platformColor(OrderPlatform platform) {
-  return switch (platform) {
-    OrderPlatform.uberEats => const Color(0xFF06C167),
-    OrderPlatform.pickMe => const Color(0xFF00B14F),
-  };
-}
-
-IconData _platformIcon(OrderPlatform platform) {
-  return switch (platform) {
-    OrderPlatform.uberEats => Icons.delivery_dining_rounded,
-    OrderPlatform.pickMe => Icons.local_taxi_rounded,
-  };
-}
-
-String _platformUri(OrderPlatform platform) {
-  return switch (platform) {
-    OrderPlatform.uberEats => 'ubereats://',
-    OrderPlatform.pickMe => 'pickme://',
-  };
-}
-
-String _storeUrl(OrderPlatform platform) {
-  final isAndroid = Platform.isAndroid;
-  return switch (platform) {
-    OrderPlatform.uberEats => isAndroid
-        ? 'https://play.google.com/store/apps/details?id=com.ubercab.eats'
-        : 'https://apps.apple.com/app/uber-eats-food-delivery/id1058959277',
-    OrderPlatform.pickMe => isAndroid
-        ? 'https://play.google.com/store/apps/details?id=com.pickme.pickme'
-        : 'https://apps.apple.com/app/pickme/id1196019644',
-  };
-}
-
 class OrderButtonsSection extends StatelessWidget {
-  final List<String> platforms;
+  final List<PlatformData> platforms;
 
   const OrderButtonsSection({
     super.key,
@@ -64,12 +20,7 @@ class OrderButtonsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final parsed = platforms
-        .map(parsePlatform)
-        .whereType<OrderPlatform>()
-        .toList();
-
-    if (parsed.isEmpty) return const SizedBox.shrink();
+    if (platforms.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,9 +39,9 @@ class OrderButtonsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Spacings.sm),
-        for (int i = 0; i < parsed.length; i++) ...[
+        for (int i = 0; i < platforms.length; i++) ...[
           if (i > 0) const SizedBox(height: Spacings.xs),
-          _PlatformButton(platform: parsed[i]),
+          _PlatformButton(platform: platforms[i]),
         ],
       ],
     );
@@ -98,36 +49,51 @@ class OrderButtonsSection extends StatelessWidget {
 }
 
 class _PlatformButton extends StatelessWidget {
-  final OrderPlatform platform;
+  final PlatformData platform;
 
   const _PlatformButton({required this.platform});
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-    final label = switch (platform) {
-      OrderPlatform.uberEats => t.offerOrderUberEats,
-      OrderPlatform.pickMe => t.offerOrderPickMe,
-    };
-    final brandColor = _platformColor(platform);
+    final color = _parseColor(platform.primaryColor);
+    final logoUrl = platform.logoUrl;
 
     return SizedBox(
       width: double.infinity,
       child: Material(
-        color: brandColor,
+        color: color,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => _handleTap(context, platform, label, t),
+          onTap: () => _handleTap(context, platform),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(_platformIcon(platform), color: Colors.white, size: 22),
+                if (logoUrl != null && logoUrl.isNotEmpty)
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(
+                        ApiConfig.resolveUrl(logoUrl),
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => _buildFallbackBadge(platform),
+                      ),
+                    ),
+                  )
+                else
+                  _buildFallbackBadge(platform),
                 const SizedBox(width: Spacings.sm),
                 Expanded(
                   child: Text(
-                    label,
+                    platform.displayName,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -147,31 +113,59 @@ class _PlatformButton extends StatelessWidget {
     );
   }
 
-  Future<void> _handleTap(
-    BuildContext context,
-    OrderPlatform platform,
-    String label,
-    AppLocalizations t,
-  ) async {
-    final uri = Uri.parse(_platformUri(platform));
+  Widget _buildFallbackBadge(PlatformData platform) {
+    final initials = platform.displayName
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0].toUpperCase())
+        .join();
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleTap(BuildContext context, PlatformData platform) async {
+    final uri = Uri.parse(platform.deepLinkScheme);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       return;
     }
     if (!context.mounted) return;
-    _showInstallDialog(context, platform, label);
+    _showInstallDialog(context, platform);
   }
 
-  void _showInstallDialog(
-    BuildContext context,
-    OrderPlatform platform,
-    String label,
-  ) {
+  void _showInstallDialog(BuildContext context, PlatformData platform) {
+    final storeUrl = platform.slug == 'uber_eats'
+        ? (Platform.isAndroid
+            ? 'https://play.google.com/store/apps/details?id=com.ubercab.eats'
+            : 'https://apps.apple.com/app/uber-eats-food-delivery/id1058959277')
+        : platform.slug == 'pickme'
+            ? (Platform.isAndroid
+                ? 'https://play.google.com/store/apps/details?id=com.pickme.pickme'
+                : 'https://apps.apple.com/app/pickme/id1196019644')
+            : 'https://play.google.com/store/search?q=${Uri.encodeComponent(platform.displayName)}';
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('$label not installed'),
-        content: Text('Install $label from the store to order?'),
+        title: Text('${platform.displayName} not installed'),
+        content: Text('Install ${platform.displayName} from the store to order?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -180,8 +174,7 @@ class _PlatformButton extends StatelessWidget {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              launchUrl(Uri.parse(_storeUrl(platform)),
-                  mode: LaunchMode.externalApplication);
+              launchUrl(Uri.parse(storeUrl), mode: LaunchMode.externalApplication);
             },
             child: const Text('Install'),
           ),
@@ -189,4 +182,12 @@ class _PlatformButton extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _parseColor(String hex) {
+  final cleaned = hex.replaceFirst('#', '');
+  if (cleaned.length == 6) {
+    return Color(int.parse('FF$cleaned', radix: 16));
+  }
+  return const Color(0xFF06C167);
 }

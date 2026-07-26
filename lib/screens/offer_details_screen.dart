@@ -8,6 +8,7 @@ import '../providers/offer_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../services/api_offer_service.dart';
+import '../services/api_platform_service.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/favorite_button.dart';
@@ -148,6 +149,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
+  List<PlatformData> _platforms = const [];
 
   @override
   void initState() {
@@ -161,6 +163,15 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
       curve: Curves.easeOut,
     );
     _controller.forward();
+    _loadPlatforms();
+  }
+
+  Future<void> _loadPlatforms() async {
+    try {
+      final client = ApiClient();
+      final service = ApiPlatformService(client);
+      _platforms = await service.fetchPlatforms();
+    } catch (_) {}
   }
 
   @override
@@ -294,7 +305,9 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                   animation: _animation,
                   index: 8,
                   child: OrderButtonsSection(
-                    platforms: offer.orderPlatforms,
+                    platforms: _platforms
+                        .where((p) => offer.orderPlatforms.contains(p.slug))
+                        .toList(),
                   ),
                 ),
               ],
