@@ -243,10 +243,8 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> refreshOffers() async {
-    await Future.wait([
-      loadOffers(forceRefresh: true),
-      loadFavorites(),
-    ]);
+    await loadOffers(forceRefresh: true);
+    await loadFavorites();
   }
 
   Future<void> searchOffers(String query) async {
