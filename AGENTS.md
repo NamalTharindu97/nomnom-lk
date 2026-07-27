@@ -1,8 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
-- Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`.
-- **Current:** Phase 12 + UX Batches 1-6 merged to `staging` and `master`. Deployed to Render. Production admin sessions use HttpOnly cookies with CSRF. App targets API 36 with 3 ABIs. 30-day account deletion lifecycle implemented. Phase 0 provider rotations remain deferred but mandatory before release. Next: Phase 11 Play Store package content, then purchase domain/VPS/Play account.
-- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases).
+- Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`, `play-store-release-plan.md`, `contabo-vps-deployment-plan.md`.
+- **Current:** Phase 12 merged to `staging` and `master`. VPS staging deployed at `169.58.79.251` (backend :8080, admin :3000). Render PostgreSQL data migrated to VPS. Admin middleware-based API proxy (runtime) replaces build-time rewrites. iOS device testing branch `ios/device-testing` with ATS/URL-scheme config (separate from master). Flutter PlatformProvider caches order/social platforms. Full Play Store compliance audit completed — 5 blockers identified. Next: P0 submission blockers (domain + HTTPS, legal links, Sentry, hero tag fix, CI URL).
+- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases). 267 Flutter tests, 145 backend tests, 14 admin E2E added. Contabo VPS staging deployed.
 
 ## Deployment Documentation
 - **`docs/deployment/README.md`** — Overview of what was deployed (Render resources, URLs, quick reference)
@@ -387,3 +387,27 @@
   - **Plans written:** `contabo-vps-deployment-plan.md`, `remove-restaurant-location-plan.md`.
   - **Deployment:** Render uses `linux/amd64` (not arm64). Deploy via `render deploys create` CLI + manual Docker push.
   - **Debug APK:** `build/app/outputs/flutter-apk/app-debug.apk` (199MB), connected to Render production backend.
+- **2026-07-27:** Contabo VPS staging deployed + Play Store compliance audit completed.
+  - **VPS Deployment:**
+    - Staging at `169.58.79.251`: backend :8080, admin :3000, PostgreSQL + Redis in Docker.
+    - Render PostgreSQL data migrated to VPS (14 users, 11 restaurants, 23 offers, 4 banners).
+    - R2 storage configured with `staging` prefix (isolated from `production`).
+    - 3 compose bugs fixed: redis ACL mounted as volume (should be secret), postgres missing DB secret, no curl in distroless backend for healthcheck.
+    - Admin proxy fixed: replaced `next.config.ts` rewrites (build-time) with `src/middleware.ts` (runtime), removed hardcoded Render URL from CI.
+  - **Flutter App:**
+    - Android running on emulator (API 36) connected to VPS.
+    - iOS runs on iPhone 16 Pro device (iOS 26.5) via Xcode — branch `ios/device-testing` with ATS exception, URL schemes, SPM disable.
+    - PlatformProvider caches order/social platforms (eliminates per-page API calls on offer details).
+    - Order buttons: Uber Eats via native scheme, PickMe via `https://pickme.lk/` web fallback.
+    - Hero tag collision identified (pre-existing, fix in P0.5).
+  - **Play Store Audit:**
+    - Full audit completed — 106 API routes reviewed, permissions audited, backend security assessed.
+    - Score: 77/100 — CONDITIONAL PASS.
+    - 5 blockers: HTTPS/domain, in-app legal links, CI URL, crash reporting, hero tags.
+    - 4 legal pages exist on admin (public): `/privacy`, `/terms`, `/support`, `/delete-account`.
+    - No analytics/ads SDKs — simple Data Safety declaration.
+    - Remediation plan written to `plans/play-store-release-plan.md`.
+  - **Git branches:**
+    - `ios/device-testing` — iOS-specific changes (Info.plist, entitlements, SPM disable).
+    - `phase/12-rate-limit-ci-aab` — feature branch.
+    - `staging`, `master` — clean, no iOS changes.
