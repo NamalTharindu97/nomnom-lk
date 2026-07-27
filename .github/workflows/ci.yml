@@ -520,7 +520,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=/api/v1
-            API_PROXY_TARGET=https://nomnom-backend-7iq0.onrender.com
+            API_PROXY_TARGET=http://backend:8080
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
             ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.meta.outputs.sha_short }}
