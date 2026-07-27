@@ -383,6 +383,30 @@ class AppLocalizationsSi extends AppLocalizations {
   String get profileRateAppSubtitle => 'සමාලෝචනයක් ලියන්න';
 
   @override
+  String get profilePrivacyPolicy => 'රහස්‍යතා ප්‍රතිපත්තිය';
+
+  @override
+  String get profilePrivacyPolicySubtitle => 'අපි ඔබේ දත්ත හසුරුවන ආකාරය';
+
+  @override
+  String get profileTermsOfService => 'සේවා කොන්දේසි';
+
+  @override
+  String get profileTermsOfServiceSubtitle => 'NomNom LK භාවිතා කිරීමේ නීති';
+
+  @override
+  String get profileSupport => 'සහාය';
+
+  @override
+  String get profileSupportSubtitle => 'උපකාර ලබා ගන්න සහ නිතර අසන පැන';
+
+  @override
+  String get profileDeleteAccountWeb => 'ගිණුම මකා දමන්න (වෙබ්)';
+
+  @override
+  String get profileDeleteAccountWebSubtitle => 'වෙබ් අඩවිය හරහා මකාදැමීම ඉල්ලන්න';
+
+  @override
   String get editProfileTitle => 'පැතිකඩ සංස්කරණය කරන්න';
 
   @override

@@ -247,7 +247,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                   aspectRatio: 1,
                   child: OfferImage(
                     imageUrl: offer.primaryImage,
-                    heroTag: 'offer-image-${offer.id}',
+                    heroTag: 'offer-detail-${offer.id}',
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),

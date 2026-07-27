@@ -7,12 +7,23 @@ class ApiConfig {
     'API_BASE_URL',
   );
 
+  static const String _configuredAdminUrl = String.fromEnvironment(
+    'ADMIN_URL',
+  );
+
   static const String _appEnv = String.fromEnvironment('APP_ENV');
   static const String _buildSha = String.fromEnvironment('BUILD_SHA');
 
   static bool get isRelease => _appEnv == 'release';
   static String get appEnv => _appEnv.isNotEmpty ? _appEnv : 'debug';
   static String get buildSha => _buildSha.isNotEmpty ? _buildSha : 'local';
+
+  static String get adminUrl => _configuredAdminUrl.isNotEmpty
+      ? _configuredAdminUrl
+      : 'http://localhost:3000';
+
+  static const String _configuredSentryDsn = String.fromEnvironment('SENTRY_DSN');
+  static String get sentryDsn => _configuredSentryDsn;
 
   static String get _defaultBaseUrl {
     try {

@@ -383,6 +383,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileRateAppSubtitle => 'Leave a review';
 
   @override
+  String get profilePrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get profilePrivacyPolicySubtitle => 'How we handle your data';
+
+  @override
+  String get profileTermsOfService => 'Terms of Service';
+
+  @override
+  String get profileTermsOfServiceSubtitle => 'Rules for using NomNom LK';
+
+  @override
+  String get profileSupport => 'Support';
+
+  @override
+  String get profileSupportSubtitle => 'Get help & FAQs';
+
+  @override
+  String get profileDeleteAccountWeb => 'Delete Account (Web)';
+
+  @override
+  String get profileDeleteAccountWebSubtitle => 'Request deletion via website';
+
+  @override
   String get editProfileTitle => 'Edit Profile';
 
   @override

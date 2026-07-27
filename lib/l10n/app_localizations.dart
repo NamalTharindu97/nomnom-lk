@@ -817,6 +817,54 @@ abstract class AppLocalizations {
   /// **'Leave a review'**
   String get profileRateAppSubtitle;
 
+  /// Link to privacy policy page
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get profilePrivacyPolicy;
+
+  /// No description provided for @profilePrivacyPolicySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How we handle your data'**
+  String get profilePrivacyPolicySubtitle;
+
+  /// Link to terms of service page
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get profileTermsOfService;
+
+  /// No description provided for @profileTermsOfServiceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules for using NomNom LK'**
+  String get profileTermsOfServiceSubtitle;
+
+  /// Link to support page
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get profileSupport;
+
+  /// No description provided for @profileSupportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get help & FAQs'**
+  String get profileSupportSubtitle;
+
+  /// Link to web-based account deletion page
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account (Web)'**
+  String get profileDeleteAccountWeb;
+
+  /// No description provided for @profileDeleteAccountWebSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request deletion via website'**
+  String get profileDeleteAccountWebSubtitle;
+
   /// No description provided for @editProfileTitle.
   ///
   /// In en, this message translates to:
