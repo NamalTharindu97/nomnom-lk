@@ -39,7 +39,7 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME}
       SMTP_PASSWORD_FILE: /run/secrets/smtp_password
       SMTP_FROM: ${SMTP_FROM:-"NomNom LK <noreply@nomnom.lk>"}
-      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase_credentials.json
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase_credentials
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@nomnom.lk}
       ADMIN_PASSWORD_FILE: /run/secrets/admin_password
     secrets:
