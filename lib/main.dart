@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'core/api_config.dart';
 import 'core/app_routes.dart';
@@ -56,8 +57,19 @@ void main() async {
   await themeProvider.load();
   final localeProvider = LocaleProvider();
   await localeProvider.initialize();
-  runApp(NomNomBootstrap(
-      themeProvider: themeProvider, localeProvider: localeProvider));
+
+  if (ApiConfig.sentryDsn.isNotEmpty) {
+    await SentryFlutter.init((options) {
+      options.dsn = ApiConfig.sentryDsn;
+      options.environment = ApiConfig.appEnv;
+      options.release = ApiConfig.buildSha;
+      options.tracesSampleRate = 0.2;
+    }, appRunner: () => runApp(NomNomBootstrap(
+        themeProvider: themeProvider, localeProvider: localeProvider)));
+  } else {
+    runApp(NomNomBootstrap(
+        themeProvider: themeProvider, localeProvider: localeProvider));
+  }
 }
 
 class NomNomBootstrap extends StatelessWidget {

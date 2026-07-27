@@ -383,6 +383,30 @@ class AppLocalizationsTa extends AppLocalizations {
   String get profileRateAppSubtitle => 'மதிப்பாய்வு எழுதுக';
 
   @override
+  String get profilePrivacyPolicy => 'தனியுரிமைக் கொள்கை';
+
+  @override
+  String get profilePrivacyPolicySubtitle => 'உங்கள் தரவை நாங்கள் கையாளும் முறை';
+
+  @override
+  String get profileTermsOfService => 'சேவை விதிமுறைகள்';
+
+  @override
+  String get profileTermsOfServiceSubtitle => 'NomNom LK ஐப் பயன்படுத்துவதற்கான விதிகள்';
+
+  @override
+  String get profileSupport => 'ஆதரவு';
+
+  @override
+  String get profileSupportSubtitle => 'உதவியைப் பெறுங்கள் மற்றும் அடிக்கடி கேட்கப்படும் கேள்விகள்';
+
+  @override
+  String get profileDeleteAccountWeb => 'கணக்கை நீக்கு (இணையம்)';
+
+  @override
+  String get profileDeleteAccountWebSubtitle => 'இணையதளம் வழியாக நீக்குதலைக் கோரவும்';
+
+  @override
   String get editProfileTitle => 'சுயவிவரத்தைத் திருத்துக';
 
   @override
