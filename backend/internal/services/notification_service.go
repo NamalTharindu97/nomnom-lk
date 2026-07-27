@@ -21,12 +21,14 @@ import (
 type NotificationService struct {
 	notificationRepo *repository.NotificationRepo
 	deviceTokenRepo  *repository.DeviceTokenRepo
+	offerRepo        *repository.OfferRepo
 	credsPath        string
 }
 
 func NewNotificationService(
 	notificationRepo *repository.NotificationRepo,
 	deviceTokenRepo *repository.DeviceTokenRepo,
+	offerRepo *repository.OfferRepo,
 	cfg *config.FirebaseConfig,
 ) *NotificationService {
 	if cfg.CredentialsPath != "" {
@@ -35,6 +37,7 @@ func NewNotificationService(
 	return &NotificationService{
 		notificationRepo: notificationRepo,
 		deviceTokenRepo:  deviceTokenRepo,
+		offerRepo:        offerRepo,
 		credsPath:        cfg.CredentialsPath,
 	}
 }
@@ -78,6 +81,17 @@ type SendPushInput struct {
 }
 
 func (s *NotificationService) SendPush(input SendPushInput) error {
+	// Look up offer image URL if an OfferID is provided
+	if input.OfferID != nil && s.offerRepo != nil {
+		offer, err := s.offerRepo.FindByID(*input.OfferID)
+		if err == nil && offer != nil && len(offer.ImageURLs) > 0 {
+			if input.Data == nil {
+				input.Data = make(map[string]string)
+			}
+			input.Data["offer_image_url"] = offer.ImageURLs[0]
+		}
+	}
+
 	var tokens []models.DeviceToken
 	var err error
 
@@ -108,6 +122,9 @@ func (s *NotificationService) SendPush(input SendPushInput) error {
 			data, _ := json.Marshal(input.Data)
 			raw := json.RawMessage(data)
 			n.Data = &raw
+			if imageURL, ok := input.Data["offer_image_url"]; ok && imageURL != "" {
+				n.ImageURL = &imageURL
+			}
 		}
 		notifications[i] = n
 	}
@@ -183,17 +200,27 @@ func (s *NotificationService) sendFCMDirect(ctx context.Context, token string, i
 		data["type"] = input.Type
 	}
 
+	androidNotif := map[string]string{
+		"channel_id": "nomnom_notifications",
+	}
+	if imageURL, ok := data["offer_image_url"]; ok && imageURL != "" {
+		androidNotif["image"] = imageURL
+	}
+
+	notification := map[string]string{
+		"title": input.Title,
+		"body":  input.Body,
+	}
+	if imageURL, ok := data["offer_image_url"]; ok && imageURL != "" {
+		notification["image"] = imageURL
+	}
+
 	msg := map[string]any{
-		"token": token,
-		"notification": map[string]string{
-			"title": input.Title,
-			"body":  input.Body,
-		},
+		"token":        token,
+		"notification": notification,
 		"android": map[string]any{
-			"priority": "high",
-			"notification": map[string]string{
-				"channel_id": "nomnom_notifications",
-			},
+			"priority":    "high",
+			"notification": androidNotif,
 		},
 	}
 	if len(data) > 0 {

@@ -11,10 +11,10 @@ import (
 )
 
 type AuditService struct {
-	repo *repository.AuditLogRepo
+	repo repository.AuditLogRepoInterface
 }
 
-func NewAuditService(repo *repository.AuditLogRepo) *AuditService {
+func NewAuditService(repo repository.AuditLogRepoInterface) *AuditService {
 	return &AuditService{repo: repo}
 }
 

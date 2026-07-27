@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/api_config.dart';
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
@@ -193,6 +194,21 @@ class _NotificationTile extends StatelessWidget {
                 ],
               ),
             ),
+            if (notification.imageUrl != null &&
+                notification.imageUrl!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: Spacings.sm),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    ApiConfig.resolveUrl(notification.imageUrl!),
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

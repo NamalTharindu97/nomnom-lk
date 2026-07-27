@@ -17,13 +17,13 @@ import (
 )
 
 type DashboardService struct {
-	restaurantRepo *repository.RestaurantRepo
-	offerRepo      *repository.OfferRepo
-	bannerRepo     *repository.BannerRepo
+	restaurantRepo repository.RestaurantRepoInterface
+	offerRepo      repository.OfferRepoInterface
+	bannerRepo     repository.BannerRepoInterface
 	rdb            *redis.Client
 }
 
-func NewDashboardService(restaurantRepo *repository.RestaurantRepo, offerRepo *repository.OfferRepo, bannerRepo *repository.BannerRepo, rdb *redis.Client) *DashboardService {
+func NewDashboardService(restaurantRepo repository.RestaurantRepoInterface, offerRepo repository.OfferRepoInterface, bannerRepo repository.BannerRepoInterface, rdb *redis.Client) *DashboardService {
 	return &DashboardService{
 		restaurantRepo: restaurantRepo,
 		offerRepo:      offerRepo,

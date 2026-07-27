@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nomnom-lk/backend/internal/services"
@@ -23,6 +24,12 @@ func (h *UploadHandler) ServeFile(c *gin.Context) {
 	key := strings.TrimPrefix(c.Param("key"), "/")
 	if key == "" {
 		response.NotFound(c, "file not found")
+		return
+	}
+
+	presignedURL, err := h.service.PresignedURL(key, 1*time.Hour)
+	if err == nil {
+		c.Redirect(http.StatusFound, presignedURL)
 		return
 	}
 

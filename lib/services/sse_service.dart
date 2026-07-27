@@ -25,6 +25,7 @@ class SSEService {
   StreamSubscription? _subscription;
   HttpClient? _client;
   final _controller = StreamController<SSEEvent>.broadcast();
+  final reconnectingNotifier = ValueNotifier<bool>(false);
   bool _isConnected = false;
   bool _shouldReconnect = true;
   String _buffer = '';
@@ -41,6 +42,7 @@ class SSEService {
   void _scheduleReconnect() {
     if (!_shouldReconnect || _reconnectAttempts >= _maxReconnectAttempts) return;
     _reconnectAttempts++;
+    reconnectingNotifier.value = true;
     final delay = _getReconnectDelay();
     debugPrint('SSE reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)...');
     Future.delayed(delay, () {
@@ -68,6 +70,7 @@ class SSEService {
       final response = await request.close().timeout(const Duration(seconds: 10));
       _isConnected = true;
       _reconnectAttempts = 0;
+      reconnectingNotifier.value = false;
       debugPrint('SSE connected');
 
       _subscription = response.transform(utf8.decoder).listen(
@@ -122,6 +125,7 @@ class SSEService {
   void disconnect() {
     _shouldReconnect = false;
     _reconnectAttempts = 0;
+    reconnectingNotifier.value = false;
     _subscription?.cancel();
     _subscription = null;
     _client?.close();

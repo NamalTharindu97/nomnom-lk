@@ -561,4 +561,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get editProfileGallery => 'கேலரி';
+
+  @override
+  String get reconnecting => 'மீண்டும் இணைக்கிறது...';
 }

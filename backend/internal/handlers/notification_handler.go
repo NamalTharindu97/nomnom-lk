@@ -39,6 +39,7 @@ type NotificationHandler struct {
 	service        *services.NotificationService
 	scheduledRepo  *repository.ScheduledNotificationRepo
 	auditService   *services.AuditService
+	offerRepo      *repository.OfferRepo
 }
 
 func NewNotificationHandler(service *services.NotificationService, auditService *services.AuditService) *NotificationHandler {
@@ -46,6 +47,10 @@ func NewNotificationHandler(service *services.NotificationService, auditService 
 		service:      service,
 		auditService: auditService,
 	}
+}
+
+func (h *NotificationHandler) SetOfferRepo(repo *repository.OfferRepo) {
+	h.offerRepo = repo
 }
 
 func (h *NotificationHandler) SetScheduledRepo(repo *repository.ScheduledNotificationRepo) {
@@ -102,7 +107,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 
 	data := make([]gin.H, len(notifications))
 	for i, n := range notifications {
-		data[i] = gin.H{
+		item := gin.H{
 			"id":         n.ID,
 			"type":       n.Type,
 			"title":      n.Title,
@@ -112,6 +117,10 @@ func (h *NotificationHandler) List(c *gin.Context) {
 			"is_read":    n.IsRead,
 			"created_at": n.CreatedAt,
 		}
+		if n.ImageURL != nil {
+			item["image_url"] = *n.ImageURL
+		}
+		data[i] = item
 	}
 
 	response.SuccessPaginated(c, data, pagination.Meta(params, total))

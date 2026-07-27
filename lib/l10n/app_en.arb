@@ -189,5 +189,6 @@
   "offerEndsToday": "Ends today",
   "offerNoAppFound": "No compatible app found",
   "editProfileCamera": "Camera",
-  "editProfileGallery": "Gallery"
+  "editProfileGallery": "Gallery",
+  "reconnecting": "Reconnecting..."
 }

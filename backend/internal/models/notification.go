@@ -13,6 +13,7 @@ type Notification struct {
 	UserID    uuid.UUID        `gorm:"type:uuid;not null;index" json:"user_id"`
 	User      *User            `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	OfferID   *uuid.UUID       `gorm:"type:uuid;index" json:"offer_id,omitempty"`
+	ImageURL  *string          `gorm:"type:text" json:"image_url,omitempty"`
 	Type      string           `gorm:"size:50;not null" json:"type"`
 	Title     string           `gorm:"size:255;not null" json:"title"`
 	Body      *string          `gorm:"type:text" json:"body,omitempty"`

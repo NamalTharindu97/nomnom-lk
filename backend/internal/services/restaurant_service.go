@@ -13,10 +13,10 @@ import (
 )
 
 type RestaurantService struct {
-	repo *repository.RestaurantRepo
+	repo repository.RestaurantRepoInterface
 }
 
-func NewRestaurantService(repo *repository.RestaurantRepo) *RestaurantService {
+func NewRestaurantService(repo repository.RestaurantRepoInterface) *RestaurantService {
 	return &RestaurantService{repo: repo}
 }
 

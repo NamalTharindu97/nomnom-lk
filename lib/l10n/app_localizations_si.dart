@@ -561,4 +561,7 @@ class AppLocalizationsSi extends AppLocalizations {
 
   @override
   String get editProfileGallery => 'ගැලරිය';
+
+  @override
+  String get reconnecting => 'නැවත සම්බන්ධ වෙමින්...';
 }

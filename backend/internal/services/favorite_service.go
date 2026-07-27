@@ -7,10 +7,10 @@ import (
 )
 
 type FavoriteService struct {
-	repo *repository.FavoriteRepo
+	repo repository.FavoriteRepoInterface
 }
 
-func NewFavoriteService(repo *repository.FavoriteRepo) *FavoriteService {
+func NewFavoriteService(repo repository.FavoriteRepoInterface) *FavoriteService {
 	return &FavoriteService{repo: repo}
 }
 

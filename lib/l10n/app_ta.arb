@@ -170,5 +170,6 @@
   "offerEndsToday": "இன்று முடிவடைகிறது",
   "offerNoAppFound": "பொருத்தமான பயன்பாடு கிடைக்கவில்லை",
   "editProfileCamera": "கேமரா",
-  "editProfileGallery": "கேலரி"
+  "editProfileGallery": "கேலரி",
+  "reconnecting": "மீண்டும் இணைக்கிறது..."
 }

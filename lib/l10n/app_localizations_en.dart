@@ -561,4 +561,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editProfileGallery => 'Gallery';
+
+  @override
+  String get reconnecting => 'Reconnecting...';
 }

@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 
+import '../core/api_config.dart';
 import '../providers/notification_provider.dart';
 import 'api_client.dart';
 
@@ -28,9 +33,9 @@ class FcmMessagingService {
   final _storage = const FlutterSecureStorage();
 
   String? _currentToken;
-  void Function(String?)? _onNavigate;
+  void Function(Map<String, dynamic>)? _onNavigate;
 
-  Future<void> initialize({void Function(String?)? onNavigate}) async {
+  Future<void> initialize({void Function(Map<String, dynamic>)? onNavigate}) async {
     _onNavigate = onNavigate;
     await _initLocalNotifications();
     await _getToken();
@@ -135,15 +140,40 @@ class FcmMessagingService {
     final body = message.notification?.body ?? '';
     final data = message.data;
 
-    const androidDetails = AndroidNotificationDetails(
-      'nomnom_notifications',
-      'NomNom Notifications',
-      channelDescription: 'Daily deals and updates from NomNom LK',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
+    AndroidNotificationDetails androidDetails;
+    final imageURL = data['offer_image_url'];
+    if (imageURL != null && imageURL.isNotEmpty) {
+      try {
+        final resolvedUrl = ApiConfig.resolveUrl(imageURL);
+        final resp = await http.get(Uri.parse(resolvedUrl));
+        if (resp.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final file = File('${tempDir.path}/notif_image.jpg');
+          await file.writeAsBytes(resp.bodyBytes);
+          androidDetails = AndroidNotificationDetails(
+            'nomnom_notifications',
+            'NomNom Notifications',
+            channelDescription: 'Daily deals and updates from NomNom LK',
+            importance: Importance.high,
+            priority: Priority.high,
+            styleInformation: BigPictureStyleInformation(
+              FilePathAndroidBitmap(file.path),
+              contentTitle: title,
+              summaryText: body,
+            ),
+          );
+        } else {
+          androidDetails = _defaultAndroidDetails;
+        }
+      } catch (_) {
+        androidDetails = _defaultAndroidDetails;
+      }
+    } else {
+      androidDetails = _defaultAndroidDetails;
+    }
+
     const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -160,19 +190,20 @@ class FcmMessagingService {
     );
   }
 
+  static const _defaultAndroidDetails = AndroidNotificationDetails(
+    'nomnom_notifications',
+    'NomNom Notifications',
+    channelDescription: 'Daily deals and updates from NomNom LK',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
+
   void _onLocalNotificationTap(NotificationResponse response) {
-    _navigateFromPayload(response.payload);
+    _onNavigate?.call({'type': response.payload ?? 'notification'});
   }
 
   void _handleMessageTap(RemoteMessage message) {
-    final data = message.data;
-    final type = data['type'];
-    final offerId = data['offer_id'];
-    _navigateFromPayload(type ?? offerId ?? 'notification');
-  }
-
-  void _navigateFromPayload(String? payload) {
-    _onNavigate?.call(payload);
+    _onNavigate?.call(message.data);
   }
 
   Future<void> registerCurrentToken() async {

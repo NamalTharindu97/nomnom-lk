@@ -8,6 +8,7 @@ import (
 type OfferRepoInterface interface {
 	Create(offer *models.Offer) error
 	FindByID(id uuid.UUID) (*models.Offer, error)
+	FindByIDForOwner(id, ownerID uuid.UUID) (*models.Offer, error)
 	FindAll(status, query string, page, perPage int, sort string) ([]models.Offer, int64, error)
 	FindAllByOwner(ownerID uuid.UUID, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error)
 	FindPending(page, perPage int) ([]models.Offer, int64, error)
@@ -24,6 +25,7 @@ type OfferRepoInterface interface {
 	IncrementViewCount(id uuid.UUID) error
 	TopByFavorites(limit int) ([]map[string]interface{}, error)
 	TopByViews(limit int) ([]models.Offer, error)
+	OwnerMetrics(ownerID uuid.UUID) (*OwnerOfferMetrics, error)
 }
 
 type RestaurantRepoInterface interface {
@@ -58,9 +60,17 @@ type UserRepoInterface interface {
 type FavoriteRepoInterface interface {
 	Add(userID, offerID uuid.UUID) error
 	Remove(userID, offerID uuid.UUID) error
-	FindByUser(userID uuid.UUID) ([]models.Favorite, error)
+	FindByUser(userID uuid.UUID, page, perPage int) ([]models.Favorite, int64, error)
 	IsFavorited(userID, offerID uuid.UUID) (bool, error)
 	GetFavoriteOfferIDs(userID uuid.UUID) ([]uuid.UUID, error)
+}
+
+type BannerRepoInterface interface {
+	CountStatsByOwner(ownerID uuid.UUID) (*OwnerBannerMetrics, error)
+}
+
+type AuditLogRepoInterface interface {
+	Create(log *models.AuditLog) error
 }
 
 type NotificationRepoInterface interface {

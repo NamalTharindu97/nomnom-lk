@@ -170,5 +170,6 @@
   "offerEndsToday": "අද අවසන් වේ",
   "offerNoAppFound": "සුසංගත යෙදුමක් හමු නොවීය",
   "editProfileCamera": "කැමරාව",
-  "editProfileGallery": "ගැලරිය"
+  "editProfileGallery": "ගැලරිය",
+  "reconnecting": "නැවත සම්බන්ධ වෙමින්..."
 }

@@ -10,6 +10,7 @@ class AppNotification {
     required this.isRead,
     required this.createdAt,
     this.offerId,
+    this.imageUrl,
   });
 
   final String id;
@@ -19,6 +20,7 @@ class AppNotification {
   final bool isRead;
   final DateTime createdAt;
   final String? offerId;
+  final String? imageUrl;
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
@@ -31,6 +33,7 @@ class AppNotification {
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
       offerId: json['offer_id'] as String?,
+      imageUrl: json['image_url'] as String?,
     );
   }
 
@@ -43,6 +46,7 @@ class AppNotification {
       'is_read': isRead,
       'created_at': createdAt.toIso8601String(),
       'offer_id': offerId,
+      'image_url': imageUrl,
     };
   }
 
@@ -54,6 +58,7 @@ class AppNotification {
     bool? isRead,
     DateTime? createdAt,
     String? offerId,
+    String? imageUrl,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -63,6 +68,7 @@ class AppNotification {
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
       offerId: offerId ?? this.offerId,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

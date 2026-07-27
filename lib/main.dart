@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'core/api_config.dart';
 import 'core/app_routes.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import 'models/offer.dart';
@@ -171,24 +172,27 @@ class _FcmInitializerState extends State<_FcmInitializer> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _initFcm());
   }
 
-  void _navigateToNotifications(String? payload) {
+  void _navigateToNotifications(Map<String, dynamic>? data) {
     final nav = Navigator.of(context, rootNavigator: true);
-    if (payload == null || payload == 'notification' || payload == 'admin') {
+    if (data == null || data.isEmpty) {
+      nav.pushNamed(AppRoutes.home);
+      return;
+    }
+    final offerId = data['offer_id'];
+    if (offerId != null && offerId is String && offerId.isNotEmpty) {
+      nav.pushNamed(AppRoutes.offerDetails, arguments: offerId);
+      return;
+    }
+    final restaurantId = data['restaurant_id'];
+    if (restaurantId != null &&
+        restaurantId is String &&
+        restaurantId.isNotEmpty) {
+      nav.pushNamed(AppRoutes.restaurants);
+      return;
+    }
+    final type = data['type'];
+    if (type == 'admin') {
       nav.pushNamed(AppRoutes.home, arguments: 3);
-      return;
-    }
-    // Deep link to offer
-    if (payload.startsWith('offer_') || payload.contains('offer_id')) {
-      final parts = payload.split('_');
-      final id = parts.length > 1 ? parts.last : payload;
-      nav.pushNamed('${AppRoutes.offerDetails}/$id');
-      return;
-    }
-    // Direct offer ID (UUID)
-    final uuidRegex = RegExp(
-        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
-    if (uuidRegex.hasMatch(payload)) {
-      nav.pushNamed('${AppRoutes.offerDetails}/$payload');
       return;
     }
     nav.pushNamed(AppRoutes.home);
@@ -345,7 +349,51 @@ class _SseListenerState extends State<_SseListener>
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    if (_sseService == null) return widget.child;
+    return ValueListenableBuilder<bool>(
+      valueListenable: _sseService!.reconnectingNotifier,
+      builder: (_, isReconnecting, __) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isReconnecting)
+              Material(
+                color: AppColors.curry.withValues(alpha: 0.1),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.curry,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppLocalizations.of(context)!.reconnecting,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.curry,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            Expanded(child: widget.child),
+          ],
+        );
+      },
+    );
+  }
 }
 
 PageRoute<void> _buildSlideUpRoute({
