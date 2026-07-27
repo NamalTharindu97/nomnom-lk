@@ -53,11 +53,6 @@ services:
       - admin_password
     networks:
       - nomnom
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
     depends_on:
       postgres:
         condition: service_healthy
