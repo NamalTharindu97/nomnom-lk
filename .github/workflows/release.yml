@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.environment }}
-      url: https://nomnom-backend-7iq0.onrender.com
+      url: https://api.nomnomlk.com
     steps:
       - uses: actions/checkout@v4
         with:
@@ -82,6 +82,7 @@ jobs:
         run: |
           flutter build appbundle --release \
             --dart-define=API_BASE_URL=${{ secrets.PRODUCTION_API_URL }} \
+            --dart-define=ADMIN_URL=https://admin.nomnomlk.com \
             --dart-define=APP_ENV=${{ inputs.environment }} \
             --dart-define=BUILD_SHA=${{ needs.validate.outputs.sha_short }}
 

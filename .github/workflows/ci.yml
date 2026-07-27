@@ -443,7 +443,7 @@ jobs:
           echo "storeFile=/tmp/ci-upload.keystore" >> android/key.properties
 
       - name: Build AAB
-        run: flutter build appbundle --release --dart-define=API_BASE_URL=https://nomnom-backend-7iq0.onrender.com/api/v1
+        run: flutter build appbundle --release --dart-define=API_BASE_URL=https://api.nomnomlk.com/api/v1
 
       - name: Verify AAB metadata
         run: |
