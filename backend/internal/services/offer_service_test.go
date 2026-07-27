@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/models"
+	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -103,7 +104,23 @@ func (m *mockOfferRepo) IncrementViewCount(id uuid.UUID) error {
 	return nil
 }
 func (m *mockOfferRepo) FindAllByOwner(ownerID uuid.UUID, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
-	return nil, 0, nil
+	var result []models.Offer
+	for _, o := range m.offers {
+		if status != "" && string(o.Status) != status {
+			continue
+		}
+		result = append(result, *o)
+	}
+	total := int64(len(result))
+	start := (page - 1) * perPage
+	if start >= len(result) {
+		return nil, total, nil
+	}
+	end := start + perPage
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[start:end], total, nil
 }
 func (m *mockOfferRepo) BulkUpdateStatus(ids []uuid.UUID, status models.OfferStatus) error {
 	return nil
@@ -116,6 +133,35 @@ func (m *mockOfferRepo) TopByFavorites(limit int) ([]map[string]interface{}, err
 }
 func (m *mockOfferRepo) TopByViews(limit int) ([]models.Offer, error) {
 	return nil, nil
+}
+func (m *mockOfferRepo) FindByIDForOwner(id, ownerID uuid.UUID) (*models.Offer, error) {
+	return m.FindByID(id)
+}
+func (m *mockOfferRepo) OwnerMetrics(ownerID uuid.UUID) (*repository.OwnerOfferMetrics, error) {
+	var total, pending, approved, rejected, expired int64
+	var totalViews int64
+	for _, o := range m.offers {
+		total++
+		switch o.Status {
+		case models.OfferPending:
+			pending++
+		case models.OfferApproved:
+			approved++
+		case models.OfferRejected:
+			rejected++
+		case models.OfferExpired:
+			expired++
+		}
+		totalViews += o.ViewCount
+	}
+	return &repository.OwnerOfferMetrics{
+		Total:      total,
+		Pending:    pending,
+		Approved:   approved,
+		Rejected:   rejected,
+		Expired:    expired,
+		TotalViews: totalViews,
+	}, nil
 }
 
 type mockRestaurantRepo struct {
@@ -135,6 +181,10 @@ func (m *mockRestaurantRepo) FindByID(id uuid.UUID) (*models.Restaurant, error) 
 }
 
 func (m *mockRestaurantRepo) Create(restaurant *models.Restaurant) error {
+	if restaurant.ID == uuid.Nil {
+		restaurant.ID = uuid.New()
+	}
+	m.restaurants[restaurant.ID] = restaurant
 	return nil
 }
 
@@ -147,18 +197,31 @@ func (m *mockRestaurantRepo) FindPending(page, perPage int) ([]models.Restaurant
 }
 
 func (m *mockRestaurantRepo) FindByOwnerID(ownerID uuid.UUID) ([]models.Restaurant, error) {
-	return nil, nil
+	var result []models.Restaurant
+	for _, r := range m.restaurants {
+		if ownerID == uuid.Nil || (r.OwnerID != nil && *r.OwnerID == ownerID) {
+			result = append(result, *r)
+		}
+	}
+	return result, nil
 }
 
 func (m *mockRestaurantRepo) Update(restaurant *models.Restaurant) error {
+	m.restaurants[restaurant.ID] = restaurant
 	return nil
 }
 
 func (m *mockRestaurantRepo) Delete(id uuid.UUID) error {
+	delete(m.restaurants, id)
 	return nil
 }
 
 func (m *mockRestaurantRepo) UpdateStatus(id uuid.UUID, status models.RestaurantStatus) error {
+	r, ok := m.restaurants[id]
+	if !ok {
+		return gorm.ErrRecordNotFound
+	}
+	r.Status = status
 	return nil
 }
 
@@ -174,7 +237,26 @@ func (m *mockRestaurantRepo) CountByDate(days int) ([]map[string]interface{}, er
 	return nil, nil
 }
 func (m *mockRestaurantRepo) FindAllByOwner(ownerID uuid.UUID, status, query string, page, perPage int) ([]models.Restaurant, int64, error) {
-	return nil, 0, nil
+	var result []models.Restaurant
+	for _, r := range m.restaurants {
+		if ownerID != uuid.Nil && (r.OwnerID == nil || *r.OwnerID != ownerID) {
+			continue
+		}
+		if status != "" && string(r.Status) != status {
+			continue
+		}
+		result = append(result, *r)
+	}
+	total := int64(len(result))
+	start := (page - 1) * perPage
+	if start >= len(result) {
+		return nil, total, nil
+	}
+	end := start + perPage
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[start:end], total, nil
 }
 func (m *mockRestaurantRepo) BulkUpdateStatus(ids []uuid.UUID, status models.RestaurantStatus) error {
 	return nil

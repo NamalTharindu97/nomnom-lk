@@ -1,13 +1,19 @@
+import 'package:nomnom_lk/models/app_user.dart';
 import 'package:nomnom_lk/models/banner.dart';
+import 'package:nomnom_lk/models/notification_model.dart';
 import 'package:nomnom_lk/models/offer.dart';
 import 'package:nomnom_lk/models/paginated_response.dart';
 import 'package:nomnom_lk/models/restaurant.dart';
+import 'package:nomnom_lk/services/api_auth_service.dart';
 import 'package:nomnom_lk/services/api_banner_service.dart';
+import 'package:nomnom_lk/services/api_client.dart';
 import 'package:nomnom_lk/services/api_favorites_service.dart';
+import 'package:nomnom_lk/services/api_notification_service.dart';
 import 'package:nomnom_lk/services/api_offer_service.dart';
 import 'package:nomnom_lk/services/api_restaurant_service.dart';
 import 'package:nomnom_lk/services/connectivity_service.dart';
 import 'package:nomnom_lk/services/local/favorite_store.dart';
+import 'package:nomnom_lk/services/local/notification_store.dart';
 import 'package:nomnom_lk/services/local/offer_store.dart';
 import 'package:nomnom_lk/services/local/restaurant_store.dart';
 
@@ -221,4 +227,171 @@ class MockApiBannerService implements ApiBannerService {
 
   @override
   Future<void> trackClick(String bannerId) async {}
+}
+
+class MockApiClient implements ApiClient {
+  Future<Map<String, dynamic>> Function(String,
+      {Map<String, dynamic>? queryParameters})? onGet;
+  Future<Map<String, dynamic>> Function(String, dynamic)? onPost;
+  Future<Map<String, dynamic>> Function(String, dynamic)? onPut;
+  Future<void> Function(String, {dynamic data})? onDelete;
+
+  bool clearTokensCalled = false;
+  String? lastInvalidatedPath;
+  bool cacheCleared = false;
+
+  @override
+  Future<Map<String, dynamic>> get(String path,
+      {Map<String, dynamic>? queryParameters}) async {
+    if (onGet != null) return onGet!(path, queryParameters: queryParameters);
+    return {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> post(String path, dynamic data) async {
+    if (onPost != null) return onPost!(path, data);
+    return {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> put(String path, dynamic data) async {
+    if (onPut != null) return onPut!(path, data);
+    return {};
+  }
+
+  @override
+  Future<void> delete(String path, {dynamic data}) async {
+    if (onDelete != null) await onDelete!(path, data: data);
+  }
+
+  @override
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String fileField,
+    required String filePath,
+    Map<String, String>? queryParams,
+  }) async {
+    return {};
+  }
+
+  @override
+  Future<void> clearTokens() async {
+    clearTokensCalled = true;
+  }
+
+  @override
+  void invalidateCache(String path) {
+    lastInvalidatedPath = path;
+  }
+
+  @override
+  void clearCache() {
+    cacheCleared = true;
+  }
+}
+
+class MockApiNotificationService implements ApiNotificationService {
+  List<AppNotification> notifications = [];
+  int unreadCount = 0;
+  bool fetchNotificationsThrows = false;
+  bool fetchUnreadCountThrows = false;
+
+  @override
+  Future<List<AppNotification>> fetchNotifications({int page = 1}) async {
+    if (fetchNotificationsThrows) throw Exception('fail');
+    return notifications;
+  }
+
+  @override
+  Future<int> fetchUnreadCount() async {
+    if (fetchUnreadCountThrows) throw Exception('fail');
+    return unreadCount;
+  }
+
+  @override
+  Future<void> markAsRead(String id) async {}
+
+  @override
+  Future<void> markAllAsRead() async {}
+}
+
+class MockNotificationStore implements NotificationStore {
+  List<Map<String, dynamic>>? cachedNotifications;
+
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<void> saveNotifications(List<Map<String, dynamic>> notifications) async {
+    cachedNotifications = notifications;
+  }
+
+  @override
+  List<Map<String, dynamic>>? getNotifications() => cachedNotifications;
+
+  @override
+  Future<void> clear() async {
+    cachedNotifications = null;
+  }
+}
+
+class MockApiAuthService implements ApiAuthService {
+  AppUser? userToReturn;
+  Exception? exceptionToThrow;
+  bool logoutCalled = false;
+
+  @override
+  bool get firebaseAvailable => true;
+
+  @override
+  Future<AppUser> signInWithFirebase(String firebaseToken) async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return userToReturn!;
+  }
+
+  @override
+  Future<AppUser> login(String email, String password) async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return userToReturn!;
+  }
+
+  @override
+  Future<Map<String, dynamic>> register(
+      String email, String password, String name) async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return {};
+  }
+
+  @override
+  Future<void> sendVerificationCode(String email) async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+  }
+
+  @override
+  Future<AppUser> verifyEmail(String email, String code) async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return userToReturn!;
+  }
+
+  @override
+  Future<void> logout() async {
+    logoutCalled = true;
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestDeletion() async {
+    return {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> cancelDeletion() async {
+    return {};
+  }
+
+  @override
+  Future<AppUser?> restoreUser() async {
+    if (exceptionToThrow != null) throw exceptionToThrow!;
+    return userToReturn;
+  }
 }
