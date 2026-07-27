@@ -91,11 +91,13 @@ class HotOfferCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(
-                          CurrencyFormatter.lkr(offer.offerPrice),
-                          style: textTheme.titleMedium?.copyWith(
-                            color: AppColors.curry,
-                            fontWeight: FontWeight.w900,
+                        Flexible(
+                          child: Text(
+                            CurrencyFormatter.lkr(offer.offerPrice),
+                            style: textTheme.titleMedium?.copyWith(
+                              color: AppColors.curry,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
