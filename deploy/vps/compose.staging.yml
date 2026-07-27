@@ -85,6 +85,8 @@ services:
       POSTGRES_USER: ${DATABASE_USER:-nomnom}
       POSTGRES_PASSWORD_FILE: /run/secrets/database_password
       POSTGRES_DB: ${DATABASE_NAME:-nomnom}
+    secrets:
+      - database_password
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
@@ -102,7 +104,8 @@ services:
     volumes:
       - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
       - redisdata:/data
-      - redis_acl:/run/secrets/redis_users_acl
+    secrets:
+      - redis_users_acl
     networks:
       - nomnom
     healthcheck:
@@ -135,5 +138,5 @@ secrets:
     file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/firebase_credentials.json
   admin_password:
     file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/admin_password
-  redis_acl:
+  redis_users_acl:
     file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom/secrets}/redis_users_acl
