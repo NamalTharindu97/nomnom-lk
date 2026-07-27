@@ -4,6 +4,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/api_config.dart';
+
+import '../core/api_config.dart';
 import '../core/app_routes.dart';
 import '../core/app_store.dart';
 import '../core/theme/app_colors.dart';
@@ -361,6 +363,38 @@ class _MenuSection extends StatelessWidget {
             title: AppLocalizations.of(context)!.profileAbout,
             subtitle: AppLocalizations.of(context)!.profileVersion,
           ),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.privacy_tip_outlined,
+            iconColor: context.colors.textSecondary,
+            title: AppLocalizations.of(context)!.profilePrivacyPolicy,
+            subtitle: AppLocalizations.of(context)!.profilePrivacyPolicySubtitle,
+            onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/privacy'),
+          ),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.description_outlined,
+            iconColor: context.colors.textSecondary,
+            title: AppLocalizations.of(context)!.profileTermsOfService,
+            subtitle: AppLocalizations.of(context)!.profileTermsOfServiceSubtitle,
+            onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/terms'),
+          ),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.help_outline_rounded,
+            iconColor: context.colors.textSecondary,
+            title: AppLocalizations.of(context)!.profileSupport,
+            subtitle: AppLocalizations.of(context)!.profileSupportSubtitle,
+            onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/support'),
+          ),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.delete_outline_rounded,
+            iconColor: Colors.red.shade300,
+            title: AppLocalizations.of(context)!.profileDeleteAccountWeb,
+            subtitle: AppLocalizations.of(context)!.profileDeleteAccountWebSubtitle,
+            onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/delete-account'),
+          ),
           if (!user.isGuest) ...[
             _MenuDivider(),
             _DeleteAccountTile(),
@@ -703,6 +737,16 @@ class _DeleteAccountTileState extends State<_DeleteAccountTile> {
           ],
         ),
       ),
+    );
+  }
+}
+
+Future<void> _openLegalUrl(BuildContext context, String url) async {
+  final uri = Uri.parse(url);
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not open link')),
     );
   }
 }

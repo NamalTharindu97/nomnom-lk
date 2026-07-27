@@ -84,6 +84,7 @@ jobs:
             --dart-define=API_BASE_URL=${{ secrets.PRODUCTION_API_URL }} \
             --dart-define=ADMIN_URL=https://admin.nomnomlk.com \
             --dart-define=APP_ENV=${{ inputs.environment }} \
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
             --dart-define=BUILD_SHA=${{ needs.validate.outputs.sha_short }}
 
       - name: Upload AAB artifact
