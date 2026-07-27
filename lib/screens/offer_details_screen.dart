@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
+import '../providers/platform_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../services/api_offer_service.dart';
-import '../services/api_platform_service.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/favorite_button.dart';
@@ -149,8 +150,6 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
-  List<PlatformData> _platforms = const [];
-  List<SocialPlatformData> _socialPlatforms = const [];
 
   @override
   void initState() {
@@ -164,21 +163,6 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
       curve: Curves.easeOut,
     );
     _controller.forward();
-    _loadPlatforms();
-  }
-
-  Future<void> _loadPlatforms() async {
-    try {
-      final client = ApiClient();
-      final opService = ApiPlatformService(client);
-      final spService = ApiSocialPlatformService(client);
-      final ops = await opService.fetchPlatforms();
-      final sps = await spService.fetchPlatforms();
-      if (mounted) setState(() {
-        _platforms = ops;
-        _socialPlatforms = sps;
-      });
-    } catch (_) {}
   }
 
   @override
@@ -194,6 +178,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
     final hasOrderPlatforms = offer.orderPlatforms.isNotEmpty;
     final hasSocialLinks = offer.socialLinks.isNotEmpty;
     final t = AppLocalizations.of(context)!;
+    final platformProvider = context.watch<PlatformProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -309,11 +294,13 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                 _StaggeredFadeSlide(
                   animation: _animation,
                   index: 8,
-                  child: OrderButtonsSection(
-                    platforms: _platforms
-                        .where((p) => offer.orderPlatforms.contains(p.slug))
-                        .toList(),
-                  ),
+                  child: platformProvider.isLoading
+                      ? _OrderButtonsShimmer()
+                      : OrderButtonsSection(
+                          platforms: platformProvider.orderPlatforms
+                              .where((p) => offer.orderPlatforms.contains(p.slug))
+                              .toList(),
+                        ),
                 ),
               ],
               if (hasSocialLinks) ...[
@@ -321,10 +308,12 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                 _StaggeredFadeSlide(
                   animation: _animation,
                   index: 9,
-                  child: FollowSection(
-                    socialLinks: offer.socialLinks,
-                    platforms: _socialPlatforms,
-                  ),
+                  child: platformProvider.isLoading
+                      ? _SocialSectionShimmer()
+                      : FollowSection(
+                          socialLinks: offer.socialLinks,
+                          platforms: platformProvider.socialPlatforms,
+                        ),
                 ),
               ],
               const SizedBox(height: Spacings.xl),
@@ -396,8 +385,116 @@ class _DiscountPill extends StatelessWidget {
               color: Theme.of(context).brightness == Brightness.dark
                   ? context.colors.background
                   : Colors.white,
-              fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w900,
+          ),
+      ),
+    );
+  }
+}
+
+class _OrderButtonsShimmer extends StatelessWidget {
+  const _OrderButtonsShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.shopping_cart_rounded, size: 18, color: AppColors.curry),
+            const SizedBox(width: Spacings.xs),
+            _ShimmerBlock(width: 100, height: 18),
+          ],
+        ),
+        const SizedBox(height: Spacings.sm),
+        Shimmer.fromColors(
+          baseColor: context.colors.surface,
+          highlightColor: context.colors.surfaceAlt,
+          child: Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: BorderRadius.circular(12),
             ),
+          ),
+        ),
+        const SizedBox(height: Spacings.xs),
+        Shimmer.fromColors(
+          baseColor: context.colors.surface,
+          highlightColor: context.colors.surfaceAlt,
+          child: Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SocialSectionShimmer extends StatelessWidget {
+  const _SocialSectionShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.share_rounded, size: 18, color: AppColors.curry),
+            const SizedBox(width: Spacings.xs),
+            _ShimmerBlock(width: 80, height: 18),
+          ],
+        ),
+        const SizedBox(height: Spacings.sm),
+        Shimmer.fromColors(
+          baseColor: context.colors.surface,
+          highlightColor: context.colors.surfaceAlt,
+          child: Row(
+            children: List.generate(
+              3,
+              (_) => Container(
+                width: 48,
+                height: 48,
+                margin: const EdgeInsets.only(right: Spacings.sm),
+                decoration: BoxDecoration(
+                  color: context.colors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ShimmerBlock extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const _ShimmerBlock({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: context.colors.surface,
+      highlightColor: context.colors.surfaceAlt,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(4),
+        ),
       ),
     );
   }

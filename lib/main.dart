@@ -17,6 +17,7 @@ import 'providers/banner_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/offer_provider.dart';
+import 'providers/platform_provider.dart';
 import 'providers/restaurant_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/edit_profile_screen.dart';
@@ -123,6 +124,9 @@ class NomNomBootstrap extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => BannerProvider(ApiBannerService(apiClient)),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PlatformProvider(apiClient),
         ),
       ],
       child:
