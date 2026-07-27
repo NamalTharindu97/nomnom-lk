@@ -1,8 +1,8 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`, `play-store-release-plan.md`, `contabo-vps-deployment-plan.md`.
-- **Current:** Phase 12 merged to `staging` and `master`. VPS staging deployed at `169.58.79.251` (backend :8080, admin :3000). Render PostgreSQL data migrated to VPS. Admin middleware-based API proxy (runtime) replaces build-time rewrites. iOS device testing branch `ios/device-testing` with ATS/URL-scheme config (separate from master). Flutter PlatformProvider caches order/social platforms. Full Play Store compliance audit completed — 5 blockers identified. Next: P0 submission blockers (domain + HTTPS, legal links, Sentry, hero tag fix, CI URL).
-- **Completed: All prior milestones** — 53 E2E tests passing, audit logging, impersonation, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish, release prep, Obsidian knowledge base, deployment plan (16 phases). 267 Flutter tests, 145 backend tests, 14 admin E2E added. Contabo VPS staging deployed.
+- **Current:** Phase 12 + P0 Play Store compliance fixes complete. VPS staging deployed at `169.58.79.251` with HTTPS via Caddy + Cloudflare TLS. Domain `nomnomlk.com` on Cloudflare. Admin at `https://admin.nomnomlk.com`, API at `https://api.nomnomlk.com`. Render data migrated to VPS. Flutter app has legal links (Privacy/Terms/Support) + Sentry crash reporting. iOS device testing branch `ios/device-testing` (separate from master). Next: Phase 11 store listing (screenshots, feature graphic, store descriptions) + Data Safety form.
+- **Completed:** All prior milestones — 267 Flutter tests, 145 backend tests, 53+ E2E tests. Audit logging, impersonation, RBAC, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish. VPS staging deployed (PostgreSQL 16, Redis 7, Caddy TLS, Cloudflare origin cert). CI URLs migrated from Render to nomnomlk.com. Admin favicon + password eye toggle + email placeholder fix.
 
 ## Deployment Documentation
 - **`docs/deployment/README.md`** — Overview of what was deployed (Render resources, URLs, quick reference)
@@ -411,3 +411,16 @@
     - `ios/device-testing` — iOS-specific changes (Info.plist, entitlements, SPM disable).
     - `phase/12-rate-limit-ci-aab` — feature branch.
     - `staging`, `master` — clean, no iOS changes.
+- **2026-07-28:** VPS staging deployment + Play Store compliance P0 fixes.
+  - **VPS:** Contabo Cloud VPS S at `169.58.79.251`. PostgreSQL 16 + Redis 7 via Docker. Caddy reverse proxy with Cloudflare origin cert for HTTPS on 443. Render PostgreSQL migrated to VPS (72-row dump). Admin email updated to `admin@nomnomlk.com`.
+  - **Domain:** `nomnomlk.com` purchased on Cloudflare ($10.46/yr). DNS: `api.nomnomlk.com` → VPS, `admin.nomnomlk.com` → VPS. Caddy routes to `backend:8080` and `admin:3000`.
+  - **Admin middleware proxy:** Replaced `next.config.ts` build-time rewrites with `src/middleware.ts` runtime proxy.
+  - **CI URL migration:** All workflows updated from Render URL to `api.nomnomlk.com`.
+  - **Sentry crash reporting:** `sentry_flutter ^8.14.2` in `main.dart`, DSN from `--dart-define=SENTRY_DSN`, graceful fallback when not set. Kotlin 2.0 language version fix in `build.gradle.kts`.
+  - **Legal links in Flutter:** Profile screen has Privacy Policy, Terms of Service, Support, Delete Account Web tiles. Opens `adminUrl/privacy` etc. via `url_launcher`. ARB strings in en/si/ta.
+  - **Admin dashboard fixes:** Favicon replaced with NomNom app icon (16x16 + 32x32 ICO), password show/hide eye toggle, email placeholder removed.
+  - **Hero tag collision fix:** `offer_details_screen.dart` uses `offer-detail-{id}` prefix.
+  - **Flutter PlatformProvider:** Caches order/social platforms on startup, eliminates per-page API calls. Shimmer loading on offer details.
+  - **Play Store compliance audit:** Score 77/100 — CONDITIONAL PASS. 7 issues identified, 3 P0 fixes applied. Remediation plan in `plans/play-store-release-plan.md`.
+  - **Play Store compliance:** Score 77/100 — CONDITIONAL PASS. 106 API routes reviewed, permissions audited (INTERNET only). 4 legal pages exist on admin (public). Remediation plan in `plans/play-store-release-plan.md`.
+  - **Flutter 267 tests pass. Backend 145 tests pass. 53+ E2E tests pass.**
