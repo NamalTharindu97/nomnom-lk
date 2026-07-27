@@ -1,14 +1,33 @@
-# Staging compose — no Caddy, direct port exposure
+# Staging compose — Caddy reverse proxy with Cloudflare origin TLS
 # For production, use deploy/vps/compose.yml instead
 
 name: nomnom-staging
 
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /etc/nomnom/secrets/origin_cert.pem:/etc/caddy/origin_cert.pem:ro
+      - /etc/nomnom/secrets/origin_key.pem:/etc/caddy/origin_key.pem:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - nomnom
+    depends_on:
+      - backend
+      - admin
+
   backend:
     image: ${BACKEND_IMAGE:-docker.io/namal97/nomnom-backend:latest}
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       ENVIRONMENT: staging
       SERVER_PORT: "8080"
@@ -32,15 +51,15 @@ services:
       R2_SECURE: "true"
       R2_FORCE_PATH_STYLE: "false"
       R2_PREFIX: staging
-      BROWSER_COOKIE_SECURE: "false"
-      CORS_ORIGINS: "*"
+      BROWSER_COOKIE_SECURE: "true"
+      CORS_ORIGINS: "https://admin.nomnomlk.com"
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME}
       SMTP_PASSWORD_FILE: /run/secrets/smtp_password
-      SMTP_FROM: ${SMTP_FROM:-"NomNom LK <noreply@nomnom.lk>"}
+      SMTP_FROM: ${SMTP_FROM:-"NomNom LK <noreply@nomnomlk.com>"}
       FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase_credentials
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@nomnom.lk}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@nomnomlk.com}
       ADMIN_PASSWORD_FILE: /run/secrets/admin_password
     secrets:
       - database_password
@@ -62,8 +81,8 @@ services:
   admin:
     image: ${ADMIN_IMAGE:-docker.io/namal97/nomnom-admin:latest}
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       API_PROXY_TARGET: http://backend:8080
       NEXT_PUBLIC_API_URL: /api/v1
@@ -115,6 +134,8 @@ networks:
 volumes:
   pgdata:
   redisdata:
+  caddy_data:
+  caddy_config:
 
 secrets:
   database_password:
