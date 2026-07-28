@@ -25,7 +25,12 @@ class FavoritesScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(Spacings.md, 18, Spacings.md, Spacings.sm),
+              padding: const EdgeInsets.fromLTRB(
+                Spacings.md,
+                18,
+                Spacings.md,
+                Spacings.sm,
+              ),
               child: Text(
                 loc.favoritesTitle,
                 style: textTheme.headlineSmall?.copyWith(
@@ -35,62 +40,81 @@ class FavoritesScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Consumer2<AuthProvider, OfferProvider>(
-                builder: (context, auth, provider, child) {
-                  if (!auth.isLoggedIn && !auth.isGuest) {
-                    return EmptyState(
-                      icon: Icons.lock_outline_rounded,
-                      title: loc.loginTitle,
-                      message: loc.loginEmailHint,
-                      onRetry: () => Navigator.of(context).pushReplacementNamed(AppRoutes.login),
-                      retryLabel: loc.loginSignInButton,
-                    );
-                  }
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final feedWidth = constraints.maxWidth.clamp(0.0, 600.0);
+                  return Center(
+                    child: SizedBox(
+                      width: feedWidth,
+                      height: constraints.maxHeight,
+                      child: Consumer2<AuthProvider, OfferProvider>(
+                        builder: (context, auth, provider, child) {
+                          if (!auth.isLoggedIn && !auth.isGuest) {
+                            return EmptyState(
+                              icon: Icons.lock_outline_rounded,
+                              title: loc.loginTitle,
+                              message: loc.loginEmailHint,
+                              onRetry: () => Navigator.of(context)
+                                  .pushReplacementNamed(AppRoutes.login),
+                              retryLabel: loc.loginSignInButton,
+                            );
+                          }
 
-                  if (provider.isLoading && !provider.hasLoaded) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                          if (provider.isLoading && !provider.hasLoaded) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
 
-                  if (provider.error != null && provider.favoriteOffers.isEmpty) {
-                    return RefreshIndicator(
-                      onRefresh: provider.refreshOffers,
-                      child: ListView(
-                        children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
-                            child: EmptyState(
-                              icon: Icons.wifi_off_rounded,
-                              title: loc.generalFailedToLoad,
-                              message: provider.error!,
-                              onRetry: provider.refreshOffers,
+                          if (provider.error != null &&
+                              provider.favoriteOffers.isEmpty) {
+                            return RefreshIndicator(
+                              onRefresh: provider.refreshOffers,
+                              child: ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  SizedBox(
+                                    height: constraints.maxHeight,
+                                    child: EmptyState(
+                                      icon: Icons.wifi_off_rounded,
+                                      title: loc.generalFailedToLoad,
+                                      message: provider.error!,
+                                      onRetry: provider.refreshOffers,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          final offers = provider.favoriteOffers;
+
+                          if (offers.isEmpty && provider.hasLoaded) {
+                            return EmptyState(
+                              icon: Icons.favorite_border_rounded,
+                              title: loc.favoritesNoSavedDeals,
+                              message: loc.favoritesEmpty,
+                            );
+                          }
+
+                          return RefreshIndicator(
+                            onRefresh: provider.refreshOffers,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.only(
+                                top: Spacings.xxs,
+                                bottom: Spacings.md,
+                              ),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: offers.length,
+                              itemBuilder: (context, index) {
+                                return StaggerItem(
+                                  index: index,
+                                  child: OfferCard(offer: offers[index]),
+                                );
+                              },
                             ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    );
-                  }
-
-                  final offers = provider.favoriteOffers;
-
-                  if (offers.isEmpty && provider.hasLoaded) {
-                    return EmptyState(
-                      icon: Icons.favorite_border_rounded,
-                      title: loc.favoritesNoSavedDeals,
-                      message: loc.favoritesEmpty,
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: provider.refreshOffers,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(top: Spacings.xxs, bottom: Spacings.md),
-                      itemCount: offers.length,
-                      itemBuilder: (context, index) {
-                        return StaggerItem(
-                          index: index,
-                          child: OfferCard(offer: offers[index]),
-                        );
-                      },
                     ),
                   );
                 },

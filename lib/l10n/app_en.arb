@@ -202,5 +202,16 @@
   "offerNoAppFound": "No compatible app found",
   "editProfileCamera": "Camera",
   "editProfileGallery": "Gallery",
-  "reconnecting": "Reconnecting..."
+  "reconnecting": "Reconnecting...",
+  "editProfileSaving": "Saving...",
+  "deleteAccountTitle": "Delete Account",
+  "deleteAccountConfirmation": "Your account will be scheduled for deletion in 30 days. You can cancel at any time during this period. This action cannot be undone after the 30-day window.",
+  "deleteAccountSubtitle": "Schedule account deletion in 30 days",
+  "deleteAccountScheduleError": "Failed to schedule deletion",
+  "linkOpenError": "Could not open link",
+  "platformNotInstalled": "{platform} not installed",
+  "@platformNotInstalled": {"placeholders": {"platform": {"type": "String"}}},
+  "platformInstallPrompt": "Install {platform} from the store to order?",
+  "@platformInstallPrompt": {"placeholders": {"platform": {"type": "String"}}},
+  "platformInstall": "Install"
 }

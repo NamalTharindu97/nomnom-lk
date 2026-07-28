@@ -24,7 +24,12 @@ class OfferCard extends StatelessWidget {
     final locale = Localizations.localeOf(context).languageCode;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.md),
+      padding: const EdgeInsets.fromLTRB(
+        Spacings.md,
+        0,
+        Spacings.md,
+        Spacings.md,
+      ),
       child: Material(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(12),
@@ -50,7 +55,9 @@ class OfferCard extends StatelessWidget {
                   Positioned(
                     top: Spacings.sm,
                     left: Spacings.sm,
-                    child: DiscountBadge(label: offer.discountLabelLocalized(Localizations.localeOf(context).languageCode)),
+                    child: DiscountBadge(
+                      label: offer.discountLabelLocalized(locale),
+                    ),
                   ),
                   Positioned(
                     top: 8,
@@ -78,11 +85,17 @@ class OfferCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: Spacings.sm),
-                        Text(
-                          CurrencyFormatter.lkr(offer.offerPrice),
-                          style: textTheme.titleMedium?.copyWith(
-                            color: AppColors.curry,
-                            fontWeight: FontWeight.w900,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          child: Text(
+                            CurrencyFormatter.lkr(offer.offerPrice),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: textTheme.titleMedium?.copyWith(
+                              color: AppColors.curry,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                       ],
@@ -101,12 +114,18 @@ class OfferCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Text(
-                          CurrencyFormatter.lkr(offer.originalPrice),
-                          style: textTheme.bodySmall?.copyWith(
-                            color: context.colors.muted,
-                            decoration: TextDecoration.lineThrough,
-                            decorationColor: context.colors.muted,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          child: Text(
+                            CurrencyFormatter.lkr(offer.originalPrice),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: context.colors.muted,
+                              decoration: TextDecoration.lineThrough,
+                              decorationColor: context.colors.muted,
+                            ),
                           ),
                         ),
                       ],
@@ -121,5 +140,3 @@ class OfferCard extends StatelessWidget {
     );
   }
 }
-
-

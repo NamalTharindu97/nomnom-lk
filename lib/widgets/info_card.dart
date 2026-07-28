@@ -25,43 +25,48 @@ class InfoCard extends StatelessWidget {
         border: Border.all(color: context.colors.border.withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 80,
-            color: AppColors.curry,
-          ),
-          const SizedBox(width: 12),
-          Icon(icon, color: AppColors.ocean, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: context.colors.textSecondary,
-                    fontWeight: FontWeight.w700,
+      child: IntrinsicHeight(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 80),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 4, color: AppColors.curry),
+              const SizedBox(width: 12),
+              Center(child: Icon(icon, color: AppColors.ocean, size: 22)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: textTheme.labelMedium?.copyWith(
+                          color: context.colors.textSecondary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        value,
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: context.colors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+            ],
           ),
-          const SizedBox(width: 12),
-        ],
+        ),
       ),
     );
   }

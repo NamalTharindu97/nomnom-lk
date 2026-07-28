@@ -94,6 +94,8 @@ class _PlatformButton extends StatelessWidget {
                 Expanded(
                   child: Text(
                     platform.displayName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -166,19 +168,24 @@ class _PlatformButton extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${platform.displayName} not installed'),
-        content: Text('Install ${platform.displayName} from the store to order?'),
+        title: Text(AppLocalizations.of(context)!
+            .platformNotInstalled(platform.displayName)),
+        content: Text(AppLocalizations.of(context)!
+            .platformInstallPrompt(platform.displayName)),
+        actionsAlignment: MainAxisAlignment.end,
+        actionsOverflowAlignment: OverflowBarAlignment.end,
+        actionsOverflowButtonSpacing: Spacings.xs,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.generalCancel),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
               launchUrl(Uri.parse(storeUrl), mode: LaunchMode.externalApplication);
             },
-            child: const Text('Install'),
+            child: Text(AppLocalizations.of(context)!.platformInstall),
           ),
         ],
       ),

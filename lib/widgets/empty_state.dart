@@ -52,61 +52,79 @@ class _EmptyStateState extends State<EmptyState>
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(Spacings.xxxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedBuilder(
-              animation: _pulseAnim,
-              builder: (context, child) => Transform.scale(
-                scale: _pulseAnim.value,
-                child: child,
-              ),
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceAlt,
-                  borderRadius: BorderRadius.circular(8),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: EdgeInsets.all(
+                  constraints.maxWidth < 360 ? Spacings.lg : Spacings.xxxl,
                 ),
-                child: Icon(widget.icon, color: AppColors.curry, size: 30),
-              ),
-            ),
-            const SizedBox(height: Spacings.lg),
-            Text(
-              widget.title,
-              textAlign: TextAlign.center,
-              style: textTheme.titleMedium?.copyWith(
-                color: context.colors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: Spacings.xs),
-            Text(
-              widget.message,
-              textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(color: context.colors.muted),
-            ),
-            if (widget.onRetry != null) ...[
-              const SizedBox(height: Spacings.lg),
-              FilledButton.icon(
-                onPressed: widget.onRetry,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(widget.retryLabel ?? AppLocalizations.of(context)!.retryLabel),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.curry,
-                  foregroundColor: Theme.of(context).brightness == Brightness.dark
-                      ? context.colors.background
-                      : Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _pulseAnim,
+                      builder: (context, child) => Transform.scale(
+                        scale: _pulseAnim.value,
+                        child: child,
+                      ),
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: context.colors.surfaceAlt,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child:
+                            Icon(widget.icon, color: AppColors.curry, size: 30),
+                      ),
+                    ),
+                    const SizedBox(height: Spacings.lg),
+                    Text(
+                      widget.title,
+                      textAlign: TextAlign.center,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: Spacings.xs),
+                    Text(
+                      widget.message,
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodyMedium
+                          ?.copyWith(color: context.colors.muted),
+                    ),
+                    if (widget.onRetry != null) ...[
+                      const SizedBox(height: Spacings.lg),
+                      FilledButton.icon(
+                        onPressed: widget.onRetry,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: Text(widget.retryLabel ??
+                            AppLocalizations.of(context)!.retryLabel),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.curry,
+                          foregroundColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? context.colors.background
+                                  : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );

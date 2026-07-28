@@ -184,146 +184,165 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
       appBar: AppBar(
         title: Text(
           offer.restaurantName,
-          style: textTheme.titleMedium?.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.w800),
+          style: textTheme.titleMedium?.copyWith(
+              color: context.colors.textPrimary, fontWeight: FontWeight.w800),
         ),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Spacings.lg,
-            Spacings.xl,
-            Spacings.lg,
-            Spacings.xxl,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 0,
-                child: Row(
+      body: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+                  Spacings.xl,
+                  constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+                  Spacings.xxl,
+                ),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 0,
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: Spacings.sm,
+                        runSpacing: Spacings.sm,
+                        children: [
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: constraints.maxWidth < 600
+                                  ? constraints.maxWidth -
+                                      (constraints.maxWidth < 360
+                                          ? Spacings.md * 2
+                                          : Spacings.lg * 2)
+                                  : 440,
+                            ),
+                            child: Text(
+                              offer.localizedTitle(
+                                Localizations.localeOf(context).languageCode,
+                              ),
+                              style: textTheme.headlineSmall?.copyWith(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          _DiscountPill(
+                            label: offer.discountLabelLocalized(
+                              Localizations.localeOf(context).languageCode,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Spacings.xl),
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 1,
                       child: Text(
-                        offer.localizedTitle(
+                        offer.localizedDescription(
                           Localizations.localeOf(context).languageCode,
                         ),
-                        style: textTheme.headlineSmall?.copyWith(
-                          color: context.colors.textPrimary,
-                          fontWeight: FontWeight.w900,
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: context.colors.textSecondary,
+                          height: 1.5,
                         ),
                       ),
                     ),
-                    const SizedBox(width: Spacings.sm),
-                    _DiscountPill(
-                      label: offer.discountLabelLocalized(
-                        Localizations.localeOf(context).languageCode,
+                    const SizedBox(height: Spacings.xl),
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 2,
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: OfferImage(
+                          imageUrl: offer.primaryImage,
+                          heroTag: 'offer-detail-${offer.id}',
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
+                    const SizedBox(height: Spacings.xl),
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 3,
+                      child: PricePanel(offer: offer),
+                    ),
+                    const SizedBox(height: Spacings.xl),
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 4,
+                      child: _SectionHeader(
+                        icon: Icons.info_outline_rounded,
+                        title: t.offerDetailsLabel,
+                      ),
+                    ),
+                    const SizedBox(height: Spacings.sm),
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 5,
+                      child: InfoCard(
+                        icon: Icons.storefront_rounded,
+                        title: t.offerRestaurantLabel,
+                        value: offer.restaurantName,
+                      ),
+                    ),
+                    const SizedBox(height: Spacings.sm),
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 6,
+                      child: InfoCard(
+                        icon: Icons.local_offer_rounded,
+                        title: t.offerDiscountLabel,
+                        value: offer.discountLabelLocalized(
+                          Localizations.localeOf(context).languageCode,
+                        ),
+                      ),
+                    ),
+                    if (hasOrderPlatforms) ...[
+                      const SizedBox(height: Spacings.xl),
+                      _StaggeredFadeSlide(
+                        animation: _animation,
+                        index: 8,
+                        child: platformProvider.isLoading
+                            ? _OrderButtonsShimmer()
+                            : OrderButtonsSection(
+                                platforms: platformProvider.orderPlatforms
+                                    .where((p) =>
+                                        offer.orderPlatforms.contains(p.slug))
+                                    .toList(),
+                              ),
+                      ),
+                    ],
+                    if (hasSocialLinks) ...[
+                      const SizedBox(height: Spacings.xl),
+                      _StaggeredFadeSlide(
+                        animation: _animation,
+                        index: 9,
+                        child: platformProvider.isLoading
+                            ? _SocialSectionShimmer()
+                            : FollowSection(
+                                socialLinks: offer.socialLinks,
+                                platforms: platformProvider.socialPlatforms,
+                              ),
+                      ),
+                    ],
+                    const SizedBox(height: Spacings.xl),
+                    _StaggeredFadeSlide(
+                      animation: _animation,
+                      index: 10,
+                      child: FavoriteButton(offerId: offer.id, showLabel: true),
+                    ),
+                    const SizedBox(height: Spacings.xxxl),
                   ],
                 ),
               ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 1,
-                child: Text(
-                  offer.localizedDescription(
-                    Localizations.localeOf(context).languageCode,
-                  ),
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: context.colors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 2,
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: OfferImage(
-                    imageUrl: offer.primaryImage,
-                    heroTag: 'offer-detail-${offer.id}',
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 3,
-                child: PricePanel(offer: offer),
-              ),
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 4,
-                child: _SectionHeader(
-                  icon: Icons.info_outline_rounded,
-                  title: t.offerDetailsLabel,
-                ),
-              ),
-              const SizedBox(height: Spacings.sm),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 5,
-                child: InfoCard(
-                  icon: Icons.storefront_rounded,
-                  title: t.offerRestaurantLabel,
-                  value: offer.restaurantName,
-                ),
-              ),
-              const SizedBox(height: Spacings.sm),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 6,
-                child: InfoCard(
-                  icon: Icons.local_offer_rounded,
-                  title: t.offerDiscountLabel,
-                  value: offer.discountLabelLocalized(
-                    Localizations.localeOf(context).languageCode,
-                  ),
-                ),
-              ),
-              if (hasOrderPlatforms) ...[
-                const SizedBox(height: Spacings.xl),
-                _StaggeredFadeSlide(
-                  animation: _animation,
-                  index: 8,
-                  child: platformProvider.isLoading
-                      ? _OrderButtonsShimmer()
-                      : OrderButtonsSection(
-                          platforms: platformProvider.orderPlatforms
-                              .where((p) => offer.orderPlatforms.contains(p.slug))
-                              .toList(),
-                        ),
-                ),
-              ],
-              if (hasSocialLinks) ...[
-                const SizedBox(height: Spacings.xl),
-                _StaggeredFadeSlide(
-                  animation: _animation,
-                  index: 9,
-                  child: platformProvider.isLoading
-                      ? _SocialSectionShimmer()
-                      : FollowSection(
-                          socialLinks: offer.socialLinks,
-                          platforms: platformProvider.socialPlatforms,
-                        ),
-                ),
-              ],
-              const SizedBox(height: Spacings.xl),
-              _StaggeredFadeSlide(
-                animation: _animation,
-                index: 10,
-                child: FavoriteButton(offerId: offer.id, showLabel: true),
-              ),
-              const SizedBox(height: Spacings.xxxl),
-            ],
+            ),
           ),
         ),
       ),
@@ -385,8 +404,8 @@ class _DiscountPill extends StatelessWidget {
               color: Theme.of(context).brightness == Brightness.dark
                   ? context.colors.background
                   : Colors.white,
-            fontWeight: FontWeight.w900,
-          ),
+              fontWeight: FontWeight.w900,
+            ),
       ),
     );
   }

@@ -16,6 +16,44 @@ class PricePanel extends StatelessWidget {
     final t = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final daysUntilEnd = offer.endDate.difference(now).inDays;
+    final priceDetails = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t.offerDealPriceLabel,
+          style: textTheme.labelLarge?.copyWith(
+            color: context.colors.muted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.end,
+          spacing: 10,
+          runSpacing: 4,
+          children: [
+            Text(
+              CurrencyFormatter.lkr(offer.offerPrice),
+              style: textTheme.headlineMedium?.copyWith(
+                color: AppColors.curry,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                CurrencyFormatter.lkr(offer.originalPrice),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: context.colors.muted,
+                  decoration: TextDecoration.lineThrough,
+                  decorationColor: context.colors.muted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -32,65 +70,40 @@ class PricePanel extends StatelessWidget {
             height: 4,
             color: AppColors.curry,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.offerDealPriceLabel,
-                        style: textTheme.labelLarge?.copyWith(
-                          color: context.colors.muted,
-                          fontWeight: FontWeight.w700,
-                        ),
+          LayoutBuilder(
+            builder: (context, constraints) => Padding(
+              padding: const EdgeInsets.all(16),
+              child: Flex(
+                direction: constraints.maxWidth < 430
+                    ? Axis.vertical
+                    : Axis.horizontal,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (constraints.maxWidth < 430)
+                    priceDetails
+                  else
+                    Flexible(fit: FlexFit.loose, child: priceDetails),
+                  if (constraints.maxWidth < 430)
+                    const SizedBox(height: 12)
+                  else
+                    const SizedBox(width: 12),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.lime.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      t.offerSaveAmount(CurrencyFormatter.lkr(offer.saving)),
+                      style: textTheme.labelLarge?.copyWith(
+                        color: AppColors.lime,
+                        fontWeight: FontWeight.w900,
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            CurrencyFormatter.lkr(offer.offerPrice),
-                            style: textTheme.headlineMedium?.copyWith(
-                              color: AppColors.curry,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                              CurrencyFormatter.lkr(offer.originalPrice),
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: context.colors.muted,
-                                decoration: TextDecoration.lineThrough,
-                                decorationColor: context.colors.muted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.lime.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    t.offerSaveAmount(CurrencyFormatter.lkr(offer.saving)),
-                    style: textTheme.labelLarge?.copyWith(
-                      color: AppColors.lime,
-                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           if (daysUntilEnd >= 0 && daysUntilEnd <= 7)
@@ -102,7 +115,8 @@ class PricePanel extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.access_time_rounded, size: 14, color: AppColors.chili),
+                  const Icon(Icons.access_time_rounded,
+                      size: 14, color: AppColors.chili),
                   const SizedBox(width: 6),
                   Text(
                     daysUntilEnd == 0

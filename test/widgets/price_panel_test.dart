@@ -64,5 +64,18 @@ void main() {
 
       expect(find.byIcon(Icons.access_time_rounded), findsNothing);
     });
+
+    testWidgets('stacks price and savings without overflow at 320 width',
+        (WidgetTester tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 568);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(wrapWithApp(PricePanel(
+        offer: makeOffer(originalPrice: 125000, offerPrice: 99999),
+      )));
+
+      expect(tester.takeException(), isNull);
+    });
   });
 }
