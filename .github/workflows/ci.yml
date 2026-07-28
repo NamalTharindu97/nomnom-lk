@@ -38,25 +38,26 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      minio:
-        image: minio/minio
-        command: server /data --console-address ":9001"
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        ports:
-          - 9000:9000
-          - 9001:9001
-        options: >-
-          --health-cmd "mc ready local"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Start MinIO
+        run: |
+          docker run --detach --name minio \
+            --publish 9000:9000 --publish 9001:9001 \
+            --env MINIO_ROOT_USER=minioadmin \
+            --env MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data --console-address ":9001"
+          for _ in {1..30}; do
+            if curl --fail --silent --output /dev/null http://localhost:9000/minio/health/live; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs minio
+          exit 1
 
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v2
@@ -147,19 +148,26 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      minio:
-        image: minio/minio
-        command: server /data --console-address ":9001"
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        ports:
-          - 9000:9000
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Start MinIO
+        run: |
+          docker run --detach --name minio \
+            --publish 9000:9000 --publish 9001:9001 \
+            --env MINIO_ROOT_USER=minioadmin \
+            --env MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data --console-address ":9001"
+          for _ in {1..30}; do
+            if curl --fail --silent --output /dev/null http://localhost:9000/minio/health/live; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs minio
+          exit 1
 
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v2
@@ -170,18 +178,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            admin/node_modules
-          key: npm-${{ hashFiles('admin/package-lock.json') }}
-          restore-keys: npm-
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install --global npm@11.6.2
+          npm ci
         working-directory: admin
 
       - name: Lint
@@ -466,74 +469,6 @@ jobs:
           name: app-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 1
-
-  docker:
-    name: Docker (Build + Push + Scan)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [backend, admin, flutter]
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Generate tags
-        id: meta
-        run: |
-          echo "sha_short=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-
-      - name: Build & Push Backend
-        uses: docker/build-push-action@v5
-        with:
-          context: backend
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:latest
-            ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:${{ steps.meta.outputs.sha_short }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Scan backend image
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:latest
-          format: table
-          exit-code: 1
-          severity: HIGH,CRITICAL
-
-      - name: Build & Push Admin
-        uses: docker/build-push-action@v5
-        with:
-          context: admin
-          push: true
-          build-args: |
-            NEXT_PUBLIC_API_URL=/api/v1
-            API_PROXY_TARGET=http://backend:8080
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
-            ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.meta.outputs.sha_short }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Scan admin image
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:latest
-          format: table
-          exit-code: 1
-          severity: HIGH,CRITICAL
 
   sonarcloud:
     name: SonarCloud Analysis

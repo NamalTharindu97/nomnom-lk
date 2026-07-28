@@ -1,8 +1,15 @@
-# Future VPS Runtime
+# VPS Runtime
 
-This directory is an additive production template. It does not replace
-`backend/docker-compose.yml`, `backend/docker-compose.deploy.yml`, or the current
-Render deployment.
+The staging runtime is active on the Contabo VPS and serves
+`api.nomnomlk.com` and `admin.nomnomlk.com`. `compose.staging.yml` is the active
+staging contract. `compose.yml` remains the isolated production contract and
+must not be enabled until its separate configuration and secret layout are
+installed and verified.
+
+Application deployments use immutable full Git SHA tags. A successful CI run
+for a push to `staging` triggers `.github/workflows/deploy-staging.yml`, which
+builds and scans both application images, publishes them to Docker Hub, invokes
+the fixed VPS deployment helper, and verifies the public endpoints.
 
 ## Security Model
 
@@ -32,11 +39,13 @@ The committed `compose.env.example` contains only non-secret placeholders.
 Production values come from the protected GitHub environment and are installed
 by `scripts/vps/install-secrets.sh`.
 
-## Pre-Purchase Limitations
+## Production Cutover
 
-The Compose model can be validated statically now. Before deployment, confirm
-the exact service UIDs, PostgreSQL TLS key permissions, image digests, firewall,
-Tailscale access, backup tooling, and rollback behavior on the purchased VPS.
+Production promotion remains disabled until the exact service UIDs, PostgreSQL
+TLS key permissions, infrastructure image digests, firewall, backup tooling,
+and rollback behavior are verified for the isolated production runtime. Set the
+protected GitHub environment variable `PRODUCTION_DEPLOY_ENABLED=true` only
+after those checks pass.
 
 Do not use the zero digests or placeholder application tags from
 `compose.env.example` for deployment.
