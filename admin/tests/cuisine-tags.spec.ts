@@ -18,8 +18,9 @@ test.describe.serial("Cuisine Tags", () => {
     const row = page.locator("tr", { hasText: tagName })
     await row.getByRole("button").first().click()
 
-    await row.getByRole("textbox").fill(updatedName)
-    await row.getByRole("button").first().click()
+    const editInput = page.locator("tbody input").filter({ visible: true })
+    await editInput.fill(updatedName)
+    await editInput.locator("xpath=ancestor::tr").getByRole("button").first().click()
 
     await expect(page.locator("tr", { hasText: updatedName })).toBeVisible()
   })

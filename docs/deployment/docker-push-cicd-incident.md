@@ -36,6 +36,9 @@ recovery method. That archive transfer was not an intended deployment process.
 - A successful CI run for a push to `staging` triggers `deploy-staging.yml`.
 - MinIO is started explicitly during CI because GitHub Actions service
   containers do not support a Compose-style `command` key.
+- Redis-backed route limits are bypassed only for `ENVIRONMENT=test`, preventing
+  the single Playwright worker IP from exhausting production-sized limits while
+  preserving middleware enforcement tests and all non-test environments.
 - GitHub Actions builds and pushes `linux/amd64` backend and admin images using
   BuildKit's GitHub Actions cache.
 - Trivy must pass before the VPS deployment step.
