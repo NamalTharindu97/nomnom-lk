@@ -7,7 +7,14 @@ class ApiRestaurantService {
 
   final ApiClient _client;
 
-  Future<PaginatedResponse<Restaurant>> fetchRestaurants({String? query, int page = 1}) async {
+  Future<PaginatedResponse<Restaurant>> fetchRestaurants({
+    String? query,
+    int page = 1,
+    bool forceRefresh = false,
+  }) async {
+    if (forceRefresh) {
+      _client.invalidateCache('/restaurants');
+    }
     final params = <String, dynamic>{
       'page': page,
       'per_page': 20,

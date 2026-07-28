@@ -598,7 +598,6 @@ class _LanguageTile extends StatelessWidget {
           PopupMenuButton<String>(
             onSelected: (code) {
               localeProvider.setLocale(code);
-              context.read<OfferProvider>().loadOffers(forceRefresh: true);
               context
                   .read<RestaurantProvider>()
                   .loadRestaurants(forceRefresh: true);

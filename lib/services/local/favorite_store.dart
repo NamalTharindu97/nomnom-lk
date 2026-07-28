@@ -25,9 +25,7 @@ class FavoriteStore {
   }
 
   Future<void> syncFromRemote(Set<String> remoteIds) async {
-    final local = getFavorites();
-    final merged = {...local, ...remoteIds};
-    await _box.put('favorite_ids', merged.join(','));
+    await _box.put('favorite_ids', remoteIds.join(','));
   }
 
   Future<void> clear() async {

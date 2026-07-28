@@ -14,7 +14,8 @@ class CacheInterceptor extends Interceptor {
   final Duration ttl;
   final Map<String, _CacheEntry> _cache = LinkedHashMap();
 
-  CacheInterceptor({this.ttl = const Duration(minutes: 5), this.maxEntries = 100});
+  CacheInterceptor(
+      {this.ttl = const Duration(minutes: 5), this.maxEntries = 100});
 
   void _set(String key, _CacheEntry entry) {
     if (_cache.length >= maxEntries) {
@@ -25,7 +26,7 @@ class CacheInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (options.method != 'GET') {
+    if (!_isCacheable(options)) {
       return handler.next(options);
     }
 
@@ -50,7 +51,7 @@ class CacheInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (response.requestOptions.method == 'GET' && response.data != null) {
+    if (_isCacheable(response.requestOptions) && response.data != null) {
       _set(
         _cacheKey(response.requestOptions),
         _CacheEntry(
@@ -64,7 +65,7 @@ class CacheInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (err.requestOptions.method == 'GET') {
+    if (_isCacheable(err.requestOptions)) {
       final key = _cacheKey(err.requestOptions);
       final entry = _cache[key];
       if (entry != null) {
@@ -94,6 +95,15 @@ class CacheInterceptor extends Interceptor {
   }
 
   int get cachedEntryCount => _cache.length;
+
+  bool _isCacheable(RequestOptions options) {
+    if (options.method != 'GET') return false;
+
+    final path = options.path;
+    return path != '/favorites' &&
+        !path.startsWith('/notifications') &&
+        path != '/users/me';
+  }
 
   String _cacheKey(RequestOptions options) {
     final locale = options.headers['Accept-Language'] ?? 'en';

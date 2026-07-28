@@ -125,8 +125,11 @@ class MockApiOfferService implements ApiOfferService {
   List<Offer> _results;
 
   @override
-  Future<PaginatedResponse<Offer>> fetchOffers(
-      {String? query, int page = 1}) async {
+  Future<PaginatedResponse<Offer>> fetchOffers({
+    String? query,
+    int page = 1,
+    bool forceRefresh = false,
+  }) async {
     return PaginatedResponse(
       data: query != null && query.isNotEmpty
           ? offers
@@ -195,7 +198,7 @@ class MockApiRestaurantService implements ApiRestaurantService {
 
   @override
   Future<PaginatedResponse<Restaurant>> fetchRestaurants(
-      {String? query, int page = 1}) async {
+      {String? query, int page = 1, bool forceRefresh = false}) async {
     return PaginatedResponse(
       data: restaurants,
       page: page,
@@ -322,7 +325,8 @@ class MockNotificationStore implements NotificationStore {
   Future<void> init() async {}
 
   @override
-  Future<void> saveNotifications(List<Map<String, dynamic>> notifications) async {
+  Future<void> saveNotifications(
+      List<Map<String, dynamic>> notifications) async {
     cachedNotifications = notifications;
   }
 
