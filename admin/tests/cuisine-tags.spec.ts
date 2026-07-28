@@ -34,12 +34,11 @@ test.describe.serial("Cuisine Tags", () => {
     await expect(page.locator("tr", { hasText: tagName })).toHaveCount(0)
   })
 
-  test("shows validation for empty name", async ({ page }) => {
+  test("disables save for empty name", async ({ page }) => {
     await page.goto("/dashboard/cuisine-tags")
     await page.getByRole("button", { name: "Add Tag" }).click()
     await page.locator("#tag-name").fill("")
-    await page.getByRole("button", { name: "Save" }).click()
 
-    await expect(page.getByText("Name is required")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled()
   })
 })
