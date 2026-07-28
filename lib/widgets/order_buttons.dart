@@ -142,10 +142,12 @@ class _PlatformButton extends StatelessWidget {
 
   Future<void> _handleTap(BuildContext context, PlatformData platform) async {
     final uri = Uri.parse(platform.deepLinkScheme);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-      return;
-    }
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
     if (!context.mounted) return;
     _showInstallDialog(context, platform);
   }
