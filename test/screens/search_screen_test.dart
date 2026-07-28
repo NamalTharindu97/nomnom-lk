@@ -141,7 +141,7 @@ void main() {
       expect(find.text('Chicken'), findsOneWidget);
 
       await tester.tap(find.text('Clear all'));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 260));
 
       expect(find.text('Chicken'), findsNothing);
       expect(find.text('What are you craving?'), findsOneWidget);

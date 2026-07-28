@@ -53,4 +53,73 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('does not auto page while inactive', (tester) async {
+    final provider = BannerProvider(MockApiBannerService(banners: [
+      FeaturedBanner(
+        id: '1',
+        image: '/first.jpg',
+        linkType: 'offer',
+        linkValue: 'offer-1',
+        title: 'First Banner',
+      ),
+      FeaturedBanner(
+        id: '2',
+        image: '/second.jpg',
+        linkType: 'offer',
+        linkValue: 'offer-2',
+        title: 'Second Banner',
+      ),
+    ]));
+    await provider.loadBanners();
+
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: ChangeNotifierProvider<BannerProvider>.value(
+        value: provider,
+        child: const FeaturedBannerCarousel(isActive: false),
+      ),
+    ));
+    await tester.pump(const Duration(seconds: 5));
+
+    expect(find.text('First Banner'), findsOneWidget);
+    expect(find.text('Second Banner'), findsNothing);
+  });
+
+  testWidgets('does not auto page with reduced motion', (tester) async {
+    final provider = BannerProvider(MockApiBannerService(banners: [
+      FeaturedBanner(
+        id: '1',
+        image: '/first.jpg',
+        linkType: 'offer',
+        linkValue: 'offer-1',
+        title: 'First Banner',
+      ),
+      FeaturedBanner(
+        id: '2',
+        image: '/second.jpg',
+        linkType: 'offer',
+        linkValue: 'offer-2',
+        title: 'Second Banner',
+      ),
+    ]));
+    await provider.loadBanners();
+
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: ChangeNotifierProvider<BannerProvider>.value(
+          value: provider,
+          child: const FeaturedBannerCarousel(),
+        ),
+      ),
+    ));
+    await tester.pump(const Duration(seconds: 5));
+
+    expect(find.text('First Banner'), findsOneWidget);
+    expect(find.text('Second Banner'), findsNothing);
+  });
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
@@ -43,9 +45,13 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
   }
 
   Future<void> _toggle(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keys[key]!, value);
+    final previous = _values[key]!;
     setState(() => _values[key] = value);
+    if (!AppMotion.reduceMotion(context)) HapticFeedback.selectionClick();
+    final prefs = await SharedPreferences.getInstance();
+    final saved = await prefs.setBool(_keys[key]!, value);
+    if (!mounted || saved) return;
+    setState(() => _values[key] = previous);
   }
 
   @override
@@ -79,74 +85,86 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
       appBar: AppBar(
         title: Text(loc.notifPrefsTitle),
       ),
-      body: _loaded
-          ? LayoutBuilder(
-              builder: (context, constraints) => ListView.separated(
-                padding: EdgeInsets.all(
-                  constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
-                ),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final (title, desc, key, icon) = items[index];
-                  return Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 600),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(Spacings.md,
-                            Spacings.sm + 2, Spacings.xs, Spacings.sm + 2),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: colors.surfaceAlt),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: colors.surfaceAlt,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(icon,
-                                  color: colors.textPrimary, size: 20),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: textTheme.bodyLarge?.copyWith(
-                                      color: colors.textPrimary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  Text(
-                                    desc,
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: colors.muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: _values[key]!,
-                              onChanged: (v) => _toggle(key, v),
-                              activeThumbColor: AppColors.curry,
-                            ),
-                          ],
-                        ),
-                      ),
+      body: AnimatedOpacity(
+        opacity: _loaded ? 1 : 0.55,
+        duration: AppMotion.duration(context, AppMotion.short),
+        child: LayoutBuilder(
+          builder: (context, constraints) => ListView.separated(
+            padding: EdgeInsets.all(
+              constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+            ),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final (title, desc, key, icon) = items[index];
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(Spacings.md,
+                        Spacings.sm + 2, Spacings.xs, Spacings.sm + 2),
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colors.surfaceAlt),
                     ),
-                  );
-                },
-              ),
-            )
-          : const Center(child: CircularProgressIndicator()),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: colors.surfaceAlt,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child:
+                              Icon(icon, color: colors.textPrimary, size: 20),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: colors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                desc,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_loaded)
+                          Switch(
+                            value: _values[key]!,
+                            onChanged: (v) => _toggle(key, v),
+                            activeThumbColor: AppColors.curry,
+                          )
+                        else
+                          Container(
+                            width: 48,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: colors.surfaceAlt,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/banner_provider.dart';
@@ -33,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AppMotion.entrance,
     );
 
     _iconScale = Tween<double>(begin: 0.7, end: 1).animate(
@@ -70,6 +71,12 @@ class _SplashScreenState extends State<SplashScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduceMotion(context)) _controller.value = 1;
+  }
+
   Future<void> _bootstrap() async {
     final authProvider = context.read<AuthProvider>();
     final offerProvider = context.read<OfferProvider>();
@@ -100,7 +107,13 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    await _controller.reverse();
+    if (!AppMotion.reduceMotion(context)) {
+      await _controller.animateBack(
+        0,
+        duration: AppMotion.short,
+        curve: AppMotion.reverseCurve,
+      );
+    }
     if (!mounted) return;
 
     await Navigator.of(context).pushReplacementNamed(

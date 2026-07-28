@@ -49,7 +49,6 @@ class OfferCard extends StatelessWidget {
                     child: OfferImage(
                       imageUrl: offer.primaryImage,
                       borderRadius: BorderRadius.zero,
-                      heroTag: 'offer-image-${offer.id}',
                     ),
                   ),
                   Positioned(

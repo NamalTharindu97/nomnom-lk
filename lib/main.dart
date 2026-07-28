@@ -10,6 +10,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'core/api_config.dart';
 import 'core/app_routes.dart';
 import 'core/theme/app_colors.dart';
+import 'core/theme/app_motion.dart';
 import 'core/theme/app_theme.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import 'models/offer.dart';
@@ -64,8 +65,9 @@ void main() async {
       options.environment = ApiConfig.appEnv;
       options.release = ApiConfig.buildSha;
       options.tracesSampleRate = 0.2;
-    }, appRunner: () => runApp(NomNomBootstrap(
-        themeProvider: themeProvider, localeProvider: localeProvider)));
+    },
+        appRunner: () => runApp(NomNomBootstrap(
+            themeProvider: themeProvider, localeProvider: localeProvider)));
   } else {
     runApp(NomNomBootstrap(
         themeProvider: themeProvider, localeProvider: localeProvider));
@@ -281,6 +283,7 @@ class _SseListenerState extends State<_SseListener>
   Future<void> _initSse() async {
     final sse = SSEService(ApiConfig.baseUrl);
     _sseService = sse;
+    if (mounted) setState(() {});
     try {
       await sse.connect();
       _hasSseConnection = sse.isConnected;
@@ -373,70 +376,50 @@ class _SseListenerState extends State<_SseListener>
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isReconnecting)
-              Material(
-                color: AppColors.curry.withValues(alpha: 0.1),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-                    child: Row(
-                      children: [
-                        const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.curry,
+            AnimatedSize(
+              duration: AppMotion.duration(context, AppMotion.short),
+              curve: AppMotion.standardCurve,
+              child: isReconnecting
+                  ? Material(
+                      color: AppColors.curry.withValues(alpha: 0.1),
+                      child: SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 4, horizontal: 16),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: AppMotion.reduceMotion(context)
+                                    ? const Icon(Icons.sync, size: 12)
+                                    : const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.curry,
+                                      ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                AppLocalizations.of(context)!.reconnecting,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.curry,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context)!.reconnecting,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.curry,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
             Expanded(child: widget.child),
           ],
         );
       },
     );
   }
-}
-
-PageRoute<void> _buildSlideUpRoute({
-  required RouteSettings settings,
-  required WidgetBuilder builder,
-}) {
-  return PageRouteBuilder<void>(
-    settings: settings,
-    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.15),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutQuart,
-          reverseCurve: Curves.easeInQuart,
-        )),
-        child: FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
-      );
-    },
-    transitionDuration: const Duration(milliseconds: 350),
-  );
 }
 
 class NomNomApp extends StatelessWidget {
@@ -502,14 +485,14 @@ class NomNomApp extends StatelessWidget {
         }
 
         if (settings.name == AppRoutes.editProfile) {
-          return _buildSlideUpRoute(
+          return MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => const EditProfileScreen(),
           );
         }
 
         if (settings.name == AppRoutes.notificationPrefs) {
-          return _buildSlideUpRoute(
+          return MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => const NotificationPrefsScreen(),
           );
@@ -522,7 +505,7 @@ class NomNomApp extends StatelessWidget {
             final String id => id,
             _ => settings.name?.split('/').last ?? '',
           };
-          return _buildSlideUpRoute(
+          return MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => OfferDetailsScreen(offerId: offerId),
           );

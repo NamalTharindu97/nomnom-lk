@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/offer_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
@@ -19,12 +21,13 @@ class FavoriteButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<OfferProvider, bool>(
-      selector: (_, provider) => provider.offerById(offerId)?.isFavorite ?? false,
+      selector: (_, provider) =>
+          provider.offerById(offerId)?.isFavorite ?? false,
       builder: (context, isFavorite, child) {
         final icon = AnimatedSwitcher(
-          duration: const Duration(milliseconds: 280),
-          switchInCurve: Curves.elasticOut,
-          switchOutCurve: Curves.easeOut,
+          duration: AppMotion.duration(context, AppMotion.short),
+          switchInCurve: AppMotion.standardCurve,
+          switchOutCurve: AppMotion.reverseCurve,
           transitionBuilder: (child, animation) {
             return ScaleTransition(scale: animation, child: child);
           },
@@ -39,35 +42,41 @@ class FavoriteButton extends StatelessWidget {
           return SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => context.read<OfferProvider>().toggleFavorite(offerId),
+              onPressed: () => _toggle(context),
               icon: icon,
               label: Text(isFavorite
                   ? AppLocalizations.of(context)!.favoriteRemove
                   : AppLocalizations.of(context)!.favoriteAdd),
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isFavorite ? AppColors.chili : AppColors.curry,
-                foregroundColor:
-                    isFavorite
-                        ? context.colors.textPrimary
-                        : (Theme.of(context).brightness == Brightness.dark
-                            ? context.colors.background
-                            : Colors.white),
+                backgroundColor: isFavorite ? AppColors.chili : AppColors.curry,
+                foregroundColor: isFavorite
+                    ? context.colors.textPrimary
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? context.colors.background
+                        : Colors.white),
               ),
             ),
           );
         }
 
         return IconButton.filledTonal(
-          onPressed: () => context.read<OfferProvider>().toggleFavorite(offerId),
-          tooltip: isFavorite ? AppLocalizations.of(context)!.favoriteRemove : AppLocalizations.of(context)!.favoriteAdd,
+          onPressed: () => _toggle(context),
+          tooltip: isFavorite
+              ? AppLocalizations.of(context)!.favoriteRemove
+              : AppLocalizations.of(context)!.favoriteAdd,
           icon: icon,
           style: IconButton.styleFrom(
             backgroundColor: context.colors.background.withValues(alpha: 0.78),
-            foregroundColor: isFavorite ? AppColors.chili : context.colors.textPrimary,
+            foregroundColor:
+                isFavorite ? AppColors.chili : context.colors.textPrimary,
           ),
         );
       },
     );
+  }
+
+  void _toggle(BuildContext context) {
+    if (!AppMotion.reduceMotion(context)) HapticFeedback.lightImpact();
+    context.read<OfferProvider>().toggleFavorite(offerId);
   }
 }

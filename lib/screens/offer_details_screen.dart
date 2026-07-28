@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
@@ -93,7 +94,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     }
 
     try {
-      final client = ApiClient();
+      final client = context.read<ApiClient>();
       final service = ApiOfferService(client);
       final offer = await service.getOffer(widget.offerId);
       if (mounted) {
@@ -115,10 +116,7 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return const _OfferDetailsSkeleton();
     }
 
     if (_error != null || _fetchedOffer == null) {
@@ -134,6 +132,49 @@ class _OfferDetailsScreenState extends State<OfferDetailsScreen> {
     }
 
     return _OfferDetailsContent(offer: _fetchedOffer!);
+  }
+}
+
+class _OfferDetailsSkeleton extends StatelessWidget {
+  const _OfferDetailsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Padding(
+                padding: const EdgeInsets.all(Spacings.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    _ShimmerBlock(width: 220, height: 28),
+                    SizedBox(height: Spacings.sm),
+                    _ShimmerBlock(width: 120, height: 18),
+                    SizedBox(height: Spacings.xl),
+                    _ShimmerBlock(width: double.infinity, height: 72),
+                    SizedBox(height: Spacings.xl),
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: _ShimmerBlock(
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                    SizedBox(height: Spacings.xl),
+                    _ShimmerBlock(width: double.infinity, height: 112),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -155,7 +196,7 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: AppMotion.medium,
       vsync: this,
     );
     _animation = CurvedAnimation(
@@ -163,6 +204,12 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
       curve: Curves.easeOut,
     );
     _controller.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduceMotion(context)) _controller.value = 1;
   }
 
   @override
@@ -262,7 +309,6 @@ class _OfferDetailsContentState extends State<_OfferDetailsContent>
                         aspectRatio: 1,
                         child: OfferImage(
                           imageUrl: offer.primaryImage,
-                          heroTag: 'offer-detail-${offer.id}',
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
@@ -427,10 +473,9 @@ class _OrderButtonsShimmer extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Spacings.sm),
-        Shimmer.fromColors(
-          baseColor: context.colors.surface,
-          highlightColor: context.colors.surfaceAlt,
-          child: Container(
+        _motionShimmer(
+          context,
+          Container(
             width: double.infinity,
             height: 56,
             decoration: BoxDecoration(
@@ -440,10 +485,9 @@ class _OrderButtonsShimmer extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Spacings.xs),
-        Shimmer.fromColors(
-          baseColor: context.colors.surface,
-          highlightColor: context.colors.surfaceAlt,
-          child: Container(
+        _motionShimmer(
+          context,
+          Container(
             width: double.infinity,
             height: 56,
             decoration: BoxDecoration(
@@ -473,10 +517,9 @@ class _SocialSectionShimmer extends StatelessWidget {
           ],
         ),
         const SizedBox(height: Spacings.sm),
-        Shimmer.fromColors(
-          baseColor: context.colors.surface,
-          highlightColor: context.colors.surfaceAlt,
-          child: Row(
+        _motionShimmer(
+          context,
+          Row(
             children: List.generate(
               3,
               (_) => Container(
@@ -504,17 +547,28 @@ class _ShimmerBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final block = Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+    if (AppMotion.reduceMotion(context)) return block;
     return Shimmer.fromColors(
       baseColor: context.colors.surface,
       highlightColor: context.colors.surfaceAlt,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: context.colors.surface,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
+      child: block,
     );
   }
+}
+
+Widget _motionShimmer(BuildContext context, Widget child) {
+  if (AppMotion.reduceMotion(context)) return child;
+  return Shimmer.fromColors(
+    baseColor: context.colors.surface,
+    highlightColor: context.colors.surfaceAlt,
+    child: child,
+  );
 }
