@@ -3,9 +3,10 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN npm install -g npm@latest && npm cache clean --force && rm -rf /tmp/*
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm install --global npm@11.6.2 && \
+    npm ci && \
+    npm cache clean --force
 
 COPY . .
 
@@ -18,16 +19,20 @@ RUN npm run build
 # Runtime stage
 FROM node:22-alpine AS runtime
 
-RUN npm install -g npm@latest && npm cache clean --force && rm -rf /tmp/*
-
 WORKDIR /app
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/next.config.ts ./next.config.ts
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+USER nextjs
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx next start -p ${PORT:-3000}"]
+CMD ["node", "server.js"]

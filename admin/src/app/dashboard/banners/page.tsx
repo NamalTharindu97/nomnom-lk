@@ -383,7 +383,10 @@ export default function BannersPage() {
               {!isAdmin && !editing && (
                 <div className="grid gap-2">
                   <Label>Select Offer</Label>
-                  <Select value={selectedOffer} onValueChange={setSelectedOffer}>
+                  <Select value={selectedOffer} onValueChange={(value) => {
+                    setSelectedOffer(value)
+                    setValue("link_value", value, { shouldValidate: true })
+                  }}>
                     <SelectTrigger><SelectValue placeholder="Choose an offer..." /></SelectTrigger>
                     <SelectContent>
                       {myOffers.map(o => (

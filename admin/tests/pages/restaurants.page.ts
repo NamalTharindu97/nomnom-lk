@@ -77,7 +77,6 @@ export class RestaurantDialog {
   readonly nameInput: Locator
   readonly slugInput: Locator
   readonly phoneInput: Locator
-  readonly cuisineTagsInput: Locator
   readonly descriptionInput: Locator
   readonly nameSiInput: Locator
   readonly nameTaInput: Locator
@@ -95,7 +94,6 @@ export class RestaurantDialog {
     this.nameInput = page.getByLabel("Name").first()
     this.slugInput = page.getByLabel("Slug")
     this.phoneInput = page.getByLabel("Phone")
-    this.cuisineTagsInput = page.getByLabel("Cuisine Tags (comma-separated)")
     this.descriptionInput = page.locator("#description")
     this.nameSiInput = page.locator("#name_si")
     this.nameTaInput = page.locator("#name_ta")
@@ -129,7 +127,10 @@ export class RestaurantDialog {
   }
 
   async fillCuisineTags(tags: string) {
-    await this.cuisineTagsInput.fill(tags)
+    for (const tag of tags.split(",").map((value) => value.trim()).filter(Boolean)) {
+      const checkbox = this.page.getByRole("checkbox", { name: tag, exact: true })
+      if (await checkbox.count()) await checkbox.check()
+    }
   }
 
   async fillDescription(description: string) {

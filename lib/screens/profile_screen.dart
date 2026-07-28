@@ -4,8 +4,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/api_config.dart';
-
-import '../core/api_config.dart';
 import '../core/app_routes.dart';
 import '../core/app_store.dart';
 import '../core/theme/app_colors.dart';
