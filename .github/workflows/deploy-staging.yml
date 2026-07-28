@@ -117,7 +117,7 @@ jobs:
           set -Eeuo pipefail
           umask 077
           install -d "$RUNNER_TEMP/nomnom-ssh"
-          printf '%s' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
           printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
 
       - name: Deploy immutable images to VPS
