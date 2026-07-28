@@ -588,4 +588,35 @@ class AppLocalizationsSi extends AppLocalizations {
 
   @override
   String get reconnecting => 'නැවත සම්බන්ධ වෙමින්...';
+
+  @override
+  String get editProfileSaving => 'සුරකිමින්...';
+
+  @override
+  String get deleteAccountTitle => 'ගිණුම මකා දමන්න';
+
+  @override
+  String get deleteAccountConfirmation => 'ඔබේ ගිණුම දින 30කින් මකා දැමීමට සැලසුම් කෙරේ. මෙම කාලය තුළ ඕනෑම වේලාවක එය අවලංගු කළ හැක. දින 30කට පසු මෙම ක්‍රියාව අහෝසි කළ නොහැක.';
+
+  @override
+  String get deleteAccountSubtitle => 'දින 30කින් ගිණුම මකා දැමීමට සැලසුම් කරන්න';
+
+  @override
+  String get deleteAccountScheduleError => 'ගිණුම මකා දැමීම සැලසුම් කිරීමට නොහැකි විය';
+
+  @override
+  String get linkOpenError => 'සබැඳිය විවෘත කිරීමට නොහැකි විය';
+
+  @override
+  String platformNotInstalled(String platform) {
+    return '$platform ස්ථාපනය කර නැත';
+  }
+
+  @override
+  String platformInstallPrompt(String platform) {
+    return 'ඇණවුම් කිරීමට වෙළඳසැලෙන් $platform ස්ථාපනය කරන්නද?';
+  }
+
+  @override
+  String get platformInstall => 'ස්ථාපනය කරන්න';
 }

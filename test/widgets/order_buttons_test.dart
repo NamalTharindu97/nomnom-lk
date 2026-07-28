@@ -17,8 +17,18 @@ void main() {
   group('OrderButtonsSection', () {
     testWidgets('renders platform display names', (tester) async {
       final platforms = [
-        PlatformData(id: '1', slug: 'uber_eats', displayName: 'Uber Eats', primaryColor: '#000000', deepLinkScheme: 'ubereats://'),
-        PlatformData(id: '2', slug: 'pickme', displayName: 'PickMe', primaryColor: '#06C167', deepLinkScheme: 'pickme://'),
+        PlatformData(
+            id: '1',
+            slug: 'uber_eats',
+            displayName: 'Uber Eats',
+            primaryColor: '#000000',
+            deepLinkScheme: 'ubereats://'),
+        PlatformData(
+            id: '2',
+            slug: 'pickme',
+            displayName: 'PickMe',
+            primaryColor: '#06C167',
+            deepLinkScheme: 'pickme://'),
       ];
 
       await tester.pumpWidget(wrapWithApp(
@@ -31,7 +41,12 @@ void main() {
 
     testWidgets('renders Order Now heading', (tester) async {
       final platforms = [
-        PlatformData(id: '1', slug: 'uber_eats', displayName: 'Uber Eats', primaryColor: '#000000', deepLinkScheme: 'ubereats://'),
+        PlatformData(
+            id: '1',
+            slug: 'uber_eats',
+            displayName: 'Uber Eats',
+            primaryColor: '#000000',
+            deepLinkScheme: 'ubereats://'),
       ];
 
       await tester.pumpWidget(wrapWithApp(
@@ -51,8 +66,18 @@ void main() {
 
     testWidgets('renders correct number of chevron icons', (tester) async {
       final platforms = [
-        PlatformData(id: '1', slug: 'uber_eats', displayName: 'Uber Eats', primaryColor: '#000000', deepLinkScheme: 'ubereats://'),
-        PlatformData(id: '2', slug: 'pickme', displayName: 'PickMe', primaryColor: '#06C167', deepLinkScheme: 'pickme://'),
+        PlatformData(
+            id: '1',
+            slug: 'uber_eats',
+            displayName: 'Uber Eats',
+            primaryColor: '#000000',
+            deepLinkScheme: 'ubereats://'),
+        PlatformData(
+            id: '2',
+            slug: 'pickme',
+            displayName: 'PickMe',
+            primaryColor: '#06C167',
+            deepLinkScheme: 'pickme://'),
       ];
 
       await tester.pumpWidget(wrapWithApp(
@@ -64,7 +89,12 @@ void main() {
 
     testWidgets('renders cart icon in heading', (tester) async {
       final platforms = [
-        PlatformData(id: '1', slug: 'uber_eats', displayName: 'Uber Eats', primaryColor: '#000000', deepLinkScheme: 'ubereats://'),
+        PlatformData(
+            id: '1',
+            slug: 'uber_eats',
+            displayName: 'Uber Eats',
+            primaryColor: '#000000',
+            deepLinkScheme: 'ubereats://'),
       ];
 
       await tester.pumpWidget(wrapWithApp(
@@ -72,6 +102,27 @@ void main() {
       ));
 
       expect(find.byIcon(Icons.shopping_cart_rounded), findsOneWidget);
+    });
+
+    testWidgets('wraps long platform labels at 320 width', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 568);
+      addTearDown(tester.view.reset);
+      final platforms = [
+        PlatformData(
+          id: '1',
+          slug: 'other',
+          displayName: 'A Very Long Local Food Ordering Platform Name',
+          primaryColor: '#000000',
+          deepLinkScheme: 'other://',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        wrapWithApp(OrderButtonsSection(platforms: platforms)),
+      );
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

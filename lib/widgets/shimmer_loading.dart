@@ -53,8 +53,12 @@ class OfferCardShimmer extends StatelessWidget {
       baseColor: context.colors.surface,
       highlightColor: context.colors.surfaceAlt,
       child: Container(
-        height: 280,
-        margin: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.md),
+        margin: const EdgeInsets.fromLTRB(
+          Spacings.md,
+          0,
+          Spacings.md,
+          Spacings.md,
+        ),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
@@ -62,11 +66,15 @@ class OfferCardShimmer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: context.colors.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.colors.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8),
+                  ),
+                ),
               ),
             ),
             Padding(
@@ -118,7 +126,12 @@ class RestaurantCardShimmer extends StatelessWidget {
       highlightColor: context.colors.surfaceAlt,
       child: Container(
         height: 100,
-        margin: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.sm),
+        margin: const EdgeInsets.fromLTRB(
+          Spacings.md,
+          0,
+          Spacings.md,
+          Spacings.sm,
+        ),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
@@ -134,9 +147,17 @@ class RestaurantCardShimmer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const _SkeletonBlock(width: 140, height: 14),
+                    const FractionallySizedBox(
+                      widthFactor: 0.65,
+                      alignment: Alignment.centerLeft,
+                      child: _SkeletonBlock(height: 14),
+                    ),
                     const SizedBox(height: Spacings.xs),
-                    const _SkeletonBlock(width: 200, height: 12),
+                    const FractionallySizedBox(
+                      widthFactor: 0.9,
+                      alignment: Alignment.centerLeft,
+                      child: _SkeletonBlock(height: 12),
+                    ),
                     const SizedBox(height: Spacings.xs),
                     const _SkeletonBlock(width: 80, height: 10),
                   ],

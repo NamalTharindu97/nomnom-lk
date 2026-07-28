@@ -88,14 +88,18 @@ class _SocialPillButton extends StatelessWidget {
           children: [
             _buildLogo(logoUrl, label, color),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: context.colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             Icon(Icons.chevron_right_rounded, size: 20, color: color),
           ],
         ),

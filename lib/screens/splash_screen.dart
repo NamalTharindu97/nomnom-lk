@@ -46,7 +46,8 @@ class _SplashScreenState extends State<SplashScreen>
       parent: _controller,
       curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
     );
-    _textSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+    _textSlide =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.25, 0.6, curve: Curves.easeOutCubic),
@@ -126,80 +127,109 @@ class _SplashScreenState extends State<SplashScreen>
                 context.colors.backgroundAlt,
                 context.colors.surface,
               ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compactHeight = constraints.maxHeight < 430;
+              final iconSize = compactHeight ? 64.0 : 80.0;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      key: const ValueKey('splash-content'),
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FadeTransition(
+                            opacity: _iconFade,
+                            child: ScaleTransition(
+                              scale: _iconScale,
+                              child: Container(
+                                width: iconSize,
+                                height: iconSize,
+                                decoration: BoxDecoration(
+                                  color: AppColors.curry,
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.curry
+                                          .withValues(alpha: 0.35),
+                                      blurRadius: 32,
+                                      offset: const Offset(0, 12),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.restaurant_menu_rounded,
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? context.colors.background
+                                      : Colors.white,
+                                  size: compactHeight ? 36 : 44,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: compactHeight ? 12 : 24),
+                          SlideTransition(
+                            position: _textSlide,
+                            child: FadeTransition(
+                              opacity: _textFade,
+                              child: Text(
+                                AppLocalizations.of(context)!.appName,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      color: context.colors.textPrimary,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: compactHeight ? 6 : 12),
+                          FadeTransition(
+                            opacity: _taglineFade,
+                            child: Text(
+                              AppLocalizations.of(context)!.splashTagline,
+                              textAlign: TextAlign.center,
+                              softWrap: true,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: context.colors.muted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                          SizedBox(height: compactHeight ? 16 : 36),
+                          FadeTransition(
+                            opacity: _spinnerFade,
+                            child: const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2.2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FadeTransition(
-                opacity: _iconFade,
-                child: ScaleTransition(
-                  scale: _iconScale,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.curry,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.curry.withValues(alpha: 0.35),
-                          blurRadius: 32,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.restaurant_menu_rounded,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? context.colors.background
-                          : Colors.white,
-                      size: 44,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SlideTransition(
-                position: _textSlide,
-                child: FadeTransition(
-                  opacity: _textFade,
-                    child: Text(
-                      AppLocalizations.of(context)!.appName,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              FadeTransition(
-                opacity: _taglineFade,
-                child: Text(
-                  AppLocalizations.of(context)!.splashTagline,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: context.colors.muted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 36),
-              FadeTransition(
-                opacity: _spinnerFade,
-                child: const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.2),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
       ),
     );
   }

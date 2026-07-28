@@ -89,47 +89,49 @@ class HotOfferCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            CurrencyFormatter.lkr(offer.offerPrice),
-                            style: textTheme.titleMedium?.copyWith(
-                              color: AppColors.curry,
-                              fontWeight: FontWeight.w900,
+                    Text(
+                      CurrencyFormatter.lkr(offer.offerPrice),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: AppColors.curry,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.curry.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.savings_rounded,
+                            size: 10,
+                            color: AppColors.curry,
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              AppLocalizations.of(context)!.offerSaveAmount(
+                                CurrencyFormatter.lkr(offer.saving),
+                              ),
+                              maxLines: 2,
+                              style: textTheme.labelSmall?.copyWith(
+                                color: AppColors.curry,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 9,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.curry.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.savings_rounded,
-                                size: 10,
-                                color: AppColors.curry,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                AppLocalizations.of(context)!.offerSaveAmount(CurrencyFormatter.lkr(offer.saving)),
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: AppColors.curry,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -38,86 +38,101 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Spacings.md, 18, Spacings.md, Spacings.sm),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.notificationsTitle,
-                      style: textTheme.headlineSmall?.copyWith(
-                        color: context.colors.textPrimary,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  Consumer<NotificationProvider>(
-                    builder: (context, provider, child) {
-                      if (provider.notifications.isEmpty) return const SizedBox();
-                      return TextButton(
-                        onPressed: () => provider.markAllAsRead(),
-                        child: Text(AppLocalizations.of(context)!.notificationsMarkAllRead),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Consumer<NotificationProvider>(
-                builder: (context, provider, child) {
-                  if (provider.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-
-                  if (provider.error != null) {
-                    return EmptyState(
-                      icon: Icons.wifi_off_rounded,
-                      title: AppLocalizations.of(context)!.generalFailedToLoad,
-                      message: provider.error!,
-                    );
-                  }
-
-                  final notifications = provider.notifications;
-                  if (notifications.isEmpty) {
-                    return EmptyState(
-                      icon: Icons.notifications_none_rounded,
-                      title: AppLocalizations.of(context)!.notificationsEmpty,
-                      message: AppLocalizations.of(context)!.notificationsAllCaughtUp,
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: Spacings.md),
-                    itemCount: notifications.length,
-                    itemBuilder: (context, index) {
-                      final n = notifications[index];
-                      return StaggerItem(
-                        index: index,
-                        child: _NotificationTile(
-                          notification: n,
-                          onTap: () {
-                            provider.markAsRead(n.id);
-                            if (n.offerId != null && n.offerId!.isNotEmpty) {
-                              Navigator.of(context).pushNamed(
-                                AppRoutes.offerDetails,
-                                arguments: n.offerId,
-                              );
-                            }
-                          },
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      Spacings.md, 18, Spacings.md, Spacings.sm),
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: Spacings.sm,
+                    runSpacing: Spacings.xxs,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.notificationsTitle,
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w900,
                         ),
+                      ),
+                      Consumer<NotificationProvider>(
+                        builder: (context, provider, child) {
+                          if (provider.notifications.isEmpty) {
+                            return const SizedBox();
+                          }
+                          return TextButton(
+                            onPressed: () => provider.markAllAsRead(),
+                            child: Text(AppLocalizations.of(context)!
+                                .notificationsMarkAllRead),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Consumer<NotificationProvider>(
+                    builder: (context, provider, child) {
+                      if (provider.isLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      if (provider.error != null) {
+                        return EmptyState(
+                          icon: Icons.wifi_off_rounded,
+                          title:
+                              AppLocalizations.of(context)!.generalFailedToLoad,
+                          message: provider.error!,
+                        );
+                      }
+
+                      final notifications = provider.notifications;
+                      if (notifications.isEmpty) {
+                        return EmptyState(
+                          icon: Icons.notifications_none_rounded,
+                          title:
+                              AppLocalizations.of(context)!.notificationsEmpty,
+                          message: AppLocalizations.of(context)!
+                              .notificationsAllCaughtUp,
+                        );
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.only(bottom: Spacings.md),
+                        itemCount: notifications.length,
+                        itemBuilder: (context, index) {
+                          final n = notifications[index];
+                          return StaggerItem(
+                            index: index,
+                            child: _NotificationTile(
+                              notification: n,
+                              onTap: () {
+                                provider.markAsRead(n.id);
+                                if (n.offerId != null &&
+                                    n.offerId!.isNotEmpty) {
+                                  Navigator.of(context).pushNamed(
+                                    AppRoutes.offerDetails,
+                                    arguments: n.offerId,
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        },
                       );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -140,7 +155,8 @@ class _NotificationTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: 14),
         decoration: BoxDecoration(
           color: notification.isRead
               ? Colors.transparent
@@ -159,7 +175,8 @@ class _NotificationTile extends StatelessWidget {
               height: 8,
               margin: const EdgeInsets.only(top: 6, right: Spacings.sm),
               decoration: BoxDecoration(
-                color: notification.isRead ? Colors.transparent : AppColors.curry,
+                color:
+                    notification.isRead ? Colors.transparent : AppColors.curry,
                 shape: BoxShape.circle,
               ),
             ),
@@ -171,8 +188,9 @@ class _NotificationTile extends StatelessWidget {
                     notification.title,
                     style: textTheme.bodyLarge?.copyWith(
                       color: context.colors.textPrimary,
-                      fontWeight:
-                          notification.isRead ? FontWeight.w600 : FontWeight.w800,
+                      fontWeight: notification.isRead
+                          ? FontWeight.w600
+                          : FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: Spacings.xxs),

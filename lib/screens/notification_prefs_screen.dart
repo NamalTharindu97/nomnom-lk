@@ -10,7 +10,8 @@ class NotificationPrefsScreen extends StatefulWidget {
   const NotificationPrefsScreen({super.key});
 
   @override
-  State<NotificationPrefsScreen> createState() => _NotificationPrefsScreenState();
+  State<NotificationPrefsScreen> createState() =>
+      _NotificationPrefsScreenState();
 }
 
 class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
@@ -54,9 +55,24 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
     final loc = AppLocalizations.of(context)!;
 
     final items = [
-      (loc.notifPrefsNewOffers, loc.notifPrefsNewOffersDesc, 'new_offers', Icons.local_offer_outlined),
-      (loc.notifPrefsPriceDrops, loc.notifPrefsPriceDropsDesc, 'price_drops', Icons.trending_down_rounded),
-      (loc.notifPrefsOpenings, loc.notifPrefsOpeningsDesc, 'openings', Icons.storefront_outlined),
+      (
+        loc.notifPrefsNewOffers,
+        loc.notifPrefsNewOffersDesc,
+        'new_offers',
+        Icons.local_offer_outlined
+      ),
+      (
+        loc.notifPrefsPriceDrops,
+        loc.notifPrefsPriceDropsDesc,
+        'price_drops',
+        Icons.trending_down_rounded
+      ),
+      (
+        loc.notifPrefsOpenings,
+        loc.notifPrefsOpeningsDesc,
+        'openings',
+        Icons.storefront_outlined
+      ),
     ];
 
     return Scaffold(
@@ -64,60 +80,71 @@ class _NotificationPrefsScreenState extends State<NotificationPrefsScreen> {
         title: Text(loc.notifPrefsTitle),
       ),
       body: _loaded
-          ? ListView.separated(
-              padding: const EdgeInsets.all(Spacings.lg),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final (title, desc, key, icon) = items[index];
-                return Container(
-                  padding: const EdgeInsets.fromLTRB(Spacings.md, Spacings.sm + 2, Spacings.xs, Spacings.sm + 2),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colors.surfaceAlt),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
+          ? LayoutBuilder(
+              builder: (context, constraints) => ListView.separated(
+                padding: EdgeInsets.all(
+                  constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+                ),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final (title, desc, key, icon) = items[index];
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(Spacings.md,
+                            Spacings.sm + 2, Spacings.xs, Spacings.sm + 2),
                         decoration: BoxDecoration(
-                          color: colors.surfaceAlt,
-                          borderRadius: BorderRadius.circular(10),
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: colors.surfaceAlt),
                         ),
-                        child: Icon(icon, color: colors.textPrimary, size: 20),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              title,
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: FontWeight.w700,
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceAlt,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(icon,
+                                  color: colors.textPrimary, size: 20),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: textTheme.bodyLarge?.copyWith(
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    desc,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colors.muted,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              desc,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colors.muted,
-                              ),
+                            Switch(
+                              value: _values[key]!,
+                              onChanged: (v) => _toggle(key, v),
+                              activeThumbColor: AppColors.curry,
                             ),
                           ],
                         ),
                       ),
-                      Switch(
-                        value: _values[key]!,
-                        onChanged: (v) => _toggle(key, v),
-                        activeThumbColor: AppColors.curry,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                  );
+                },
+              ),
             )
           : const Center(child: CircularProgressIndicator()),
     );
