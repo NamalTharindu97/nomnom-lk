@@ -8,7 +8,14 @@ class ApiOfferService {
 
   final ApiClient _client;
 
-  Future<PaginatedResponse<Offer>> fetchOffers({String? query, int page = 1}) async {
+  Future<PaginatedResponse<Offer>> fetchOffers({
+    String? query,
+    int page = 1,
+    bool forceRefresh = false,
+  }) async {
+    if (forceRefresh) {
+      _client.invalidateCache('/offers');
+    }
     final params = <String, dynamic>{
       'page': page,
       'per_page': ApiConfig.perPage,

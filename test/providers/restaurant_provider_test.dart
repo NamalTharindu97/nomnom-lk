@@ -34,7 +34,7 @@ class _PaginatingRestaurantService implements ApiRestaurantService {
 
   @override
   Future<PaginatedResponse<Restaurant>> fetchRestaurants(
-      {String? query, int page = 1}) async {
+      {String? query, int page = 1, bool forceRefresh = false}) async {
     final index = page - 1;
     if (index >= pages.length) {
       return PaginatedResponse(
@@ -68,8 +68,11 @@ class _ControlledRestaurantSearchService extends MockApiRestaurantService {
   Future<PaginatedResponse<Restaurant>> fetchRestaurants({
     String? query,
     int page = 1,
+    bool forceRefresh = false,
   }) {
-    if (query == null) return super.fetchRestaurants(page: page);
+    if (query == null) {
+      return super.fetchRestaurants(page: page, forceRefresh: forceRefresh);
+    }
     return (requests[query] ??= Completer<PaginatedResponse<Restaurant>>())
         .future;
   }
@@ -88,7 +91,7 @@ class _ControlledRestaurantSearchService extends MockApiRestaurantService {
 class _FailingRestaurantService implements ApiRestaurantService {
   @override
   Future<PaginatedResponse<Restaurant>> fetchRestaurants(
-          {String? query, int page = 1}) async =>
+          {String? query, int page = 1, bool forceRefresh = false}) async =>
       throw Exception('Network error');
 
   @override
@@ -103,7 +106,7 @@ class _SearchableRestaurantService implements ApiRestaurantService {
 
   @override
   Future<PaginatedResponse<Restaurant>> fetchRestaurants(
-      {String? query, int page = 1}) async {
+      {String? query, int page = 1, bool forceRefresh = false}) async {
     if (query != null && query.isNotEmpty) {
       final filtered = allRestaurants
           .where((r) => r.name.toLowerCase().contains(query.toLowerCase()))

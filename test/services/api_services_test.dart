@@ -120,6 +120,22 @@ void main() {
       await service.fetchOffers(page: 3);
     });
 
+    test('force refresh invalidates the offers cache', () async {
+      mock.onGet = (path, {queryParameters}) async => {
+            'data': [],
+            'pagination': {
+              'page': 1,
+              'per_page': 20,
+              'total': 0,
+              'total_pages': 1,
+            },
+          };
+
+      await service.fetchOffers(forceRefresh: true);
+
+      expect(mock.lastInvalidatedPath, '/offers');
+    });
+
     test('getOffer returns parsed offer', () async {
       mock.onGet = (path, {queryParameters}) async {
         expect(path, '/offers/o1');
@@ -283,6 +299,22 @@ void main() {
       final result = await service.fetchRestaurants(page: 5);
       expect(result.page, 5);
     });
+
+    test('force refresh invalidates the restaurants cache', () async {
+      mock.onGet = (path, {queryParameters}) async => {
+            'data': [],
+            'pagination': {
+              'page': 1,
+              'per_page': 20,
+              'total': 0,
+              'total_pages': 1,
+            },
+          };
+
+      await service.fetchRestaurants(forceRefresh: true);
+
+      expect(mock.lastInvalidatedPath, '/restaurants');
+    });
   });
 
   group('ApiNotificationService', () {
@@ -299,7 +331,10 @@ void main() {
         expect(path, '/notifications');
         expect(queryParameters, {'page': 1, 'per_page': 20});
         return {
-          'data': [_notificationJson, {..._notificationJson, 'id': 'n2'}],
+          'data': [
+            _notificationJson,
+            {..._notificationJson, 'id': 'n2'}
+          ],
         };
       };
 
@@ -322,7 +357,9 @@ void main() {
     test('fetchUnreadCount returns count', () async {
       mock.onGet = (path, {queryParameters}) async {
         expect(path, '/notifications/unread-count');
-        return {'data': {'unread_count': 7}};
+        return {
+          'data': {'unread_count': 7}
+        };
       };
 
       final count = await service.fetchUnreadCount();
@@ -393,7 +430,8 @@ void main() {
       expect(mock.lastInvalidatedPath, '/banners/active');
     });
 
-    test('fetchActiveBanners without forceRefresh does not invalidate', () async {
+    test('fetchActiveBanners without forceRefresh does not invalidate',
+        () async {
       mock.onGet = (path, {queryParameters}) async {
         return {'data': []};
       };

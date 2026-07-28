@@ -32,8 +32,14 @@ class OfferProvider extends ChangeNotifier {
 
   void _onLocaleChanged() {
     if (_hasLoaded) {
-      loadOffers(forceRefresh: true);
+      _refreshForLocale();
     }
+  }
+
+  Future<void> _refreshForLocale() async {
+    await loadOffers(forceRefresh: true);
+    _applyCachedFavorites();
+    notifyListeners();
   }
 
   final ApiOfferService _offerService;
@@ -55,7 +61,11 @@ class OfferProvider extends ChangeNotifier {
   bool _isLoadingMore = false;
   bool _hasLoaded = false;
   bool _isSearching = false;
+  int _offersRequest = 0;
   int _searchRequest = 0;
+  int _favoritesRequest = 0;
+  int _accountGeneration = 0;
+  final Map<String, int> _favoriteMutations = {};
   String? _error;
   String? _searchError;
   int _currentPage = 1;
@@ -197,12 +207,17 @@ class OfferProvider extends ChangeNotifier {
 
   Future<void> loadOffers({bool forceRefresh = false}) async {
     if (_hasLoaded && !forceRefresh) return;
+    final request = ++_offersRequest;
     _setLoading(true);
     _error = null;
     _currentPage = 1;
     if (_isOnline) {
       try {
-        final result = await _offerService.fetchOffers(page: _currentPage);
+        final result = await _offerService.fetchOffers(
+          page: _currentPage,
+          forceRefresh: forceRefresh,
+        );
+        if (request != _offersRequest) return;
         _offers = result.data;
         _rebuildOffersCache();
         _filterVersion++;
@@ -211,6 +226,7 @@ class OfferProvider extends ChangeNotifier {
         _hasLoaded = true;
         await _offerStore.saveOffersByPage(_currentPage, _offers);
       } catch (e) {
+        if (request != _offersRequest) return;
         _error = 'failedLoadPullRetry';
       }
     }
@@ -306,11 +322,18 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> toggleFavorite(String offerId) async {
+    final accountGeneration = _accountGeneration;
+    if (_favoriteMutations.containsKey(offerId)) return;
+    _favoriteMutations[offerId] = accountGeneration;
+    _favoritesRequest++;
     final index = _offerIndex[offerId];
     final sIndex = _searchIndex[offerId];
     final hasOffer = index != null && index < _offers.length;
     final hasSearch = sIndex != null && sIndex < _searchResults.length;
-    if (!hasOffer && !hasSearch) return;
+    if (!hasOffer && !hasSearch) {
+      _favoriteMutations.remove(offerId);
+      return;
+    }
 
     bool wasFavorite = false;
     if (hasOffer) {
@@ -329,17 +352,20 @@ class OfferProvider extends ChangeNotifier {
       if (wasFavorite) {
         debugPrint('FAV: remove $offerId');
         await _favoritesService.removeFavorite(offerId);
+        if (accountGeneration != _accountGeneration) return;
         await _favoriteStore.removeFavorite(offerId);
         debugPrint(
             'FAV: removed ok, Hive: ${_favoriteStore.getFavorites().length}');
       } else {
         debugPrint('FAV: add $offerId');
         await _favoritesService.addFavorite(offerId);
+        if (accountGeneration != _accountGeneration) return;
         await _favoriteStore.addFavorite(offerId);
         debugPrint(
             'FAV: added ok, Hive: ${_favoriteStore.getFavorites().length}');
       }
     } catch (_) {
+      if (accountGeneration != _accountGeneration) return;
       if (hasOffer) {
         _offers[index] = _offers[index].copyWith(isFavorite: wasFavorite);
       }
@@ -348,6 +374,10 @@ class OfferProvider extends ChangeNotifier {
             _searchResults[sIndex].copyWith(isFavorite: wasFavorite);
       }
       notifyListeners();
+    } finally {
+      if (_favoriteMutations[offerId] == accountGeneration) {
+        _favoriteMutations.remove(offerId);
+      }
     }
   }
 
@@ -359,13 +389,22 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> loadFavorites() async {
+    final accountGeneration = _accountGeneration;
+    final request = ++_favoritesRequest;
     _applyCachedFavorites();
 
     try {
       final favorites = await _favoritesService.fetchFavorites();
+      if (request != _favoritesRequest ||
+          accountGeneration != _accountGeneration) {
+        return;
+      }
       final favoriteIds = favorites.map((o) => o.id).toSet();
-      if (favoriteIds.isEmpty) return;
       await _favoriteStore.syncFromRemote(favoriteIds);
+      if (request != _favoritesRequest ||
+          accountGeneration != _accountGeneration) {
+        return;
+      }
       _offers = _offers.map((offer) {
         return offer.copyWith(isFavorite: favoriteIds.contains(offer.id));
       }).toList(growable: false);
@@ -387,5 +426,21 @@ class OfferProvider extends ChangeNotifier {
 
   Future<void> _syncQueuedActions() async {
     await loadFavorites();
+  }
+
+  void resetForAccountChange() {
+    _accountGeneration++;
+    _favoritesRequest++;
+    _favoriteMutations.clear();
+    _offers = _offers
+        .map((offer) => offer.copyWith(isFavorite: false))
+        .toList(growable: false);
+    _searchResults = _searchResults
+        .map((offer) => offer.copyWith(isFavorite: false))
+        .toList(growable: false);
+    _rebuildOffersCache();
+    _rebuildSearchCache();
+    _filterVersion++;
+    notifyListeners();
   }
 }

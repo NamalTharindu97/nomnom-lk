@@ -87,6 +87,35 @@ class NomNomBootstrap extends StatelessWidget {
     final restaurantStore = RestaurantStore();
     final favoriteStore = FavoriteStore();
     final notificationStore = NotificationStore();
+    final offerProvider = OfferProvider(
+      offerService: ApiOfferService(apiClient),
+      favoritesService: ApiFavoritesService(apiClient),
+      favoriteStore: favoriteStore,
+      offerStore: offerStore,
+      connectivityService: connectivityService,
+    );
+    offerProvider.setLocaleProvider(localeProvider);
+    final notificationProvider = NotificationProvider(
+      ApiNotificationService(apiClient),
+      notificationStore: notificationStore,
+    );
+    final restaurantProvider = RestaurantProvider(
+      ApiRestaurantService(apiClient),
+      restaurantStore: restaurantStore,
+      connectivityService: connectivityService,
+    );
+    final authProvider = AuthProvider(
+      ApiAuthService(apiClient),
+      apiClient: apiClient,
+      favoriteStore: favoriteStore,
+      notificationStore: notificationStore,
+      offerStore: offerStore,
+      restaurantStore: restaurantStore,
+      onAccountCleared: () {
+        offerProvider.resetForAccountChange();
+        notificationProvider.resetForAccountChange();
+      },
+    );
 
     return MultiProvider(
       providers: [
@@ -98,42 +127,10 @@ class NomNomBootstrap extends StatelessWidget {
         Provider<NotificationStore>.value(value: notificationStore),
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: localeProvider),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(
-            ApiAuthService(apiClient),
-            apiClient: apiClient,
-            favoriteStore: favoriteStore,
-            notificationStore: notificationStore,
-            offerStore: offerStore,
-            restaurantStore: restaurantStore,
-          ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) {
-            final provider = OfferProvider(
-              offerService: ApiOfferService(apiClient),
-              favoritesService: ApiFavoritesService(apiClient),
-              favoriteStore: favoriteStore,
-              offerStore: offerStore,
-              connectivityService: connectivityService,
-            );
-            provider.setLocaleProvider(localeProvider);
-            return provider;
-          },
-        ),
-        ChangeNotifierProvider(
-          create: (_) => NotificationProvider(
-            ApiNotificationService(apiClient),
-            notificationStore: notificationStore,
-          ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => RestaurantProvider(
-            ApiRestaurantService(apiClient),
-            restaurantStore: restaurantStore,
-            connectivityService: connectivityService,
-          ),
-        ),
+        ChangeNotifierProvider(create: (_) => authProvider),
+        ChangeNotifierProvider(create: (_) => offerProvider),
+        ChangeNotifierProvider(create: (_) => notificationProvider),
+        ChangeNotifierProvider(create: (_) => restaurantProvider),
         ChangeNotifierProvider(
           create: (_) => BannerProvider(ApiBannerService(apiClient)),
         ),
@@ -247,6 +244,7 @@ class _SseListenerState extends State<_SseListener>
   Timer? _debounce;
   Timer? _pollTimer;
   bool _needsOfferRefresh = false;
+  bool _needsFavoriteRefresh = false;
   bool _needsRestaurantRefresh = false;
   bool _needsBannerRefresh = false;
   bool _hasSseConnection = false;
@@ -272,10 +270,19 @@ class _SseListenerState extends State<_SseListener>
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
       apiClient.invalidateCache('/offers');
-      context.read<OfferProvider>().refreshOffers();
+      _refreshOffersForSession();
       apiClient.invalidateCache('/restaurants');
       context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
     });
+  }
+
+  void _refreshOffersForSession() {
+    final offerProvider = context.read<OfferProvider>();
+    if (context.read<AuthProvider>().isLoggedIn) {
+      offerProvider.refreshOffers();
+    } else {
+      offerProvider.loadOffers(forceRefresh: true);
+    }
   }
 
   Future<void> _initSse() async {
@@ -320,7 +327,12 @@ class _SseListenerState extends State<_SseListener>
         break;
       case 'favorite.added':
       case 'favorite.removed':
-        _needsOfferRefresh = true;
+        final eventUserId = event.data['user_id']?.toString();
+        final activeUserId = context.read<AuthProvider>().user?.id;
+        if (eventUserId == activeUserId) {
+          _needsOfferRefresh = true;
+          _needsFavoriteRefresh = true;
+        }
         break;
     }
     _debounce?.cancel();
@@ -331,7 +343,11 @@ class _SseListenerState extends State<_SseListener>
     final apiClient = context.read<ApiClient>();
     if (_needsOfferRefresh) {
       apiClient.invalidateCache('/offers');
-      context.read<OfferProvider>().refreshOffers();
+      if (_needsFavoriteRefresh) {
+        apiClient.invalidateCache('/favorites');
+        _needsFavoriteRefresh = false;
+      }
+      _refreshOffersForSession();
       _needsOfferRefresh = false;
     }
     if (_needsRestaurantRefresh) {

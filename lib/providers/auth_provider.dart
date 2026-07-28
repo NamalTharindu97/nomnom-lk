@@ -19,11 +19,13 @@ class AuthProvider extends ChangeNotifier {
     NotificationStore? notificationStore,
     OfferStore? offerStore,
     RestaurantStore? restaurantStore,
+    VoidCallback? onAccountCleared,
   })  : _apiClient = apiClient,
         _favoriteStore = favoriteStore,
         _notificationStore = notificationStore,
         _offerStore = offerStore,
-        _restaurantStore = restaurantStore;
+        _restaurantStore = restaurantStore,
+        _onAccountCleared = onAccountCleared;
 
   final ApiAuthService _authService;
   final ApiClient? _apiClient;
@@ -31,6 +33,7 @@ class AuthProvider extends ChangeNotifier {
   final NotificationStore? _notificationStore;
   final OfferStore? _offerStore;
   final RestaurantStore? _restaurantStore;
+  final VoidCallback? _onAccountCleared;
 
   AppUser? _user;
   bool _isInitialized = false;
@@ -117,26 +120,53 @@ class AuthProvider extends ChangeNotifier {
     if (_isSigningOut) return;
     _isSigningOut = true;
     _setLoading(true);
+    _onAccountCleared?.call();
 
-    await fcmService?.unregisterToken();
+    try {
+      try {
+        await fcmService?.unregisterToken();
+      } catch (_) {}
+      try {
+        await _authService.logout();
+      } catch (_) {}
+      try {
+        await fb.FirebaseAuth.instance.signOut();
+      } catch (_) {}
+      try {
+        await gsi.GoogleSignIn().signOut();
+      } catch (_) {}
 
-    await _authService.logout();
+      _apiClient?.clearCache();
+      try {
+        await _apiClient?.clearTokens();
+      } catch (_) {}
 
-    try { await fb.FirebaseAuth.instance.signOut(); } catch (_) {}
-    try { gsi.GoogleSignIn().signOut(); } catch (_) {}
-
-    _apiClient?.clearCache();
-    _apiClient?.clearTokens();
-
-    await _favoriteStore?.clear();
-    await _notificationStore?.clear();
-    await _offerStore?.clear();
-    await _restaurantStore?.clear();
-
-    _user = null;
-    _isInitialized = true;
-    _isSigningOut = false;
-    _setLoading(false);
+      try {
+        await _favoriteStore?.clear();
+      } catch (_) {}
+      try {
+        await _notificationStore?.clear();
+      } catch (_) {}
+      try {
+        await _offerStore?.clear();
+      } catch (_) {}
+      try {
+        await _restaurantStore?.clear();
+      } catch (_) {}
+    } finally {
+      // Invalidate requests that may have started while remote logout was running.
+      _onAccountCleared?.call();
+      _user = null;
+      _isInitialized = true;
+      try {
+        await _favoriteStore?.clear();
+      } catch (_) {}
+      try {
+        await _notificationStore?.clear();
+      } catch (_) {}
+      _isSigningOut = false;
+      _setLoading(false);
+    }
   }
 
   void updateUser(AppUser updated) {

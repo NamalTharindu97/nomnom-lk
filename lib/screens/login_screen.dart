@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _syncDataAfterLogin() async {
     try {
       await Future.wait([
-        context.read<OfferProvider>().loadOffers(forceRefresh: true),
+        context.read<OfferProvider>().refreshOffers(),
         context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true),
         context.read<NotificationProvider>().loadUnreadCount(),
       ]);
