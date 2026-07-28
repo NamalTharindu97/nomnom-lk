@@ -9,8 +9,6 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'core/api_config.dart';
 import 'core/app_routes.dart';
-import 'core/theme/app_colors.dart';
-import 'core/theme/app_motion.dart';
 import 'core/theme/app_theme.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import 'models/offer.dart';
@@ -283,7 +281,6 @@ class _SseListenerState extends State<_SseListener>
   Future<void> _initSse() async {
     final sse = SSEService(ApiConfig.baseUrl);
     _sseService = sse;
-    if (mounted) setState(() {});
     try {
       await sse.connect();
       _hasSseConnection = sse.isConnected;
@@ -368,58 +365,7 @@ class _SseListenerState extends State<_SseListener>
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_sseService == null) return widget.child;
-    return ValueListenableBuilder<bool>(
-      valueListenable: _sseService!.reconnectingNotifier,
-      builder: (_, isReconnecting, __) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSize(
-              duration: AppMotion.duration(context, AppMotion.short),
-              curve: AppMotion.standardCurve,
-              child: isReconnecting
-                  ? Material(
-                      color: AppColors.curry.withValues(alpha: 0.1),
-                      child: SafeArea(
-                        bottom: false,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 4, horizontal: 16),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: AppMotion.reduceMotion(context)
-                                    ? const Icon(Icons.sync, size: 12)
-                                    : const CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.curry,
-                                      ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                AppLocalizations.of(context)!.reconnecting,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.curry,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            Expanded(child: widget.child),
-          ],
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => widget.child;
 }
 
 class NomNomApp extends StatelessWidget {
