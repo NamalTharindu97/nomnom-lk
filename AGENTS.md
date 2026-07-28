@@ -1,7 +1,7 @@
 ## Goal
 - Go backend + admin dashboard + Flutter app for NomNom LK, a Sri Lankan food offers discovery app.
 - Detail plans in `plans/`: `backend-plan.md`, `flutter-plan.md`, `admin-plan.md`, `devops-plan.md`, `fixes-plan.md`, `play-store-release-plan.md`, `contabo-vps-deployment-plan.md`.
-- **Current:** Phase 12 + P0 Play Store compliance fixes complete. VPS staging deployed at `169.58.79.251` with HTTPS via Caddy + Cloudflare TLS. Domain `nomnomlk.com` on Cloudflare. Admin at `https://admin.nomnomlk.com`, API at `https://api.nomnomlk.com`. Render data migrated to VPS. Flutter app has legal links (Privacy/Terms/Support) + Sentry crash reporting. Next: Phase 11 store listing (screenshots, feature graphic, store descriptions) + Data Safety form.
+- **Current:** Phase 12 + P0 Play Store compliance fixes complete. VPS staging deployed at `169.58.79.251` with HTTPS via Caddy + Cloudflare TLS. Domain `nomnomlk.com` on Cloudflare. Admin at `https://admin.nomnomlk.com`, API at `https://api.nomnomlk.com`. Render data migrated to VPS. Flutter app has legal links (Privacy/Terms/Support) + Sentry crash reporting. iOS device testing branch `ios/device-testing` (separate from master). Next: Phase 11 store listing (screenshots, feature graphic, store descriptions) + Data Safety form.
 - **Completed:** All prior milestones — 267 Flutter tests, 145 backend tests, 53+ E2E tests. Audit logging, impersonation, RBAC, owner scoping, CI bugfixes, order platforms, banner lifecycle with SSE refresh, owner metrics, UI/UX polish. VPS staging deployed (PostgreSQL 16, Redis 7, Caddy TLS, Cloudflare origin cert). CI URLs migrated from Render to nomnomlk.com. Admin favicon + password eye toggle + email placeholder fix.
 
 ## Deployment Documentation
@@ -387,6 +387,30 @@
   - **Plans written:** `contabo-vps-deployment-plan.md`, `remove-restaurant-location-plan.md`.
   - **Deployment:** Render uses `linux/amd64` (not arm64). Deploy via `render deploys create` CLI + manual Docker push.
   - **Debug APK:** `build/app/outputs/flutter-apk/app-debug.apk` (199MB), connected to Render production backend.
+- **2026-07-27:** Contabo VPS staging deployed + Play Store compliance audit completed.
+  - **VPS Deployment:**
+    - Staging at `169.58.79.251`: backend :8080, admin :3000, PostgreSQL + Redis in Docker.
+    - Render PostgreSQL data migrated to VPS (14 users, 11 restaurants, 23 offers, 4 banners).
+    - R2 storage configured with `staging` prefix (isolated from `production`).
+    - 3 compose bugs fixed: redis ACL mounted as volume (should be secret), postgres missing DB secret, no curl in distroless backend for healthcheck.
+    - Admin proxy fixed: replaced `next.config.ts` rewrites (build-time) with `src/middleware.ts` (runtime), removed hardcoded Render URL from CI.
+  - **Flutter App:**
+    - Android running on emulator (API 36) connected to VPS.
+    - iOS runs on iPhone 16 Pro device (iOS 26.5) via Xcode — branch `ios/device-testing` with ATS exception, URL schemes, SPM disable.
+    - PlatformProvider caches order/social platforms (eliminates per-page API calls on offer details).
+    - Order buttons: Uber Eats via native scheme, PickMe via `https://pickme.lk/` web fallback.
+    - Hero tag collision identified (pre-existing, fix in P0.5).
+  - **Play Store Audit:**
+    - Full audit completed — 106 API routes reviewed, permissions audited, backend security assessed.
+    - Score: 77/100 — CONDITIONAL PASS.
+    - 5 blockers: HTTPS/domain, in-app legal links, CI URL, crash reporting, hero tags.
+    - 4 legal pages exist on admin (public): `/privacy`, `/terms`, `/support`, `/delete-account`.
+    - No analytics/ads SDKs — simple Data Safety declaration.
+    - Remediation plan written to `plans/play-store-release-plan.md`.
+  - **Git branches:**
+    - `ios/device-testing` — iOS-specific changes (Info.plist, entitlements, SPM disable).
+    - `phase/12-rate-limit-ci-aab` — feature branch.
+    - `staging`, `master` — clean, no iOS changes.
 - **2026-07-28:** VPS staging deployment + Play Store compliance P0 fixes.
   - **VPS:** Contabo Cloud VPS S at `169.58.79.251`. PostgreSQL 16 + Redis 7 via Docker. Caddy reverse proxy with Cloudflare origin cert for HTTPS on 443. Render PostgreSQL migrated to VPS (72-row dump). Admin email updated to `admin@nomnomlk.com`.
   - **Domain:** `nomnomlk.com` purchased on Cloudflare ($10.46/yr). DNS: `api.nomnomlk.com` → VPS, `admin.nomnomlk.com` → VPS. Caddy routes to `backend:8080` and `admin:3000`.
