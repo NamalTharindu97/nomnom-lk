@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../utils/spacings.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 
-class EmptyState extends StatefulWidget {
+class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
     required this.icon,
@@ -20,33 +21,6 @@ class EmptyState extends StatefulWidget {
   final String message;
   final VoidCallback? onRetry;
   final String? retryLabel;
-
-  @override
-  State<EmptyState> createState() => _EmptyStateState();
-}
-
-class _EmptyStateState extends State<EmptyState>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _pulseAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,12 +42,12 @@ class _EmptyStateState extends State<EmptyState>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    AnimatedBuilder(
-                      animation: _pulseAnim,
-                      builder: (context, child) => Transform.scale(
-                        scale: _pulseAnim.value,
-                        child: child,
-                      ),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.96, end: 1),
+                      duration: AppMotion.duration(context, AppMotion.medium),
+                      curve: AppMotion.standardCurve,
+                      builder: (context, scale, child) =>
+                          Transform.scale(scale: scale, child: child),
                       child: Container(
                         width: 64,
                         height: 64,
@@ -81,13 +55,12 @@ class _EmptyStateState extends State<EmptyState>
                           color: context.colors.surfaceAlt,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child:
-                            Icon(widget.icon, color: AppColors.curry, size: 30),
+                        child: Icon(icon, color: AppColors.curry, size: 30),
                       ),
                     ),
                     const SizedBox(height: Spacings.lg),
                     Text(
-                      widget.title,
+                      title,
                       textAlign: TextAlign.center,
                       style: textTheme.titleMedium?.copyWith(
                         color: context.colors.textPrimary,
@@ -96,17 +69,17 @@ class _EmptyStateState extends State<EmptyState>
                     ),
                     const SizedBox(height: Spacings.xs),
                     Text(
-                      widget.message,
+                      message,
                       textAlign: TextAlign.center,
                       style: textTheme.bodyMedium
                           ?.copyWith(color: context.colors.muted),
                     ),
-                    if (widget.onRetry != null) ...[
+                    if (onRetry != null) ...[
                       const SizedBox(height: Spacings.lg),
                       FilledButton.icon(
-                        onPressed: widget.onRetry,
+                        onPressed: onRetry,
                         icon: const Icon(Icons.refresh_rounded, size: 18),
-                        label: Text(widget.retryLabel ??
+                        label: Text(retryLabel ??
                             AppLocalizations.of(context)!.retryLabel),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.curry,

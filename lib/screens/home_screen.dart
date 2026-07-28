@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
@@ -21,9 +23,11 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     required this.onSearchTap,
+    this.isActive = true,
   });
 
   final VoidCallback onSearchTap;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +68,9 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SliverToBoxAdapter(child: FeaturedBannerCarousel()),
+                      SliverToBoxAdapter(
+                        child: FeaturedBannerCarousel(isActive: isActive),
+                      ),
                       const SliverToBoxAdapter(
                           child: SizedBox(height: Spacings.md)),
                       const SliverToBoxAdapter(child: _HotOffersSection()),
@@ -629,44 +635,57 @@ class _FilterChip extends StatefulWidget {
   State<_FilterChip> createState() => _FilterChipState();
 }
 
-class _FilterChipState extends State<_FilterChip>
-    with SingleTickerProviderStateMixin {
+class _FilterChipState extends State<_FilterChip> {
   double _scale = 1.0;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final reduceMotion = AppMotion.reduceMotion(context);
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _scale = 0.93),
-      onTapUp: (_) => setState(() => _scale = 1.0),
-      onTapCancel: () => setState(() => _scale = 1.0),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _scale,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: Spacings.sm + 2, vertical: Spacings.xs),
-          decoration: BoxDecoration(
-            color:
-                widget.isSelected ? AppColors.curry : context.colors.surfaceAlt,
-            borderRadius: BorderRadius.circular(20),
-            border: widget.isSelected
-                ? null
-                : Border.all(
-                    color: context.colors.textPrimary.withValues(alpha: 0.08)),
-          ),
-          child: Text(
-            widget.label,
-            style: textTheme.labelMedium?.copyWith(
+    return Semantics(
+      button: true,
+      selected: widget.isSelected,
+      child: GestureDetector(
+        onTapDown: (_) {
+          if (!reduceMotion) setState(() => _scale = 0.96);
+        },
+        onTapUp: (_) => setState(() => _scale = 1.0),
+        onTapCancel: () => setState(() => _scale = 1.0),
+        onTap: () {
+          if (!reduceMotion) HapticFeedback.selectionClick();
+          widget.onTap();
+        },
+        child: AnimatedScale(
+          scale: _scale,
+          duration: AppMotion.duration(context, AppMotion.press),
+          curve: AppMotion.standardCurve,
+          child: AnimatedContainer(
+            duration: AppMotion.duration(context, AppMotion.short),
+            curve: AppMotion.standardCurve,
+            padding: const EdgeInsets.symmetric(
+                horizontal: Spacings.sm + 2, vertical: Spacings.xs),
+            decoration: BoxDecoration(
               color: widget.isSelected
-                  ? (Theme.of(context).brightness == Brightness.dark
-                      ? context.colors.background
-                      : Colors.white)
-                  : context.colors.textSecondary,
-              fontWeight: FontWeight.w700,
+                  ? AppColors.curry
+                  : context.colors.surfaceAlt,
+              borderRadius: BorderRadius.circular(20),
+              border: widget.isSelected
+                  ? null
+                  : Border.all(
+                      color:
+                          context.colors.textPrimary.withValues(alpha: 0.08)),
+            ),
+            child: Text(
+              widget.label,
+              style: textTheme.labelMedium?.copyWith(
+                color: widget.isSelected
+                    ? (Theme.of(context).brightness == Brightness.dark
+                        ? context.colors.background
+                        : Colors.white)
+                    : context.colors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

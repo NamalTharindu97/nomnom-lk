@@ -12,6 +12,7 @@ import '../providers/restaurant_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/motion_switcher.dart';
 import '../widgets/offer_card.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/stagger_item.dart';
@@ -187,117 +188,150 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
                 Expanded(
-                  child: _controller.text.isEmpty
-                      ? _SearchIdleState(
-                          recentSearches: _recentSearches,
-                          onRecentTap: _onRecentTap,
-                          onClearRecent: _clearRecent,
-                        )
-                      : Consumer2<OfferProvider, RestaurantProvider>(
-                          builder:
-                              (context, offerProvider, restProvider, child) {
-                            final isSearching = offerProvider.isSearching ||
-                                restProvider.isSearching;
-                            final offers = offerProvider.searchResults;
-                            final restaurants = restProvider.searchResults;
-                            final hasError =
-                                offerProvider.searchError != null ||
-                                    restProvider.searchError != null;
+                  child: MotionSwitcher(
+                    child: _controller.text.isEmpty
+                        ? _SearchIdleState(
+                            key: const ValueKey('search-idle'),
+                            recentSearches: _recentSearches,
+                            onRecentTap: _onRecentTap,
+                            onClearRecent: _clearRecent,
+                          )
+                        : Consumer2<OfferProvider, RestaurantProvider>(
+                            key: const ValueKey('search-results'),
+                            builder:
+                                (context, offerProvider, restProvider, child) {
+                              final isSearching = offerProvider.isSearching ||
+                                  restProvider.isSearching;
+                              final offers = offerProvider.searchResults;
+                              final restaurants = restProvider.searchResults;
+                              final hasError =
+                                  offerProvider.searchError != null ||
+                                      restProvider.searchError != null;
 
-                            if (isSearching) {
-                              return const OfferShimmerList();
-                            }
+                              if (isSearching) {
+                                return const MotionSwitcher(
+                                  child: OfferShimmerList(
+                                    key: ValueKey('search-loading'),
+                                  ),
+                                );
+                              }
 
-                            if (hasError &&
-                                offers.isEmpty &&
-                                restaurants.isEmpty) {
-                              final loc = AppLocalizations.of(context)!;
-                              final errToken = offerProvider.searchError ??
-                                  restProvider.searchError!;
-                              return LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return ListView(
-                                    children: [
-                                      SizedBox(
-                                        height: constraints.maxHeight,
-                                        child: EmptyState(
-                                          icon: Icons.wifi_off_rounded,
-                                          title: loc.searchFailed,
-                                          message: _resolveError(errToken, loc),
-                                          onRetry: _retrySearch,
+                              if (hasError &&
+                                  offers.isEmpty &&
+                                  restaurants.isEmpty) {
+                                final loc = AppLocalizations.of(context)!;
+                                final errToken = offerProvider.searchError ??
+                                    restProvider.searchError!;
+                                return MotionSwitcher(
+                                  child: LayoutBuilder(
+                                    key: const ValueKey('search-error'),
+                                    builder: (context, constraints) => ListView(
+                                      children: [
+                                        SizedBox(
+                                          height: constraints.maxHeight,
+                                          child: EmptyState(
+                                            icon: Icons.wifi_off_rounded,
+                                            title: loc.searchFailed,
+                                            message:
+                                                _resolveError(errToken, loc),
+                                            onRetry: _retrySearch,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              if (offers.isEmpty && restaurants.isEmpty) {
+                                return MotionSwitcher(
+                                  child: EmptyState(
+                                    key: const ValueKey('search-empty'),
+                                    icon: Icons.search_off_rounded,
+                                    title: AppLocalizations.of(context)!
+                                        .searchNoResults,
+                                    message: AppLocalizations.of(context)!
+                                        .searchNoResultsSubtitle,
+                                  ),
+                                );
+                              }
+
+                              return MotionSwitcher(
+                                child: CustomScrollView(
+                                  key: const ValueKey('search-result-list'),
+                                  slivers: [
+                                    if (restaurants.isNotEmpty) ...[
+                                      SliverToBoxAdapter(
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                              Spacings.md,
+                                              Spacings.xs,
+                                              Spacings.md,
+                                              Spacings.xxs),
+                                          child: Text(
+                                            AppLocalizations.of(context)!
+                                                .searchRestaurantsTab,
+                                            style:
+                                                textTheme.titleSmall?.copyWith(
+                                              color: context.colors.muted,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SliverList.builder(
+                                        itemCount: restaurants.length,
+                                        itemBuilder: (context, index) =>
+                                            StaggerItem(
+                                          key: ValueKey(
+                                              'search-restaurant-${restaurants[index].id}'),
+                                          index: index,
+                                          child: _SearchRestaurantTile(
+                                            restaurant: restaurants[index],
+                                          ),
                                         ),
                                       ),
                                     ],
-                                  );
-                                },
-                              );
-                            }
-
-                            if (offers.isEmpty && restaurants.isEmpty) {
-                              return EmptyState(
-                                icon: Icons.search_off_rounded,
-                                title: AppLocalizations.of(context)!
-                                    .searchNoResults,
-                                message: AppLocalizations.of(context)!
-                                    .searchNoResultsSubtitle,
-                              );
-                            }
-
-                            return ListView(
-                              padding: const EdgeInsets.only(
-                                  top: Spacings.xxs, bottom: Spacings.md),
-                              children: [
-                                if (restaurants.isNotEmpty) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        Spacings.md,
-                                        Spacings.xs,
-                                        Spacings.md,
-                                        Spacings.xxs),
-                                    child: Text(
-                                      AppLocalizations.of(context)!
-                                          .searchRestaurantsTab,
-                                      style: textTheme.titleSmall?.copyWith(
-                                        color: context.colors.muted,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  ...restaurants.map(
-                                    (r) => StaggerItem(
-                                      index: 0,
-                                      child:
-                                          _SearchRestaurantTile(restaurant: r),
-                                    ),
-                                  ),
-                                ],
-                                if (offers.isNotEmpty) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        Spacings.md,
-                                        Spacings.xs,
-                                        Spacings.md,
-                                        Spacings.xxs),
-                                    child: Text(
-                                      AppLocalizations.of(context)!
-                                          .searchOffersTab,
-                                      style: textTheme.titleSmall?.copyWith(
-                                        color: context.colors.muted,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  ...offers.asMap().entries.map(
-                                        (e) => StaggerItem(
-                                          index: e.key,
-                                          child: OfferCard(offer: e.value),
+                                    if (offers.isNotEmpty) ...[
+                                      SliverToBoxAdapter(
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                              Spacings.md,
+                                              Spacings.xs,
+                                              Spacings.md,
+                                              Spacings.xxs),
+                                          child: Text(
+                                            AppLocalizations.of(context)!
+                                                .searchOffersTab,
+                                            style:
+                                                textTheme.titleSmall?.copyWith(
+                                              color: context.colors.muted,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                ],
-                              ],
-                            );
-                          },
-                        ),
+                                      SliverList.builder(
+                                        itemCount: offers.length,
+                                        itemBuilder: (context, index) =>
+                                            StaggerItem(
+                                          key: ValueKey(
+                                              'search-offer-${offers[index].id}'),
+                                          index: index,
+                                          child:
+                                              OfferCard(offer: offers[index]),
+                                        ),
+                                      ),
+                                    ],
+                                    const SliverToBoxAdapter(
+                                      child: SizedBox(height: Spacings.md),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
                 ),
               ],
             ),
@@ -310,6 +344,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
 class _SearchIdleState extends StatelessWidget {
   const _SearchIdleState({
+    super.key,
     required this.recentSearches,
     required this.onRecentTap,
     required this.onClearRecent,

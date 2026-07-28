@@ -44,7 +44,6 @@ class HotOfferCard extends StatelessWidget {
               borderRadius: BorderRadius.zero,
               height: double.infinity,
               width: double.infinity,
-              heroTag: 'hot-offer-image-${offer.id}',
             ),
             Positioned(
               top: Spacings.sm,

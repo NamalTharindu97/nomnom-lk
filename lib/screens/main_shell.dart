@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
@@ -79,6 +81,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   void _selectTab(int index) {
+    if (index != _selectedIndex && !AppMotion.reduceMotion(context)) {
+      HapticFeedback.selectionClick();
+    }
     setState(() {
       _selectedIndex = index;
       if (index == 1) _searchFocusRequest++;
@@ -92,7 +97,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomeScreen(onSearchTap: () => _selectTab(1)),
+      HomeScreen(
+        onSearchTap: () => _selectTab(1),
+        isActive: _selectedIndex == 0,
+      ),
       SearchScreen(
         isActive: _selectedIndex == 1,
         focusRequest: _searchFocusRequest,
@@ -105,7 +113,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: pages,
+        children: [
+          for (var index = 0; index < pages.length; index++)
+            TickerMode(enabled: index == _selectedIndex, child: pages[index]),
+        ],
       ),
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
@@ -192,11 +203,17 @@ class _NavIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      switchInCurve: Curves.elasticOut,
-      switchOutCurve: Curves.easeOut,
+      duration: AppMotion.duration(context, AppMotion.short),
+      switchInCurve: AppMotion.standardCurve,
+      switchOutCurve: AppMotion.reverseCurve,
       transitionBuilder: (child, animation) {
-        return ScaleTransition(scale: animation, child: child);
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
+            child: child,
+          ),
+        );
       },
       child: badge != null && badge! > 0
           ? Badge(

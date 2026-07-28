@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_motion.dart';
 
 class _NomNomSlideTransitionBuilder extends PageTransitionsBuilder {
   const _NomNomSlideTransitionBuilder();
@@ -14,28 +15,19 @@ class _NomNomSlideTransitionBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return ScaleTransition(
-      scale: Tween<double>(begin: 0.97, end: 1.0).animate(
-        CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        ),
-      ),
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0.08, 0),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        )),
-        child: FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
-      ),
+    if (AppMotion.reduceMotion(context)) return child;
+
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: AppMotion.standardCurve,
+      reverseCurve: AppMotion.reverseCurve,
+    );
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0.04, 0),
+        end: Offset.zero,
+      ).animate(curved),
+      child: FadeTransition(opacity: curved, child: child),
     );
   }
 }

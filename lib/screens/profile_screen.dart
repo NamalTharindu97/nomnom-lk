@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +9,7 @@ import '../core/api_config.dart';
 import '../core/app_routes.dart';
 import '../core/app_store.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
@@ -100,11 +103,19 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = context.colors;
+    final editProfile = user.isLoggedIn && onEditProfile != null
+        ? () {
+            if (!AppMotion.reduceMotion(context)) {
+              HapticFeedback.selectionClick();
+            }
+            onEditProfile!();
+          }
+        : null;
 
     return Column(
       children: [
         GestureDetector(
-          onTap: user.isLoggedIn ? onEditProfile : null,
+          onTap: editProfile,
           child: Stack(
             children: [
               Container(
@@ -123,23 +134,33 @@ class _ProfileHeader extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: user.avatarUrl != null
-                      ? Image.network(ApiConfig.resolveUrl(user.avatarUrl!),
-                          fit: BoxFit.cover)
-                      : Center(
-                          child: Text(
-                            user.name.isEmpty
-                                ? '?'
-                                : user.name.substring(0, 1).toUpperCase(),
-                            style: textTheme.headlineMedium?.copyWith(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? colors.background
-                                  : Colors.white,
-                              fontWeight: FontWeight.w900,
+                  child: AnimatedSwitcher(
+                    duration: AppMotion.duration(context, AppMotion.short),
+                    child: user.avatarUrl != null
+                        ? CachedNetworkImage(
+                            key: ValueKey(user.avatarUrl),
+                            imageUrl: ApiConfig.resolveUrl(user.avatarUrl!),
+                            memCacheWidth:
+                                (72 * MediaQuery.devicePixelRatioOf(context))
+                                    .round(),
+                            fit: BoxFit.cover,
+                          )
+                        : Center(
+                            key: const ValueKey('avatar-fallback'),
+                            child: Text(
+                              user.name.isEmpty
+                                  ? '?'
+                                  : user.name.substring(0, 1).toUpperCase(),
+                              style: textTheme.headlineMedium?.copyWith(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? colors.background
+                                    : Colors.white,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
-                        ),
+                  ),
                 ),
               ),
               if (user.isLoggedIn)
@@ -166,7 +187,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         GestureDetector(
-          onTap: user.isLoggedIn ? onEditProfile : null,
+          onTap: editProfile,
           child: Text(
             user.name,
             style: textTheme.titleLarge?.copyWith(

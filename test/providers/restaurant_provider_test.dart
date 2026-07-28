@@ -59,6 +59,32 @@ class _PaginatingRestaurantService implements ApiRestaurantService {
       throw UnimplementedError();
 }
 
+class _ControlledRestaurantSearchService extends MockApiRestaurantService {
+  _ControlledRestaurantSearchService() : super(restaurants: const []);
+
+  final requests = <String, Completer<PaginatedResponse<Restaurant>>>{};
+
+  @override
+  Future<PaginatedResponse<Restaurant>> fetchRestaurants({
+    String? query,
+    int page = 1,
+  }) {
+    if (query == null) return super.fetchRestaurants(page: page);
+    return (requests[query] ??= Completer<PaginatedResponse<Restaurant>>())
+        .future;
+  }
+
+  void complete(String query, Restaurant restaurant) {
+    requests[query]!.complete(PaginatedResponse(
+      data: [restaurant],
+      page: 1,
+      perPage: 20,
+      total: 1,
+      totalPages: 1,
+    ));
+  }
+}
+
 class _FailingRestaurantService implements ApiRestaurantService {
   @override
   Future<PaginatedResponse<Restaurant>> fetchRestaurants(
@@ -188,8 +214,7 @@ void main() {
       expect(provider.restaurants.first.name, 'Updated');
     });
 
-    test('sets error to noInternet when offline and no cached data',
-        () async {
+    test('sets error to noInternet when offline and no cached data', () async {
       final offline = _OfflineConnectivityService();
       final service = MockApiRestaurantService();
 
@@ -307,6 +332,41 @@ void main() {
   });
 
   group('searchRestaurants', () {
+    test('keeps the newest results when an older search finishes last',
+        () async {
+      final service = _ControlledRestaurantSearchService();
+      provider = RestaurantProvider(service,
+          restaurantStore: store, connectivityService: connectivity);
+
+      final older = provider.searchRestaurants('older');
+      final newer = provider.searchRestaurants('newer');
+      service.complete(
+          'newer', makeRestaurant(id: 'newer', name: 'Newer Restaurant'));
+      await newer;
+      service.complete(
+          'older', makeRestaurant(id: 'older', name: 'Older Restaurant'));
+      await older;
+
+      expect(provider.searchResults.single.id, 'newer');
+      expect(provider.isSearching, isFalse);
+    });
+
+    test('clearing an active search resets loading state', () async {
+      final service = _ControlledRestaurantSearchService();
+      provider = RestaurantProvider(service,
+          restaurantStore: store, connectivityService: connectivity);
+
+      final active = provider.searchRestaurants('active');
+      expect(provider.isSearching, isTrue);
+      await provider.searchRestaurants('');
+      expect(provider.isSearching, isFalse);
+
+      service.complete('active', makeRestaurant(id: 'stale'));
+      await active;
+      expect(provider.searchResults, isEmpty);
+      expect(provider.isSearching, isFalse);
+    });
+
     test('populates searchResults', () async {
       final restaurants = [
         makeRestaurant(id: 'r1', name: 'KFC'),

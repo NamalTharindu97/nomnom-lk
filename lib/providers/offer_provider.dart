@@ -55,6 +55,7 @@ class OfferProvider extends ChangeNotifier {
   bool _isLoadingMore = false;
   bool _hasLoaded = false;
   bool _isSearching = false;
+  int _searchRequest = 0;
   String? _error;
   String? _searchError;
   int _currentPage = 1;
@@ -102,7 +103,8 @@ class OfferProvider extends ChangeNotifier {
   }
 
   List<Offer> get filteredOffers {
-    if (_cachedFilterVersion == _filterVersion && _cachedFilteredOffers != null) {
+    if (_cachedFilterVersion == _filterVersion &&
+        _cachedFilteredOffers != null) {
       return _cachedFilteredOffers!;
     }
     var results = _offers;
@@ -175,7 +177,9 @@ class OfferProvider extends ChangeNotifier {
     final idx = _offerIndex[id];
     if (idx != null && idx < _offers.length) return _offers[idx];
     final sIdx = _searchIndex[id];
-    if (sIdx != null && sIdx < _searchResults.length) return _searchResults[sIdx];
+    if (sIdx != null && sIdx < _searchResults.length) {
+      return _searchResults[sIdx];
+    }
     return null;
   }
 
@@ -185,7 +189,9 @@ class OfferProvider extends ChangeNotifier {
   }
 
   void _rebuildSearchCache() {
-    _searchIndex = {for (var i = 0; i < _searchResults.length; i++) _searchResults[i].id: i};
+    _searchIndex = {
+      for (var i = 0; i < _searchResults.length; i++) _searchResults[i].id: i
+    };
     _cachedSearchResults = List.unmodifiable(_searchResults);
   }
 
@@ -265,11 +271,13 @@ class OfferProvider extends ChangeNotifier {
   }
 
   Future<void> searchOffers(String query) async {
+    final request = ++_searchRequest;
     if (query.trim().isEmpty) {
       _searchQuery = '';
       _filterVersion++;
       _searchError = null;
       _searchResults = const [];
+      _isSearching = false;
       _rebuildSearchCache();
       notifyListeners();
       return;
@@ -281,15 +289,20 @@ class OfferProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final result = await _offerService.fetchOffers(query: query);
+      if (request != _searchRequest) return;
       _searchResults = result.data;
       _rebuildSearchCache();
       _hasMore = result.hasMore;
       _total = result.total;
     } catch (_) {
+      if (request != _searchRequest) return;
       _searchError = 'searchFailedTryAgain';
+    } finally {
+      if (request == _searchRequest) {
+        _isSearching = false;
+        notifyListeners();
+      }
     }
-    _isSearching = false;
-    notifyListeners();
   }
 
   Future<void> toggleFavorite(String offerId) async {
@@ -306,7 +319,8 @@ class OfferProvider extends ChangeNotifier {
     }
     if (hasSearch) {
       wasFavorite = _searchResults[sIndex].isFavorite;
-      _searchResults[sIndex] = _searchResults[sIndex].copyWith(isFavorite: !wasFavorite);
+      _searchResults[sIndex] =
+          _searchResults[sIndex].copyWith(isFavorite: !wasFavorite);
     }
 
     notifyListeners();
@@ -316,19 +330,22 @@ class OfferProvider extends ChangeNotifier {
         debugPrint('FAV: remove $offerId');
         await _favoritesService.removeFavorite(offerId);
         await _favoriteStore.removeFavorite(offerId);
-        debugPrint('FAV: removed ok, Hive: ${_favoriteStore.getFavorites().length}');
+        debugPrint(
+            'FAV: removed ok, Hive: ${_favoriteStore.getFavorites().length}');
       } else {
         debugPrint('FAV: add $offerId');
         await _favoritesService.addFavorite(offerId);
         await _favoriteStore.addFavorite(offerId);
-        debugPrint('FAV: added ok, Hive: ${_favoriteStore.getFavorites().length}');
+        debugPrint(
+            'FAV: added ok, Hive: ${_favoriteStore.getFavorites().length}');
       }
     } catch (_) {
       if (hasOffer) {
         _offers[index] = _offers[index].copyWith(isFavorite: wasFavorite);
       }
       if (hasSearch) {
-        _searchResults[sIndex] = _searchResults[sIndex].copyWith(isFavorite: wasFavorite);
+        _searchResults[sIndex] =
+            _searchResults[sIndex].copyWith(isFavorite: wasFavorite);
       }
       notifyListeners();
     }

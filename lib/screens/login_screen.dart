@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
@@ -41,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: AppMotion.entrance,
     )..forward();
 
     _logoAnim = CurvedAnimation(
@@ -64,6 +65,12 @@ class _LoginScreenState extends State<LoginScreen>
       parent: _animCtrl,
       curve: const Interval(0.65, 0.95, curve: Curves.easeOutCubic),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduceMotion(context)) _animCtrl.value = 1;
   }
 
   @override
@@ -358,7 +365,10 @@ class _LoginScreenState extends State<LoginScreen>
                                 child: FadeTransition(
                                   opacity: _emailBtnAnim,
                                   child: AnimatedCrossFade(
-                                    duration: const Duration(milliseconds: 300),
+                                    duration: AppMotion.duration(
+                                      context,
+                                      AppMotion.medium,
+                                    ),
                                     crossFadeState: _showEmailForm
                                         ? CrossFadeState.showSecond
                                         : CrossFadeState.showFirst,

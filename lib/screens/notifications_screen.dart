@@ -1,15 +1,18 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/api_config.dart';
 import '../core/app_routes.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/motion_switcher.dart';
 import '../widgets/stagger_item.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -78,55 +81,58 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Expanded(
                   child: Consumer<NotificationProvider>(
                     builder: (context, provider, child) {
+                      late final Widget state;
                       if (provider.isLoading) {
-                        return const Center(
+                        state = const Center(
+                          key: ValueKey('notifications-loading'),
                           child: CircularProgressIndicator(),
                         );
-                      }
-
-                      if (provider.error != null) {
-                        return EmptyState(
+                      } else if (provider.error != null) {
+                        state = EmptyState(
+                          key: const ValueKey('notifications-error'),
                           icon: Icons.wifi_off_rounded,
                           title:
                               AppLocalizations.of(context)!.generalFailedToLoad,
                           message: provider.error!,
                         );
-                      }
-
-                      final notifications = provider.notifications;
-                      if (notifications.isEmpty) {
-                        return EmptyState(
+                      } else if (provider.notifications.isEmpty) {
+                        state = EmptyState(
+                          key: const ValueKey('notifications-empty'),
                           icon: Icons.notifications_none_rounded,
                           title:
                               AppLocalizations.of(context)!.notificationsEmpty,
                           message: AppLocalizations.of(context)!
                               .notificationsAllCaughtUp,
                         );
+                      } else {
+                        final notifications = provider.notifications;
+                        state = ListView.builder(
+                          key: const ValueKey('notifications-list'),
+                          padding: const EdgeInsets.only(bottom: Spacings.md),
+                          itemCount: notifications.length,
+                          itemBuilder: (context, index) {
+                            final n = notifications[index];
+                            return StaggerItem(
+                              key: ValueKey('notification-${n.id}'),
+                              index: index,
+                              child: _NotificationTile(
+                                notification: n,
+                                onTap: () {
+                                  provider.markAsRead(n.id);
+                                  if (n.offerId != null &&
+                                      n.offerId!.isNotEmpty) {
+                                    Navigator.of(context).pushNamed(
+                                      AppRoutes.offerDetails,
+                                      arguments: n.offerId,
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        );
                       }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.only(bottom: Spacings.md),
-                        itemCount: notifications.length,
-                        itemBuilder: (context, index) {
-                          final n = notifications[index];
-                          return StaggerItem(
-                            index: index,
-                            child: _NotificationTile(
-                              notification: n,
-                              onTap: () {
-                                provider.markAsRead(n.id);
-                                if (n.offerId != null &&
-                                    n.offerId!.isNotEmpty) {
-                                  Navigator.of(context).pushNamed(
-                                    AppRoutes.offerDetails,
-                                    arguments: n.offerId,
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      );
+                      return MotionSwitcher(child: state);
                     },
                   ),
                 ),
@@ -154,7 +160,9 @@ class _NotificationTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: AppMotion.duration(context, AppMotion.short),
+        curve: AppMotion.standardCurve,
         padding:
             const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: 14),
         decoration: BoxDecoration(
@@ -170,7 +178,8 @@ class _NotificationTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
+            AnimatedContainer(
+              duration: AppMotion.duration(context, AppMotion.short),
               width: 8,
               height: 8,
               margin: const EdgeInsets.only(top: 6, right: Spacings.sm),
@@ -218,12 +227,16 @@ class _NotificationTile extends StatelessWidget {
                 padding: const EdgeInsets.only(left: Spacings.sm),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    ApiConfig.resolveUrl(notification.imageUrl!),
+                  child: CachedNetworkImage(
+                    imageUrl: ApiConfig.resolveUrl(notification.imageUrl!),
                     width: 48,
                     height: 48,
+                    memCacheWidth:
+                        (48 * MediaQuery.devicePixelRatioOf(context)).round(),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(),
+                    fadeInDuration:
+                        AppMotion.duration(context, AppMotion.short),
+                    errorWidget: (_, __, ___) => const SizedBox(),
                   ),
                 ),
               ),

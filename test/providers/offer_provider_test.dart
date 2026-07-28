@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nomnom_lk/models/offer.dart';
 import 'package:nomnom_lk/models/paginated_response.dart';
@@ -67,6 +69,31 @@ class _CachedOfferStore extends MockOfferStore {
 
   @override
   List<Offer>? getOffersByPage(int page) => _cached;
+}
+
+class _ControlledOfferSearchService extends MockApiOfferService {
+  _ControlledOfferSearchService() : super(offers: const []);
+
+  final requests = <String, Completer<PaginatedResponse<Offer>>>{};
+
+  @override
+  Future<PaginatedResponse<Offer>> fetchOffers({
+    String? query,
+    int page = 1,
+  }) {
+    if (query == null) return super.fetchOffers(page: page);
+    return (requests[query] ??= Completer<PaginatedResponse<Offer>>()).future;
+  }
+
+  void complete(String query, Offer offer) {
+    requests[query]!.complete(PaginatedResponse(
+      data: [offer],
+      page: 1,
+      perPage: 20,
+      total: 1,
+      totalPages: 1,
+    ));
+  }
 }
 
 OfferProvider _createProvider({
@@ -403,6 +430,37 @@ void main() {
   });
 
   group('searchOffers', () {
+    test('keeps the newest results when an older search finishes last',
+        () async {
+      final service = _ControlledOfferSearchService();
+      final provider = _createProvider(offerService: service);
+
+      final older = provider.searchOffers('older');
+      final newer = provider.searchOffers('newer');
+      service.complete('newer', makeOffer(id: 'newer', title: 'Newer'));
+      await newer;
+      service.complete('older', makeOffer(id: 'older', title: 'Older'));
+      await older;
+
+      expect(provider.searchResults.single.id, 'newer');
+      expect(provider.isSearching, isFalse);
+    });
+
+    test('clearing an active search resets loading state', () async {
+      final service = _ControlledOfferSearchService();
+      final provider = _createProvider(offerService: service);
+
+      final active = provider.searchOffers('active');
+      expect(provider.isSearching, isTrue);
+      await provider.searchOffers('');
+      expect(provider.isSearching, isFalse);
+
+      service.complete('active', makeOffer(id: 'stale'));
+      await active;
+      expect(provider.searchResults, isEmpty);
+      expect(provider.isSearching, isFalse);
+    });
+
     test('populates searchResults matching the query', () async {
       final offers = [
         makeOffer(id: '1', title: 'Pizza Deal'),

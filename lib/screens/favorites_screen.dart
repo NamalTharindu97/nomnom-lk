@@ -8,7 +8,9 @@ import '../providers/offer_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/motion_switcher.dart';
 import '../widgets/offer_card.dart';
+import '../widgets/shimmer_loading.dart';
 import '../widgets/stagger_item.dart';
 
 class FavoritesScreen extends StatelessWidget {
@@ -49,8 +51,10 @@ class FavoritesScreen extends StatelessWidget {
                       height: constraints.maxHeight,
                       child: Consumer2<AuthProvider, OfferProvider>(
                         builder: (context, auth, provider, child) {
+                          late final Widget state;
                           if (!auth.isLoggedIn && !auth.isGuest) {
-                            return EmptyState(
+                            state = EmptyState(
+                              key: const ValueKey('favorites-auth'),
                               icon: Icons.lock_outline_rounded,
                               title: loc.loginTitle,
                               message: loc.loginEmailHint,
@@ -58,16 +62,15 @@ class FavoritesScreen extends StatelessWidget {
                                   .pushReplacementNamed(AppRoutes.login),
                               retryLabel: loc.loginSignInButton,
                             );
-                          }
-
-                          if (provider.isLoading && !provider.hasLoaded) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-
-                          if (provider.error != null &&
+                          } else if (provider.isLoading &&
+                              !provider.hasLoaded) {
+                            state = const OfferShimmerList(
+                              key: ValueKey('favorites-loading'),
+                            );
+                          } else if (provider.error != null &&
                               provider.favoriteOffers.isEmpty) {
-                            return RefreshIndicator(
+                            state = RefreshIndicator(
+                              key: const ValueKey('favorites-error'),
                               onRefresh: provider.refreshOffers,
                               child: ListView(
                                 physics: const AlwaysScrollableScrollPhysics(),
@@ -84,35 +87,38 @@ class FavoritesScreen extends StatelessWidget {
                                 ],
                               ),
                             );
-                          }
-
-                          final offers = provider.favoriteOffers;
-
-                          if (offers.isEmpty && provider.hasLoaded) {
-                            return EmptyState(
+                          } else if (provider.favoriteOffers.isEmpty &&
+                              provider.hasLoaded) {
+                            state = EmptyState(
+                              key: const ValueKey('favorites-empty'),
                               icon: Icons.favorite_border_rounded,
                               title: loc.favoritesNoSavedDeals,
                               message: loc.favoritesEmpty,
                             );
-                          }
-
-                          return RefreshIndicator(
-                            onRefresh: provider.refreshOffers,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.only(
-                                top: Spacings.xxs,
-                                bottom: Spacings.md,
+                          } else {
+                            final offers = provider.favoriteOffers;
+                            state = RefreshIndicator(
+                              key: const ValueKey('favorites-list'),
+                              onRefresh: provider.refreshOffers,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.only(
+                                  top: Spacings.xxs,
+                                  bottom: Spacings.md,
+                                ),
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                itemCount: offers.length,
+                                itemBuilder: (context, index) {
+                                  return StaggerItem(
+                                    key: ValueKey(
+                                        'favorite-${offers[index].id}'),
+                                    index: index,
+                                    child: OfferCard(offer: offers[index]),
+                                  );
+                                },
                               ),
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: offers.length,
-                              itemBuilder: (context, index) {
-                                return StaggerItem(
-                                  index: index,
-                                  child: OfferCard(offer: offers[index]),
-                                );
-                              },
-                            ),
-                          );
+                            );
+                          }
+                          return MotionSwitcher(child: state);
                         },
                       ),
                     ),

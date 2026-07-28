@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -7,12 +9,18 @@ import 'package:provider/provider.dart';
 
 import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../utils/spacings.dart';
+
+Uint8List? _encodeAvatarJpeg(Uint8List rawBytes) {
+  final decoded = img.decodeImage(rawBytes);
+  return decoded == null ? null : img.encodeJpg(decoded, quality: 85);
+}
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -96,8 +104,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       debugPrint('upload: converting $path to JPEG');
       final rawBytes = await File(path).readAsBytes();
-      final decoded = img.decodeImage(rawBytes);
-      if (decoded == null) {
+      final jpgBytes = await compute(_encodeAvatarJpeg, rawBytes);
+      if (jpgBytes == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(AppLocalizations.of(context)!.uploadFailed)),
@@ -105,7 +113,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
         return null;
       }
-      final jpgBytes = img.encodeJpg(decoded, quality: 85);
       final tmpFile = File('${Directory.systemTemp.path}/avatar_upload.jpg');
       await tmpFile.writeAsBytes(jpgBytes);
       debugPrint('upload: converted to JPEG, size=${jpgBytes.length}');
@@ -257,28 +264,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(24),
-                                  child: displayAvatarPath != null
-                                      ? Image.file(File(displayAvatarPath),
-                                          fit: BoxFit.cover)
-                                      : displayAvatarUrl != null
-                                          ? Image.network(
-                                              ApiConfig.resolveUrl(
-                                                  displayAvatarUrl),
-                                              fit: BoxFit.cover)
-                                          : Center(
-                                              child: Text(
-                                                ((user?.name ?? '?').isEmpty
-                                                        ? '?'
-                                                        : user!.name)
-                                                    .substring(0, 1)
-                                                    .toUpperCase(),
-                                                style: textTheme.displaySmall
-                                                    ?.copyWith(
-                                                  color: colors.background,
-                                                  fontWeight: FontWeight.w900,
+                                  child: AnimatedSwitcher(
+                                    duration: AppMotion.duration(
+                                      context,
+                                      AppMotion.short,
+                                    ),
+                                    child: displayAvatarPath != null
+                                        ? Image.file(
+                                            File(displayAvatarPath),
+                                            key: ValueKey(displayAvatarPath),
+                                            cacheWidth: 256,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : displayAvatarUrl != null
+                                            ? CachedNetworkImage(
+                                                key: ValueKey(displayAvatarUrl),
+                                                imageUrl: ApiConfig.resolveUrl(
+                                                  displayAvatarUrl,
+                                                ),
+                                                memCacheWidth: (88 *
+                                                        MediaQuery
+                                                            .devicePixelRatioOf(
+                                                                context))
+                                                    .round(),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Center(
+                                                key: const ValueKey(
+                                                  'edit-avatar-fallback',
+                                                ),
+                                                child: Text(
+                                                  ((user?.name ?? '?').isEmpty
+                                                          ? '?'
+                                                          : user!.name)
+                                                      .substring(0, 1)
+                                                      .toUpperCase(),
+                                                  style: textTheme.displaySmall
+                                                      ?.copyWith(
+                                                    color: colors.background,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                  ),
                                 ),
                               ),
                               Positioned(

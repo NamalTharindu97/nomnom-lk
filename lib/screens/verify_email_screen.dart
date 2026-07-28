@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
@@ -37,7 +38,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
     super.initState();
     _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AppMotion.entrance,
     )..forward();
 
     _logoAnim = CurvedAnimation(
@@ -60,6 +61,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
       parent: _animCtrl,
       curve: const Interval(0.65, 1.0, curve: Curves.easeOutCubic),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduceMotion(context)) _animCtrl.value = 1;
   }
 
   @override
