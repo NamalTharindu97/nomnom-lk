@@ -1,88 +1,154 @@
 name: Deploy Staging
 
 on:
-  push:
-    branches: [staging]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Full staging commit SHA to deploy
+        required: false
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: staging-deployment
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Validate staging release candidate
+  build-and-deploy:
+    name: Build, publish, and deploy staging
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'staging')
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    environment:
+      name: staging
+      url: https://admin.nomnomlk.com
 
-      - name: Record staging SHA
+    steps:
+      - name: Resolve source SHA
+        id: source
+        env:
+          DISPATCH_SHA: ${{ inputs.source_sha }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          echo "Staging commit: $GITHUB_SHA"
-          echo "Triggered by: $GITHUB_ACTOR"
-          echo "## Staging Release Candidate" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** \`$GITHUB_SHA\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** \`staging\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Actor:** $GITHUB_ACTOR" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo ":information_source: Staging deployment is not yet configured." >> $GITHUB_STEP_SUMMARY
-          echo "This workflow will trigger automated staging deployment when Contabo VPS is provisioned." >> $GITHUB_STEP_SUMMARY
+          set -Eeuo pipefail
+          sha=${DISPATCH_SHA:-$WORKFLOW_SHA}
+          if [[ -z "$sha" ]]; then
+            sha=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY.git" refs/heads/staging | cut -f1)
+          fi
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::source_sha must be a full 40-character Git commit SHA"
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
-  build-backend:
-    name: Build backend Docker image
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Check out tested source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Verify source belongs to staging
+        run: |
+          set -Eeuo pipefail
+          git fetch origin staging
+          git merge-base --is-ancestor "${{ steps.source.outputs.sha }}" origin/staging
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build backend image
+      - name: Build and publish backend
         uses: docker/build-push-action@v5
         with:
           context: backend
-          push: false
-          load: false
-          tags: nomnom-backend:staging
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:${{ steps.source.outputs.sha }}
+          cache-from: type=gha,scope=staging-backend
+          cache-to: type=gha,mode=max,scope=staging-backend
 
       - name: Scan backend image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: nomnom-backend:staging
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:${{ steps.source.outputs.sha }}
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
 
-  build-admin:
-    name: Build admin Docker image
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build admin image
+      - name: Build and publish admin
         uses: docker/build-push-action@v5
         with:
           context: admin
-          push: false
-          load: false
+          platforms: linux/amd64
+          push: true
           build-args: |
             NEXT_PUBLIC_API_URL=/api/v1
             API_PROXY_TARGET=http://backend:8080
-          tags: nomnom-admin:staging
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.source.outputs.sha }}
+          cache-from: type=gha,scope=staging-admin
+          cache-to: type=gha,mode=max,scope=staging-admin
 
       - name: Scan admin image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: nomnom-admin:staging
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.source.outputs.sha }}
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
+
+      - name: Install SSH identity
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          install -d "$RUNNER_TEMP/nomnom-ssh"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
+
+      - name: Deploy immutable images to VPS
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT }}
+          VPS_DEPLOY_USER: ${{ vars.VPS_DEPLOY_USER }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -Eeuo pipefail
+          trap 'rm -rf "$RUNNER_TEMP/nomnom-ssh"' EXIT
+          port=${VPS_PORT:-22}
+          ssh -i "$RUNNER_TEMP/nomnom-ssh/id" \
+            -p "$port" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o "UserKnownHostsFile=$RUNNER_TEMP/nomnom-ssh/known_hosts" \
+            "$VPS_DEPLOY_USER@$VPS_HOST" \
+            "sudo /usr/local/sbin/nomnom-deploy-staging 'docker.io/$DOCKER_USERNAME/nomnom-backend:$SOURCE_SHA' 'docker.io/$DOCKER_USERNAME/nomnom-admin:$SOURCE_SHA'"
+
+      - name: Verify public endpoints
+        run: |
+          set -Eeuo pipefail
+          curl --fail --silent --show-error https://api.nomnomlk.com/health
+          curl --fail --silent --show-error --output /dev/null https://admin.nomnomlk.com/login
+
+      - name: Record deployment
+        run: |
+          echo "## Staging deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${{ steps.source.outputs.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- API: https://api.nomnomlk.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Admin: https://admin.nomnomlk.com" >> "$GITHUB_STEP_SUMMARY"

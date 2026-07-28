@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 
 func RateLimit(rdb *redis.Client, limit int, window time.Duration, prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if rdb == nil {
+		if rdb == nil || os.Getenv("ENVIRONMENT") == "test" {
 			c.Next()
 			return
 		}
@@ -58,7 +59,7 @@ func RateLimit(rdb *redis.Client, limit int, window time.Duration, prefix string
 
 func RateLimitByEmail(rdb *redis.Client, limit int, window time.Duration, prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if rdb == nil {
+		if rdb == nil || os.Getenv("ENVIRONMENT") == "test" {
 			c.Next()
 			return
 		}

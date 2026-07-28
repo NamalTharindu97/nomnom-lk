@@ -15,6 +15,9 @@ concurrency:
   group: production-deployment
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   gate:
     name: Production gate
@@ -23,28 +26,42 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Verify source branch is staging
         if: github.event_name == 'pull_request'
+        env:
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
-          if [ "${{ github.event.pull_request.head.ref }}" != "staging" ]; then
+          if [ "$SOURCE_BRANCH" != "staging" ]; then
             echo "::error::Production PRs must originate from the staging branch."
-            echo "This PR came from: ${{ github.event.pull_request.head.ref }}"
+            echo "This PR came from: $SOURCE_BRANCH"
             exit 1
           fi
           echo "Source branch is staging — proceeding."
 
       - name: Record promotion intent
+        env:
+          SOURCE_SHA_INPUT: ${{ inputs.source_sha || github.event.pull_request.head.sha }}
+          PR_URL: ${{ github.event.pull_request.html_url || 'manual dispatch' }}
         run: |
-          SOURCE_SHA="${{ inputs.source_sha || github.event.pull_request.merge_commit_sha }}"
+          SOURCE_SHA="$SOURCE_SHA_INPUT"
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Production source must be a full 40-character staging SHA"
+            exit 1
+          fi
+          git fetch origin staging
+          git merge-base --is-ancestor "$SOURCE_SHA" origin/staging
           echo "source_sha=$SOURCE_SHA" >> $GITHUB_OUTPUT
           echo "## Production Promotion" >> $GITHUB_STEP_SUMMARY
           echo "- **Source SHA:** \`$SOURCE_SHA\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **PR:** ${{ github.event.pull_request.html_url || 'manual dispatch' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR:** $PR_URL" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo ":information_source: Production deployment is not yet configured." >> $GITHUB_STEP_SUMMARY
-          echo "This workflow will promote staging-tested images when Contabo VPS is provisioned." >> $GITHUB_STEP_SUMMARY
         id: promo
+
+    outputs:
+      source_sha: ${{ steps.promo.outputs.source_sha }}
 
   deploy:
     name: Deploy to production
@@ -52,17 +69,62 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://nomnom-admin-e41y.onrender.com
+      url: https://admin.nomnomlk.com
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.source_sha }}
 
-      - name: Production approval received
+      - name: Verify production runtime is enabled
+        env:
+          PRODUCTION_DEPLOY_ENABLED: ${{ vars.PRODUCTION_DEPLOY_ENABLED }}
+        run: |
+          if [[ "$PRODUCTION_DEPLOY_ENABLED" != "true" ]]; then
+            echo "::error::The isolated production VPS runtime is not enabled."
+            exit 1
+          fi
+
+      - name: Install SSH identity
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          install -d "$RUNNER_TEMP/nomnom-ssh"
+          printf '%s' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
+
+      - name: Promote staging-tested images
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT }}
+          VPS_DEPLOY_USER: ${{ vars.VPS_DEPLOY_USER }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          SOURCE_SHA: ${{ needs.gate.outputs.source_sha }}
+        run: |
+          set -Eeuo pipefail
+          trap 'rm -rf "$RUNNER_TEMP/nomnom-ssh"' EXIT
+          port=${VPS_PORT:-22}
+          ssh -i "$RUNNER_TEMP/nomnom-ssh/id" \
+            -p "$port" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o "UserKnownHostsFile=$RUNNER_TEMP/nomnom-ssh/known_hosts" \
+            "$VPS_DEPLOY_USER@$VPS_HOST" \
+            "sudo /usr/local/sbin/nomnom-deploy 'docker.io/$DOCKER_USERNAME/nomnom-backend:$SOURCE_SHA' 'docker.io/$DOCKER_USERNAME/nomnom-admin:$SOURCE_SHA'"
+
+      - name: Verify production endpoints
+        run: |
+          set -Eeuo pipefail
+          curl --fail --silent --show-error https://api.nomnomlk.com/health
+          curl --fail --silent --show-error --output /dev/null https://admin.nomnomlk.com/login
+
+      - name: Record production deployment
         run: |
           echo "## Production Deployment Approved" >> $GITHUB_STEP_SUMMARY
           echo "- **Approved by:** $GITHUB_ACTOR" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ needs.gate.outputs.source_sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo ":warning: Production deployment pipeline is not yet implemented." >> $GITHUB_STEP_SUMMARY
-          echo "Images must be deployed manually via Render dashboard until Contabo VPS cutover." >> $GITHUB_STEP_SUMMARY

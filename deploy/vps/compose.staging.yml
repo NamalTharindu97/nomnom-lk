@@ -24,7 +24,7 @@ services:
       - admin
 
   backend:
-    image: ${BACKEND_IMAGE:-docker.io/namal97/nomnom-backend:latest}
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to an immutable full-SHA tag}
     restart: unless-stopped
     expose:
       - "8080"
@@ -79,7 +79,7 @@ services:
         condition: service_healthy
 
   admin:
-    image: ${ADMIN_IMAGE:-docker.io/namal97/nomnom-admin:latest}
+    image: ${ADMIN_IMAGE:?Set ADMIN_IMAGE to an immutable full-SHA tag}
     restart: unless-stopped
     expose:
       - "3000"

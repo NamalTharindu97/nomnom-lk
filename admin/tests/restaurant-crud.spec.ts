@@ -19,7 +19,7 @@ test.describe("Restaurant CRUD", () => {
     await dialog.fillName(`E2E Create ${uniqueId}`)
     await dialog.fillSlug(`e2e-create-${uniqueId}`)
     await dialog.fillPhone("+94 11 234 5678")
-    await dialog.fillCuisineTags("E2E, Playwright")
+    await dialog.fillCuisineTags("Pizza, Fast Food")
     await dialog.fillDescription("A restaurant created during automated E2E testing.")
     await dialog.fillNameSi("පරීක්ෂණ අවන්හල")
     await dialog.fillDescriptionSi("ස්වයංක්‍රීය පරීක්ෂණයක් අතරතුර නිර්මාණය කරන ලද අවන්හලක්.")

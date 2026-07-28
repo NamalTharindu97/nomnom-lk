@@ -31,6 +31,24 @@ func TestRateLimit_NilRedis_PassThrough(t *testing.T) {
 	assert.NotContains(t, w.Header(), "X-RateLimit-Limit")
 }
 
+func TestRateLimit_TestEnvironment_PassThrough(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "test")
+	gin.SetMode(gin.TestMode)
+
+	rdb := redis.NewClient(&redis.Options{Addr: "127.0.0.1:1"})
+	r := gin.New()
+	r.Use(RateLimit(rdb, 0, time.Minute, "rl:test"))
+	r.GET("/test", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/test", nil))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotContains(t, w.Header(), "X-RateLimit-Limit")
+}
+
 func TestRateLimit_EnforcesLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
