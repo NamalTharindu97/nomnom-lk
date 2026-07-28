@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,13 +21,15 @@ type SSEClient struct {
 }
 
 type SSEService struct {
-	mu      sync.RWMutex
-	clients map[string]*SSEClient
+	mu                sync.RWMutex
+	clients           map[string]*SSEClient
+	heartbeatInterval time.Duration
 }
 
 func NewSSEService() *SSEService {
 	return &SSEService{
-		clients: make(map[string]*SSEClient),
+		clients:           make(map[string]*SSEClient),
+		heartbeatInterval: 15 * time.Second,
 	}
 }
 
@@ -60,11 +63,13 @@ func (s *SSEService) HandleSSE(c *gin.Context) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("X-Accel-Buffering", "no")
 
 	// Force headers to flush immediately so the client receives the HTTP
 	// response. Without this, c.Stream blocks on select waiting for events
 	// and the client never hears back.
 	c.Writer.WriteHeader(http.StatusOK)
+	_, _ = c.Writer.Write([]byte(": connected\n\n"))
 	c.Writer.Flush()
 
 	client := &SSEClient{
@@ -74,6 +79,8 @@ func (s *SSEService) HandleSSE(c *gin.Context) {
 	s.AddClient(client)
 
 	defer s.RemoveClient(client.ID)
+	heartbeat := time.NewTicker(s.heartbeatInterval)
+	defer heartbeat.Stop()
 
 	c.Stream(func(w io.Writer) bool {
 		select {
@@ -83,6 +90,9 @@ func (s *SSEService) HandleSSE(c *gin.Context) {
 			}
 			c.SSEvent(evt.Event, evt.Data)
 			return true
+		case <-heartbeat.C:
+			_, err := fmt.Fprint(w, ": ping\n\n")
+			return err == nil
 		case <-c.Request.Context().Done():
 			return false
 		}

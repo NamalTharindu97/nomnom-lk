@@ -17,6 +17,8 @@ class SSEEvent {
 class SSEService {
   SSEService(this.baseUrl);
 
+  static const connectionResponseTimeout = Duration(seconds: 30);
+
   final String baseUrl;
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 10;
@@ -40,11 +42,14 @@ class SSEService {
   }
 
   void _scheduleReconnect() {
-    if (!_shouldReconnect || _reconnectAttempts >= _maxReconnectAttempts) return;
+    if (!_shouldReconnect || _reconnectAttempts >= _maxReconnectAttempts) {
+      return;
+    }
     _reconnectAttempts++;
     reconnectingNotifier.value = true;
     final delay = _getReconnectDelay();
-    debugPrint('SSE reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)...');
+    debugPrint(
+        'SSE reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)...');
     Future.delayed(delay, () {
       if (_shouldReconnect && !_isConnected) {
         debugPrint('SSE reconnecting...');
@@ -67,7 +72,7 @@ class SSEService {
       request.headers.set('Accept', 'text/event-stream');
       request.headers.set('Cache-Control', 'no-cache');
 
-      final response = await request.close().timeout(const Duration(seconds: 10));
+      final response = await request.close().timeout(connectionResponseTimeout);
       _isConnected = true;
       _reconnectAttempts = 0;
       reconnectingNotifier.value = false;

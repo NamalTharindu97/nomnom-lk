@@ -1,17 +1,53 @@
 package services
 
 import (
+	"context"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type closeNotifyRecorder struct {
+	*httptest.ResponseRecorder
+	closed chan bool
+}
+
+func (r *closeNotifyRecorder) CloseNotify() <-chan bool {
+	return r.closed
+}
 
 func TestNewSSEService(t *testing.T) {
 	s := NewSSEService()
 	require.NotNil(t, s)
 	assert.Empty(t, s.clients)
+}
+
+func TestHandleSSESendsInitialCommentAndHeartbeat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	s := NewSSEService()
+	s.heartbeatInterval = time.Millisecond
+
+	recorder := &closeNotifyRecorder{
+		ResponseRecorder: httptest.NewRecorder(),
+		closed:           make(chan bool),
+	}
+	c, _ := gin.CreateTestContext(recorder)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	c.Request = httptest.NewRequest("GET", "/events", nil).WithContext(ctx)
+
+	s.HandleSSE(c)
+
+	assert.Equal(t, "text/event-stream", recorder.Header().Get("Content-Type"))
+	assert.Equal(t, "no", recorder.Header().Get("X-Accel-Buffering"))
+	body := recorder.Body.String()
+	assert.True(t, strings.HasPrefix(body, ": connected\n\n"))
+	assert.Contains(t, body, ": ping\n\n")
 }
 
 func TestAddClient(t *testing.T) {
