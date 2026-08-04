@@ -1,9 +1,16 @@
 name: nomnom
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   caddy:
     image: ${CADDY_IMAGE:?Set CADDY_IMAGE to an immutable digest}
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
       - "443:443"
@@ -36,6 +43,7 @@ services:
   admin:
     image: ${ADMIN_IMAGE:?Set ADMIN_IMAGE to an immutable SHA image}
     restart: unless-stopped
+    logging: *default-logging
     environment:
       API_PROXY_TARGET: http://backend:8080
       NEXT_PUBLIC_API_URL: /api/v1
@@ -63,6 +71,7 @@ services:
   backend:
     image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to an immutable SHA image}
     restart: unless-stopped
+    logging: *default-logging
     environment:
       ENVIRONMENT: production
       SERVER_HOST: 0.0.0.0
@@ -132,6 +141,7 @@ services:
   postgres:
     image: ${POSTGRES_IMAGE:?Set POSTGRES_IMAGE to an immutable digest}
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_DB: ${DATABASE_NAME:-nomnom}
       POSTGRES_USER: ${DATABASE_USER:-nomnom}
@@ -173,6 +183,7 @@ services:
   redis:
     image: ${REDIS_IMAGE:?Set REDIS_IMAGE to an immutable digest}
     restart: unless-stopped
+    logging: *default-logging
     command: ["redis-server", "/etc/redis/redis.conf"]
     secrets:
       - source: redis_health_password

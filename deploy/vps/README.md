@@ -39,6 +39,32 @@ The committed `compose.env.example` contains only non-secret placeholders.
 Production values come from the protected GitHub environment and are installed
 by `scripts/vps/install-secrets.sh`.
 
+## Logs
+
+All hosted services write to standard output and standard error. Docker retains
+five 10 MB JSON log files per service, so logs remain available across process
+restarts without growing without limit. Container recreation changes the raw
+file path; use `docker logs` or the allowlisted `scripts/vps/logs.sh` helper
+instead of reading `/var/lib/docker/containers` directly.
+
+Install the reviewed helper on staging as a root-owned command:
+
+```bash
+install -m 0755 scripts/vps/logs.sh /usr/local/sbin/nomnom-logs
+```
+
+Common commands:
+
+```bash
+nomnom-logs status
+nomnom-logs backend --since 30m
+nomnom-logs backend --since 2h --follow
+journalctl -t nomnom-deploy-staging --since today
+```
+
+See [VPS logging and debugging](../../docs/deployment/vps-logging.md) for the
+complete runbook, request-ID correlation, retention, and safe diagnostic rules.
+
 ## Production Cutover
 
 Production promotion remains disabled until the exact service UIDs, PostgreSQL

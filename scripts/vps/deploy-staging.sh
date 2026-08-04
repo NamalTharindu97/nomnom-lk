@@ -12,6 +12,12 @@ ADMIN_HEALTH_URL=${ADMIN_HEALTH_URL:-https://admin.nomnomlk.com/login}
 BACKEND_IMAGE=${1:-}
 ADMIN_IMAGE=${2:-}
 
+journal_event() {
+  if command -v logger >/dev/null 2>&1; then
+    logger --tag nomnom-deploy-staging -- "$1" || true
+  fi
+}
+
 if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
   printf 'deploy-staging must run as root\n' >&2
   exit 1
@@ -27,27 +33,36 @@ validate_image() {
 
 validate_image "$BACKEND_IMAGE"
 validate_image "$ADMIN_IMAGE"
-
-cd "$COMPOSE_DIR"
-BACKEND_IMAGE="$BACKEND_IMAGE" ADMIN_IMAGE="$ADMIN_IMAGE" \
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" config --quiet
-
 old_backend_id=$(docker inspect --format '{{.Image}}' nomnom-staging-backend-1 2>/dev/null || true)
 old_admin_id=$(docker inspect --format '{{.Image}}' nomnom-staging-admin-1 2>/dev/null || true)
 deployment_succeeded=false
 
 rollback() {
+  local exit_status=$?
+  set +e
   if [[ "$deployment_succeeded" == true ]]; then
-    return
+    return "$exit_status"
   fi
 
+  journal_event "deployment_failed exit_status=$exit_status"
   printf '[deploy-staging] Health verification failed; restoring previous images\n' >&2
   if [[ -n "$old_backend_id" && -n "$old_admin_id" ]]; then
-    BACKEND_IMAGE="$old_backend_id" ADMIN_IMAGE="$old_admin_id" \
-      docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps backend admin
+    journal_event "rollback_started"
+    if BACKEND_IMAGE="$old_backend_id" ADMIN_IMAGE="$old_admin_id" \
+      docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps backend admin; then
+      journal_event "rollback_completed"
+    else
+      journal_event "rollback_failed"
+    fi
   fi
+  return "$exit_status"
 }
 trap rollback EXIT
+journal_event "deployment_started backend_image=$BACKEND_IMAGE admin_image=$ADMIN_IMAGE"
+
+cd "$COMPOSE_DIR"
+BACKEND_IMAGE="$BACKEND_IMAGE" ADMIN_IMAGE="$ADMIN_IMAGE" \
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" config --quiet
 
 printf '[deploy-staging] Pulling immutable application images\n'
 BACKEND_IMAGE="$BACKEND_IMAGE" ADMIN_IMAGE="$ADMIN_IMAGE" \
@@ -88,4 +103,5 @@ update_image_reference() {
 update_image_reference BACKEND_IMAGE "$BACKEND_IMAGE"
 update_image_reference ADMIN_IMAGE "$ADMIN_IMAGE"
 deployment_succeeded=true
+journal_event "deployment_succeeded backend_image=$BACKEND_IMAGE admin_image=$ADMIN_IMAGE"
 printf '[deploy-staging] Deployment completed successfully\n'

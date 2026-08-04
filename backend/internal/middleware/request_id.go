@@ -1,14 +1,19 @@
 package middleware
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
+var validRequestID = regexp.MustCompile(`^[A-Za-z0-9._:-]{1,128}$`)
+
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		requestID := c.GetHeader("X-Request-ID")
-		if requestID == "" {
+		requestID := strings.TrimSpace(c.GetHeader("X-Request-ID"))
+		if !validRequestID.MatchString(requestID) {
 			requestID = uuid.New().String()
 		}
 		c.Set("request_id", requestID)

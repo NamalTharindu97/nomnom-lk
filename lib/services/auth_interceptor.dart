@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 
+import 'request_diagnostic_interceptor.dart';
+
 class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._storage, this._dio);
 
@@ -71,6 +73,7 @@ class AuthInterceptor extends Interceptor {
         'Accept-Language': Intl.defaultLocale?.split('_').first ?? 'en',
       },
     ));
+    refreshDio.interceptors.add(RequestDiagnosticInterceptor());
     final response = await refreshDio.post('/auth/refresh', data: {
       'refresh_token': refreshToken,
     });
