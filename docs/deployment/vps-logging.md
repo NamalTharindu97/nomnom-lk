@@ -18,22 +18,26 @@ The active staging runtime is defined by:
 /etc/nomnom/compose/compose.staging.env
 ```
 
-The reviewed log helper is installed as:
+The reviewed helpers are installed as:
 
 ```text
 /usr/local/sbin/nomnom-logs
+/usr/local/sbin/nomnom-refresh-log-links
 ```
 
 Install or update it from a reviewed checkout with:
 
 ```bash
 install -m 0755 scripts/vps/logs.sh /usr/local/sbin/nomnom-logs
+install -m 0755 scripts/vps/refresh-log-links.sh /usr/local/sbin/nomnom-refresh-log-links
+nomnom-refresh-log-links
 ```
 
 ## Application Logs
 
 ```bash
 nomnom-logs status
+nomnom-logs paths
 nomnom-logs backend --since 30m
 nomnom-logs backend --since 2h --follow
 nomnom-logs admin --since 1h
@@ -46,15 +50,44 @@ The helper accepts only the five known staging services. `--since` accepts a
 positive duration ending in `s`, `m`, `h`, or `d`. It does not read the Compose
 environment or secret files.
 
+## Stable Host Paths
+
+The active staging logs have stable, descriptive host aliases:
+
+```text
+/var/log/nomnom/backend.json.log
+/var/log/nomnom/admin.json.log
+/var/log/nomnom/caddy.json.log
+/var/log/nomnom/postgres.json.log
+/var/log/nomnom/redis.json.log
+```
+
+These are root-owned symbolic links to Docker's current JSON log files. They
+live outside the containers and can be inspected directly by a root operator.
+The `.json.log` suffix is intentional because direct reads include Docker's JSON
+envelope. Use `nomnom-logs` for clean application output.
+
+`nomnom-refresh-log-links` obtains each target from `docker inspect`, resolves
+it to a canonical path, and refuses any target that is not a matching 64-character
+container ID beneath `/var/lib/docker/containers`. All five targets are
+validated before publication, each replacement is atomic, and previous aliases
+are restored if publication fails. The staging deployment helper refreshes them after successful
+container recreation and after rollback. Production aliases will use
+`/var/log/nomnom/production` when the isolated production runtime is enabled.
+
+Do not configure logrotate for these aliases. Docker owns and rotates the target
+files. Container recreation changes the internal target, while the descriptive
+alias remains stable.
+
 Docker's raw files are stored under:
 
 ```text
 /var/lib/docker/containers/<container-id>/<container-id>-json.log
 ```
 
-Container IDs and raw paths change after recreation. Do not build operational
-procedures around those paths. Find a current path only when diagnosing Docker
-itself:
+Container IDs and raw paths change after recreation. Use the stable aliases or
+`nomnom-logs` for normal operations. Find an internal path only when diagnosing
+Docker itself:
 
 ```bash
 docker inspect --format '{{.LogPath}}' nomnom-staging-backend-1

@@ -51,6 +51,9 @@ rollback() {
     if BACKEND_IMAGE="$old_backend_id" ADMIN_IMAGE="$old_admin_id" \
       docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps backend admin; then
       journal_event "rollback_completed"
+      if [[ -x /usr/local/sbin/nomnom-refresh-log-links ]]; then
+        /usr/local/sbin/nomnom-refresh-log-links || journal_event "rollback_log_link_refresh_failed"
+      fi
     else
       journal_event "rollback_failed"
     fi
@@ -100,6 +103,13 @@ update_image_reference() {
   mv "$temporary" "$ENV_FILE"
 }
 
+if [[ ! -x /usr/local/sbin/nomnom-refresh-log-links ]]; then
+  journal_event "log_link_refresh_missing"
+  printf '[deploy-staging] Named log refresh helper is not installed\n' >&2
+  exit 1
+fi
+/usr/local/sbin/nomnom-refresh-log-links
+journal_event "log_links_refreshed"
 update_image_reference BACKEND_IMAGE "$BACKEND_IMAGE"
 update_image_reference ADMIN_IMAGE "$ADMIN_IMAGE"
 deployment_succeeded=true

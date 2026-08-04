@@ -117,6 +117,11 @@ finish() {
       2) journal_event "secret_rollback_unavailable" ;;
       *) journal_event "secret_rollback_failed" ;;
     esac
+    if [[ -x /usr/local/sbin/nomnom-refresh-log-links ]]; then
+      NOMNOM_COMPOSE_PROJECT=nomnom \
+        NOMNOM_LOG_ROOT=/var/log/nomnom/production \
+        /usr/local/sbin/nomnom-refresh-log-links || journal_event "rollback_log_link_refresh_failed"
+    fi
   fi
   return "$exit_status"
 }
@@ -130,6 +135,15 @@ docker compose --env-file "$env_file" -f compose.yml up -d
 health_url=${HEALTH_URL:?Set HEALTH_URL in the server compose environment}
 for _ in $(seq 1 60); do
   if curl --fail --silent --show-error --output /dev/null "$health_url"; then
+    if [[ ! -x /usr/local/sbin/nomnom-refresh-log-links ]]; then
+      journal_event "log_link_refresh_missing"
+      printf 'Named log refresh helper is not installed\n' >&2
+      exit 1
+    fi
+    NOMNOM_COMPOSE_PROJECT=nomnom \
+      NOMNOM_LOG_ROOT=/var/log/nomnom/production \
+      /usr/local/sbin/nomnom-refresh-log-links
+    journal_event "log_links_refreshed"
     if [[ "$images_supplied" == true ]]; then
       update_image_reference() {
         local key=$1

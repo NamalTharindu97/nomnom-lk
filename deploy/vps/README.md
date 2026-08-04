@@ -47,16 +47,24 @@ restarts without growing without limit. Container recreation changes the raw
 file path; use `docker logs` or the allowlisted `scripts/vps/logs.sh` helper
 instead of reading `/var/lib/docker/containers` directly.
 
-Install the reviewed helper on staging as a root-owned command:
+Install the reviewed helpers on staging as root-owned commands:
 
 ```bash
 install -m 0755 scripts/vps/logs.sh /usr/local/sbin/nomnom-logs
+install -m 0755 scripts/vps/refresh-log-links.sh /usr/local/sbin/nomnom-refresh-log-links
+nomnom-refresh-log-links
 ```
+
+The refresh helper creates stable root-owned aliases under `/var/log/nomnom`.
+It canonicalizes every target and refuses paths outside Docker's container-log
+directory. Successful deployments refresh the aliases after container
+recreation.
 
 Common commands:
 
 ```bash
 nomnom-logs status
+nomnom-logs paths
 nomnom-logs backend --since 30m
 nomnom-logs backend --since 2h --follow
 journalctl -t nomnom-deploy-staging --since today
