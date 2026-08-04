@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../core/api_config.dart';
 import 'auth_interceptor.dart';
 import 'cache_interceptor.dart';
+import 'request_diagnostic_interceptor.dart';
 
 class ApiClient {
   late final Dio _dio;
@@ -25,6 +26,7 @@ class ApiClient {
     _cacheInterceptor = CacheInterceptor(ttl: const Duration(minutes: 2));
     _dio.interceptors.addAll([
       AuthInterceptor(_storage, _dio),
+      RequestDiagnosticInterceptor(),
       _cacheInterceptor,
     ]);
   }
@@ -42,13 +44,15 @@ class ApiClient {
 
   Future<Map<String, dynamic>> post(String path, dynamic data) async {
     final response = await _dio.post(path, data: data);
-    if (response.data == null || response.data is! Map) return <String, dynamic>{};
+    if (response.data == null || response.data is! Map)
+      return <String, dynamic>{};
     return response.data as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> put(String path, dynamic data) async {
     final response = await _dio.put(path, data: data);
-    if (response.data == null || response.data is! Map) return <String, dynamic>{};
+    if (response.data == null || response.data is! Map)
+      return <String, dynamic>{};
     return response.data as Map<String, dynamic>;
   }
 
@@ -72,12 +76,14 @@ class ApiClient {
         if (token != null) 'Authorization': 'Bearer $token',
       },
     ));
+    multipartDio.interceptors.add(RequestDiagnosticInterceptor());
     final ext = filePath.split('.').last;
     final bytes = await File(filePath).readAsBytes();
     final formData = FormData.fromMap({
       fileField: MultipartFile.fromBytes(bytes, filename: 'avatar.$ext'),
     });
-    final response = await multipartDio.post(path, data: formData, queryParameters: queryParams);
+    final response = await multipartDio.post(path,
+        data: formData, queryParameters: queryParams);
     final body = response.data;
     if (body is String) return <String, dynamic>{};
     if (body is! Map) return <String, dynamic>{};

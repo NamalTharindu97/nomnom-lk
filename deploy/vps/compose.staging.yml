@@ -3,10 +3,17 @@
 
 name: nomnom-staging
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
       - "443:443"
@@ -26,6 +33,7 @@ services:
   backend:
     image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to an immutable full-SHA tag}
     restart: unless-stopped
+    logging: *default-logging
     expose:
       - "8080"
     environment:
@@ -51,6 +59,7 @@ services:
       R2_SECURE: "true"
       R2_FORCE_PATH_STYLE: "false"
       R2_PREFIX: staging
+      SENTRY_DSN: ${SENTRY_DSN:-}
       BROWSER_COOKIE_SECURE: "true"
       CORS_ORIGINS: "https://admin.nomnomlk.com"
       SMTP_HOST: ${SMTP_HOST}
@@ -81,6 +90,7 @@ services:
   admin:
     image: ${ADMIN_IMAGE:?Set ADMIN_IMAGE to an immutable full-SHA tag}
     restart: unless-stopped
+    logging: *default-logging
     expose:
       - "3000"
     environment:
@@ -95,6 +105,7 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${DATABASE_USER:-nomnom}
       POSTGRES_PASSWORD_FILE: /run/secrets/database_password
@@ -114,6 +125,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging: *default-logging
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
