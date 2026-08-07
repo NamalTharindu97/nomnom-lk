@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"os"
 	"time"
@@ -58,6 +59,7 @@ func main() {
 	rdb := database.NewRedisClient(&cfg.Redis)
 
 	bootstrapAdmin(db, &cfg.Admin, logger)
+	bootstrapDemoViewer(db, &cfg.DemoViewer, logger)
 
 	r, cronSvc := router.SetupRouter(cfg, db, rdb, logger)
 
@@ -77,6 +79,45 @@ func main() {
 		sentry.Flush(2 * time.Second)
 		os.Exit(1)
 	}
+}
+
+func bootstrapDemoViewer(db *gorm.DB, viewerCfg *config.DemoViewerConfig, logger zerolog.Logger) {
+	if viewerCfg == nil || !viewerCfg.Enabled {
+		return
+	}
+
+	var existing models.User
+	err := db.Where("email = ?", viewerCfg.Email).First(&existing).Error
+	if err == nil {
+		if existing.Role != models.RolePortfolioViewer {
+			logger.Error().Str("email", viewerCfg.Email).Msg("Demo viewer email belongs to another role; refusing to modify account")
+			return
+		}
+		now := time.Now()
+		updates := map[string]interface{}{
+			"name": viewerCfg.Name, "is_active": true, "email_verified_at": now,
+			"password_hash": "", "firebase_uid": nil,
+		}
+		if updateErr := db.Model(&existing).Updates(updates).Error; updateErr != nil {
+			logger.Warn().Err(updateErr).Msg("Failed to reconcile demo viewer account")
+		}
+		return
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		logger.Warn().Err(err).Msg("Failed to look up demo viewer account")
+		return
+	}
+
+	now := time.Now()
+	viewer := models.User{
+		Email: viewerCfg.Email, Name: viewerCfg.Name, Role: models.RolePortfolioViewer,
+		IsActive: true, EmailVerifiedAt: &now,
+	}
+	if err := db.Create(&viewer).Error; err != nil {
+		logger.Warn().Err(err).Msg("Failed to create demo viewer account")
+		return
+	}
+	logger.Info().Str("email", viewerCfg.Email).Msg("Demo viewer account created")
 }
 
 func bootstrapAdmin(db *gorm.DB, adminCfg *config.AdminConfig, logger zerolog.Logger) {

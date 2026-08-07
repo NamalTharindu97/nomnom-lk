@@ -10,22 +10,24 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	JWT      JWTConfig
-	Firebase FirebaseConfig
-	R2       R2Config
-	Sentry   SentryConfig
-	CORS     CORSConfig
-	Browser  BrowserSessionConfig
-	Admin    AdminConfig
-	SMTP     SMTPConfig
+	Server     ServerConfig
+	Database   DatabaseConfig
+	Redis      RedisConfig
+	JWT        JWTConfig
+	Firebase   FirebaseConfig
+	R2         R2Config
+	Sentry     SentryConfig
+	CORS       CORSConfig
+	Browser    BrowserSessionConfig
+	Admin      AdminConfig
+	DemoViewer DemoViewerConfig
+	SMTP       SMTPConfig
 }
 
 type SMTPConfig struct {
@@ -93,6 +95,13 @@ type BrowserSessionConfig struct {
 type AdminConfig struct {
 	Email    string
 	Password string
+}
+
+type DemoViewerConfig struct {
+	Enabled    bool
+	Email      string
+	Name       string
+	SessionTTL string
 }
 
 type parsedDBConfig struct {
@@ -253,6 +262,10 @@ func Load() (*Config, error) {
 
 	v.SetDefault("ADMIN_EMAIL", "admin@nomnom.lk")
 	v.SetDefault("ADMIN_PASSWORD", "")
+	v.SetDefault("DEMO_VIEWER_ENABLED", false)
+	v.SetDefault("DEMO_VIEWER_EMAIL", "recruiter-demo@nomnomlk.com")
+	v.SetDefault("DEMO_VIEWER_NAME", "Recruiter Demo")
+	v.SetDefault("DEMO_VIEWER_SESSION_TTL", "30m")
 
 	v.SetDefault("SMTP_HOST", "")
 	v.SetDefault("SMTP_PORT", 587)
@@ -344,6 +357,12 @@ func Load() (*Config, error) {
 			Email:    v.GetString("ADMIN_EMAIL"),
 			Password: v.GetString("ADMIN_PASSWORD"),
 		},
+		DemoViewer: DemoViewerConfig{
+			Enabled:    v.GetBool("DEMO_VIEWER_ENABLED"),
+			Email:      v.GetString("DEMO_VIEWER_EMAIL"),
+			Name:       v.GetString("DEMO_VIEWER_NAME"),
+			SessionTTL: v.GetString("DEMO_VIEWER_SESSION_TTL"),
+		},
 		SMTP: SMTPConfig{
 			Host:     v.GetString("SMTP_HOST"),
 			Port:     v.GetInt("SMTP_PORT"),
@@ -359,6 +378,23 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) Validate() error {
+	if c.DemoViewer.Enabled {
+		var problems []string
+		if _, err := mail.ParseAddress(c.DemoViewer.Email); err != nil || !strings.Contains(c.DemoViewer.Email, "@") {
+			problems = append(problems, "DEMO_VIEWER_EMAIL is invalid")
+		}
+		if strings.TrimSpace(c.DemoViewer.Name) == "" {
+			problems = append(problems, "DEMO_VIEWER_NAME is required")
+		}
+		ttl, err := time.ParseDuration(c.DemoViewer.SessionTTL)
+		if err != nil || ttl <= 0 || ttl > time.Hour {
+			problems = append(problems, "DEMO_VIEWER_SESSION_TTL must be between 1s and 1h")
+		}
+		if len(problems) > 0 {
+			return fmt.Errorf("invalid demo viewer configuration: %s", strings.Join(problems, "; "))
+		}
+	}
+
 	if !strings.EqualFold(strings.TrimSpace(c.Server.Environment), "production") {
 		return nil
 	}

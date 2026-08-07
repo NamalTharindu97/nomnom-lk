@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -63,26 +64,38 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 
 	h.restaurantRepo.CountAll(&totalRestaurants)
 	h.offerRepo.CountAll(&totalOffers)
-	h.userRepo.CountAll(&totalUsers)
 	h.restaurantRepo.CountByStatus("pending", &pendingRestaurants)
 	h.offerRepo.CountByStatus("pending", &pendingOffers)
 
 	bannerTotal, bannerPending, bannerClicks, _ := h.bannerRepo.CountStats()
+	if middleware.IsPortfolioViewer(c) {
+		response.Success(c, gin.H{
+			"total_restaurants":   totalRestaurants,
+			"total_offers":        totalOffers,
+			"pending_restaurants": pendingRestaurants,
+			"pending_offers":      pendingOffers,
+			"total_banners":       bannerTotal,
+			"pending_banners":     bannerPending,
+			"total_banner_clicks": bannerClicks,
+		})
+		return
+	}
+	h.userRepo.CountAll(&totalUsers)
 	activeCoupons, totalRedemptions, _ := h.couponRepo.CountStats()
 	notifTotal, _ := h.notificationRepo.CountAll()
 
 	response.Success(c, gin.H{
-		"total_restaurants":      totalRestaurants,
-		"total_offers":           totalOffers,
-		"total_users":            totalUsers,
-		"pending_restaurants":    pendingRestaurants,
-		"pending_offers":         pendingOffers,
-		"total_banners":          bannerTotal,
-		"pending_banners":        bannerPending,
-		"total_banner_clicks":    bannerClicks,
-		"active_coupons":         activeCoupons,
+		"total_restaurants":        totalRestaurants,
+		"total_offers":             totalOffers,
+		"total_users":              totalUsers,
+		"pending_restaurants":      pendingRestaurants,
+		"pending_offers":           pendingOffers,
+		"total_banners":            bannerTotal,
+		"pending_banners":          bannerPending,
+		"total_banner_clicks":      bannerClicks,
+		"active_coupons":           activeCoupons,
 		"total_coupon_redemptions": totalRedemptions,
-		"total_notifications":    notifTotal,
+		"total_notifications":      notifTotal,
 	})
 }
 
@@ -346,6 +359,15 @@ func (h *AdminHandler) BulkUsers(c *gin.Context) {
 		})
 		return
 	}
+	protected, err := h.userRepo.CountByIDsAndRole(req.IDs, models.RolePortfolioViewer)
+	if err != nil {
+		response.InternalError(c, "failed to validate users")
+		return
+	}
+	if protected > 0 {
+		response.Error(c, http.StatusForbidden, "SYSTEM_ACCOUNT_PROTECTED", "the recruiter demo account is managed by configuration")
+		return
+	}
 
 	switch req.Action {
 	case "activate":
@@ -400,10 +422,10 @@ func (h *AdminHandler) AnalyticsExpiringOffers(c *gin.Context) {
 			restaurantName = o.Restaurant.Name
 		}
 		data[i] = gin.H{
-			"offer_id":       o.ID,
-			"title":          o.Title,
+			"offer_id":        o.ID,
+			"title":           o.Title,
 			"restaurant_name": restaurantName,
-			"end_date":       o.EndDate,
+			"end_date":        o.EndDate,
 		}
 	}
 	response.Success(c, data)
@@ -431,12 +453,12 @@ func (h *AdminHandler) AnalyticsRecentActivity(c *gin.Context) {
 	data := make([]gin.H, len(logs))
 	for i, l := range logs {
 		data[i] = gin.H{
-			"id":         l.ID,
-			"admin_name": l.AdminName,
-			"action":     l.Action,
+			"id":          l.ID,
+			"admin_name":  l.AdminName,
+			"action":      l.Action,
 			"entity_type": l.EntityType,
-			"details":    l.Details,
-			"created_at": l.CreatedAt,
+			"details":     l.Details,
+			"created_at":  l.CreatedAt,
 		}
 	}
 	response.Success(c, data)

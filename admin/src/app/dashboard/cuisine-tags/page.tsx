@@ -17,6 +17,7 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Plus, Pencil, Trash2, Tags } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 interface CuisineTag {
   id: string
@@ -25,6 +26,7 @@ interface CuisineTag {
 }
 
 export default function CuisineTagsPage() {
+  const { isViewer, isReadOnly } = useAuth()
   const [tags, setTags] = useState<CuisineTag[]>([])
   const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState("")
@@ -103,17 +105,17 @@ export default function CuisineTagsPage() {
           <div>
             <h1 className="text-2xl font-bold">Cuisine Tags</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Manage predefined cuisine tags for restaurant filtering
+               {isViewer ? "Explore predefined restaurant filtering tags" : "Manage predefined cuisine tags for restaurant filtering"}
             </p>
           </div>
-          {!showForm && (
+           {!isReadOnly && !showForm && (
             <Button onClick={() => setShowForm(true)} size="sm">
               <Plus className="mr-1 h-4 w-4" /> Add Tag
             </Button>
           )}
         </div>
 
-        {showForm && (
+        {!isReadOnly && showForm && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">New Cuisine Tag</CardTitle>
@@ -148,20 +150,20 @@ export default function CuisineTagsPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <TableSkeleton columns={3} rows={8} />
+              <TableSkeleton columns={isReadOnly ? 1 : 3} rows={8} />
             ) : tags.length === 0 ? (
               <EmptyState
                 icon={<Tags className="h-8 w-8" />}
-                title="No cuisine tags yet"
-                description="Add tags to help users filter restaurants by cuisine type"
+                title={isViewer ? "No cuisine tags available" : "No cuisine tags yet"}
+                description={isViewer ? "Cuisine tags will appear here when available." : "Add tags to help users filter restaurants by cuisine type"}
               />
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
+                    {!isViewer && <TableHead>Created</TableHead>}
+                    {!isReadOnly && <TableHead className="w-24">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -179,10 +181,10 @@ export default function CuisineTagsPage() {
                           <span className="font-medium">{tag.name}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      {!isViewer && <TableCell className="text-muted-foreground text-sm">
                         {new Date(tag.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
+                      </TableCell>}
+                      {!isReadOnly && <TableCell>
                         <div className="flex gap-1">
                           {editingId === tag.id ? (
                             <>
@@ -213,7 +215,7 @@ export default function CuisineTagsPage() {
                             </>
                           )}
                         </div>
-                      </TableCell>
+                      </TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -222,7 +224,7 @@ export default function CuisineTagsPage() {
           </CardContent>
         </Card>
 
-        <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        {!isReadOnly && <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Cuisine Tag</AlertDialogTitle>
@@ -237,7 +239,7 @@ export default function CuisineTagsPage() {
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        </AlertDialog>
+        </AlertDialog>}
       </div>
     </ErrorBoundary>
   )

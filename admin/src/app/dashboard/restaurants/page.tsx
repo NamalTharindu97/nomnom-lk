@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import Link from "next/link"
-import { Plus, Pencil, Trash2, Search, Store, Download } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Store, Download, Eye } from "lucide-react"
 import RestaurantDialog from "./_restaurant-dialog"
 
 interface Restaurant {
@@ -46,7 +46,7 @@ const PER_PAGE = 10
 const STATUSES = ["all", "approved", "pending", "rejected"]
 
 export default function RestaurantsPage() {
-  const { isAdmin, isOwner } = useAuth()
+  const { isAdmin, isOwner, isViewer, isReadOnly } = useAuth()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -136,9 +136,9 @@ export default function RestaurantsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Restaurants</h1>
-            <p className="text-muted-foreground">{isOwner ? "Manage your restaurants" : "Manage restaurant listings"}</p>
+            <p className="text-muted-foreground">{isViewer ? "Explore restaurant listings" : isOwner ? "Manage your restaurants" : "Manage restaurant listings"}</p>
           </div>
-          <div className="flex items-center gap-2">
+          {!isReadOnly && <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => csvExport("restaurants", ["Name", "Cuisine", "Status"], restaurants.map(r => [r.name, (r.cuisine_tags || []).join("; "), r.status]))} disabled={restaurants.length === 0}>
               <Download className="mr-2 size-4" />
               Export CSV
@@ -147,13 +147,13 @@ export default function RestaurantsPage() {
               <Plus className="mr-2 size-4" />
               {isOwner ? "New Restaurant" : "New Restaurant"}
             </Button>
-          </div>
+          </div>}
         </div>
 
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <CardTitle>{isOwner ? "My Restaurants" : "All Restaurants"}</CardTitle>
+              <CardTitle>{isOwner ? "My Restaurants" : isViewer ? "Explore Restaurants" : "All Restaurants"}</CardTitle>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -214,8 +214,8 @@ export default function RestaurantsPage() {
                   <EmptyState
                     icon={<Store className="size-10 text-muted-foreground/50" />}
                     title="No restaurants found"
-                    description={search || statusFilter !== "all" ? "Try adjusting your search or filters." : "No restaurants have been created yet."}
-                    action={
+                    description={search || statusFilter !== "all" ? "Try adjusting your search or filters." : isViewer ? "No restaurant listings are available to explore." : "No restaurants have been created yet."}
+                    action={isReadOnly ? undefined :
                       search || statusFilter !== "all" ? undefined : (
                         <Button size="sm" onClick={() => { setEditing(null); setShowDialog(true) }}>
                           <Plus className="mr-1 size-3" />
@@ -252,7 +252,9 @@ export default function RestaurantsPage() {
                       </TableCell>
                       <TableCell>{statusBadge(r.status)}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                        {isViewer ? (
+                          <Button asChild size="sm" variant="outline"><Link href={`/dashboard/restaurants/${r.id}`}><Eye className="mr-1 size-3.5" />View</Link></Button>
+                        ) : <div className="flex justify-end gap-1">
                           <Button size="icon" variant="ghost" onClick={() => { setEditing(r); setShowDialog(true) }}>
                             <Pencil className="size-4" />
                           </Button>
@@ -323,7 +325,7 @@ export default function RestaurantsPage() {
                               </AlertDialog>
                             </>
                           )}
-                        </div>
+                        </div>}
                       </TableCell>
                     </TableRow>
                   ))
@@ -335,12 +337,12 @@ export default function RestaurantsPage() {
           </CardContent>
         </Card>
 
-        <RestaurantDialog
+        {!isReadOnly && <RestaurantDialog
           open={showDialog}
           onClose={() => setShowDialog(false)}
           onSaved={load}
           restaurant={editing}
-        />
+        />}
       </div>
     </ErrorBoundary>
   )

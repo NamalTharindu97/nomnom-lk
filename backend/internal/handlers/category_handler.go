@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/response"
@@ -36,6 +37,14 @@ func (h *CategoryHandler) List(c *gin.Context) {
 	}
 	if cats == nil {
 		cats = []models.Category{}
+	}
+	if middleware.IsPortfolioViewer(c) {
+		data := make([]gin.H, len(cats))
+		for i, category := range cats {
+			data[i] = gin.H{"id": category.ID, "name": category.Name, "slug": category.Slug}
+		}
+		response.Success(c, data)
+		return
 	}
 	response.Success(c, cats)
 }

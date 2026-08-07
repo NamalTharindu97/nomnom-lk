@@ -174,6 +174,20 @@ func (h *BannerHandler) List(c *gin.Context) {
 	if banners == nil {
 		banners = []models.Banner{}
 	}
+	if middleware.IsPortfolioViewer(c) {
+		data := make([]gin.H, len(banners))
+		for i, banner := range banners {
+			data[i] = gin.H{
+				"id": banner.ID, "image": banner.Image, "title": banner.Title,
+				"sponsor_name": banner.SponsorName, "sort_order": banner.SortOrder,
+				"status": banner.Status, "click_count": banner.ClickCount,
+				"start_date": banner.StartDate, "end_date": banner.EndDate,
+				"link_type": banner.LinkType,
+			}
+		}
+		response.Success(c, data)
+		return
+	}
 	response.Success(c, banners)
 }
 
@@ -381,7 +395,7 @@ func (h *BannerHandler) Reject(c *gin.Context) {
 // --- Owner dashboard routes ---
 
 func (h *BannerHandler) ListOwner(c *gin.Context) {
-	ownerID, _ := middleware.GetOwnerScopeID(c)
+	ownerID, _ := middleware.GetDashboardOwnerID(c)
 
 	banners, err := h.repo.FindAllByOwner(ownerID)
 	if err != nil {
@@ -395,7 +409,7 @@ func (h *BannerHandler) ListOwner(c *gin.Context) {
 }
 
 func (h *BannerHandler) CreateOwner(c *gin.Context) {
-	ownerID, _ := middleware.GetOwnerScopeID(c)
+	ownerID, _ := middleware.GetDashboardOwnerID(c)
 
 	var req ownerBannerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -448,7 +462,7 @@ func (h *BannerHandler) UpdateOwner(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetOwnerScopeID(c)
+	ownerID, _ := middleware.GetDashboardOwnerID(c)
 
 	banner, err := h.repo.FindByID(id)
 	if err != nil {
@@ -515,7 +529,7 @@ func (h *BannerHandler) DeleteOwner(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetOwnerScopeID(c)
+	ownerID, _ := middleware.GetDashboardOwnerID(c)
 
 	banner, err := h.repo.FindByID(id)
 	if err != nil {

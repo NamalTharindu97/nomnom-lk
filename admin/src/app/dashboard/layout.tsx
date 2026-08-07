@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
+import { ReadOnlyBanner } from "@/components/read-only-banner"
+import { canAccessDashboardRoute } from "@/lib/dashboard-access"
 import {
   LayoutDashboard,
   Store,
@@ -58,6 +60,17 @@ const ownerNavItems = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
+const viewerNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/restaurants", label: "Restaurants", icon: Store },
+  { href: "/dashboard/offers", label: "Offers", icon: Tag },
+  { href: "/dashboard/banners", label: "Banners", icon: ImageIcon },
+  { href: "/dashboard/categories", label: "Categories", icon: Folder },
+  { href: "/dashboard/cuisine-tags", label: "Cuisine Tags", icon: Tag },
+  { href: "/dashboard/order-platforms", label: "Order Platforms", icon: ShoppingCart },
+  { href: "/dashboard/social-platforms", label: "Social Platforms", icon: Share2 },
+]
+
 const themeOptions = [
   { value: "light" as const, icon: Sun, label: "Light" },
   { value: "dark" as const, icon: Moon, label: "Dark" },
@@ -66,10 +79,16 @@ const themeOptions = [
 
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
-  const { user, logout, isImpersonating, impersonatedUser } = useAuth()
+  const { user, logout, isViewer, isImpersonating, impersonatedUser } = useAuth()
   const { theme, setTheme } = useTheme()
 
-  const navItems = user?.role === "admin" ? adminNavItems : ownerNavItems
+  const navItems = isViewer
+    ? viewerNavItems
+    : user?.role === "admin"
+      ? adminNavItems
+      : user?.role === "restaurant_owner"
+        ? ownerNavItems
+        : []
 
   return (
     <>
@@ -157,10 +176,10 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             </Avatar>
             <div className="text-sm text-sidebar-foreground min-w-0">
               <p className="font-medium truncate">{user?.name}</p>
-              <p className="text-xs text-sidebar-foreground/60 capitalize truncate">{user?.role}</p>
+              <p className="text-xs text-sidebar-foreground/60 capitalize truncate">{isViewer ? "Read-only viewer" : user?.role}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="text-sidebar-foreground/60 hover:text-destructive shrink-0">
+          <Button aria-label="Log out" variant="ghost" size="icon" onClick={logout} className="text-sidebar-foreground/60 hover:text-destructive shrink-0">
             <LogOut className="size-4" />
           </Button>
         </div>
@@ -169,26 +188,13 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   )
 }
 
-const adminOnlyPaths = [
-  "/dashboard/users",
-  "/dashboard/owners",
-  "/dashboard/notifications",
-  "/dashboard/notification-templates",
-  "/dashboard/coupons",
-  "/dashboard/categories",
-  "/dashboard/cuisine-tags",
-  "/dashboard/order-platforms",
-  "/dashboard/social-platforms",
-  "/dashboard/audit-log",
-]
-
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isForbiddenPath = Boolean(
-    user && user.role !== "admin" && adminOnlyPaths.some((p) => pathname.startsWith(p))
+    user && !canAccessDashboardRoute(user.role, pathname)
   )
 
   useEffect(() => {
@@ -210,6 +216,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
             <Button
+              aria-label="Open navigation"
               variant="ghost"
               size="icon"
               className="lg:hidden"
@@ -220,6 +227,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="flex-1" />
           </header>
           <ImpersonationBanner />
+          <ReadOnlyBanner />
           <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
     </div>

@@ -95,8 +95,14 @@ func (h *UserHandler) Create(c *gin.Context) {
 	}
 
 	role := models.RoleUser
-	if req.Role == "restaurant_owner" || req.Role == "admin" {
+	if req.Role != "" {
 		role = models.UserRole(req.Role)
+		if !role.IsAdminAssignable() {
+			response.ValidationError(c, []response.ErrorDetail{
+				{Field: "role", Message: "role must be user, restaurant_owner, or admin"},
+			})
+			return
+		}
 	}
 
 	hashedPassword, err := hash.HashPassword(req.Password)
@@ -159,9 +165,20 @@ func (h *UserHandler) Update(c *gin.Context) {
 		response.NotFound(c, "user not found")
 		return
 	}
+	if user.Role == models.RolePortfolioViewer {
+		response.Error(c, http.StatusForbidden, "SYSTEM_ACCOUNT_PROTECTED", "the recruiter demo account is managed by configuration")
+		return
+	}
 
 	if req.Role != nil {
-		user.Role = models.UserRole(*req.Role)
+		role := models.UserRole(*req.Role)
+		if !role.IsAdminAssignable() {
+			response.ValidationError(c, []response.ErrorDetail{
+				{Field: "role", Message: "role must be user, restaurant_owner, or admin"},
+			})
+			return
+		}
+		user.Role = role
 	}
 	if req.Name != nil {
 		user.Name = *req.Name
@@ -323,6 +340,10 @@ func (h *UserHandler) Delete(c *gin.Context) {
 	user, err := h.repo.FindByID(userID)
 	if err != nil {
 		response.NotFound(c, "user not found")
+		return
+	}
+	if user.Role == models.RolePortfolioViewer {
+		response.Error(c, http.StatusForbidden, "SYSTEM_ACCOUNT_PROTECTED", "the recruiter demo account is managed by configuration")
 		return
 	}
 

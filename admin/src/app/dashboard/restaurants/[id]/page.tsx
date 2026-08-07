@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ArrowLeft, Pencil, Store } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 interface Restaurant {
   id: string
@@ -27,6 +28,7 @@ interface Restaurant {
 export default function RestaurantDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { isViewer, isReadOnly } = useAuth()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [loading, setLoading] = useState(true)
   const [platformMap, setPlatformMap] = useState<Record<string, string>>({})
@@ -100,12 +102,12 @@ export default function RestaurantDetailPage() {
             <ArrowLeft className="mr-2 size-4" />
             Back to Restaurants
           </Button>
-          <a href={`/dashboard/restaurants?edit=${params.id}`}>
+          {!isReadOnly && <a href={`/dashboard/restaurants?edit=${params.id}`}>
             <Button variant="outline">
               <Pencil className="mr-2 size-4" />
               Edit
             </Button>
-          </a>
+          </a>}
         </div>
 
         {restaurant.cover_image && (
@@ -138,10 +140,10 @@ export default function RestaurantDetailPage() {
                   <p className="mt-1 text-sm">{restaurant.description}</p>
                 </div>
               )}
-              <div>
+              {!isViewer && <div>
                 <span className="text-sm text-muted-foreground">Created</span>
                 <p className="font-medium">{new Date(restaurant.created_at).toLocaleDateString()}</p>
-              </div>
+              </div>}
             </CardContent>
           </Card>
 
@@ -150,7 +152,7 @@ export default function RestaurantDetailPage() {
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {restaurant.contact_phone && (
+              {!isViewer && restaurant.contact_phone && (
                 <div>
                   <span className="text-sm text-muted-foreground">Contact</span>
                   <p className="font-medium">{restaurant.contact_phone}</p>

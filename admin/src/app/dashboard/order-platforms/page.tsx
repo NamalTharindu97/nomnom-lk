@@ -17,6 +17,7 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Plus, Pencil, Trash2, ShoppingCart } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 interface OrderPlatform {
   id: string
@@ -30,6 +31,7 @@ interface OrderPlatform {
 }
 
 export default function OrderPlatformsPage() {
+  const { isViewer, isReadOnly } = useAuth()
   const [platforms, setPlatforms] = useState<OrderPlatform[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -121,17 +123,17 @@ export default function OrderPlatformsPage() {
           <div>
             <h1 className="text-2xl font-bold">Ordering Platforms</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Manage delivery platforms for restaurant ordering
+               {isViewer ? "Explore public ordering integrations" : "Manage delivery platforms for restaurant ordering"}
             </p>
           </div>
-          {!showForm && (
+           {!isReadOnly && !showForm && (
             <Button onClick={() => setShowForm(true)} size="sm">
               <Plus className="mr-1 h-4 w-4" /> Add Platform
             </Button>
           )}
         </div>
 
-        {showForm && (
+        {!isReadOnly && showForm && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">{editId ? "Edit" : "New"} Ordering Platform</CardTitle>
@@ -208,8 +210,8 @@ export default function OrderPlatformsPage() {
             ) : platforms.length === 0 ? (
               <EmptyState
                 icon={<ShoppingCart className="h-8 w-8" />}
-                title="No ordering platforms yet"
-                description="Add delivery platforms so restaurants can link to them"
+                title={isViewer ? "No ordering platforms available" : "No ordering platforms yet"}
+                description={isViewer ? "Ordering integrations will appear here when available." : "Add delivery platforms so restaurants can link to them"}
               />
             ) : (
               <Table>
@@ -219,7 +221,7 @@ export default function OrderPlatformsPage() {
                     <TableHead>Slug</TableHead>
                     <TableHead>Scheme</TableHead>
                     <TableHead>Color</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
+                     {!isReadOnly && <TableHead className="w-24">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -228,13 +230,13 @@ export default function OrderPlatformsPage() {
                       <TableCell className="font-medium">{p.display_name}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{p.slug}</TableCell>
                       <TableCell className="text-muted-foreground text-sm font-mono">{p.deep_link_scheme}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                       <TableCell>
+                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: p.primary_color }} />
                           <span className="text-xs font-mono">{p.primary_color}</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
+                       </TableCell>
+                       {!isReadOnly && <TableCell>
                         <div className="flex gap-1">
                           <Button size="sm" variant="ghost" onClick={() => {
                             setEditId(p.id); setName(p.name); setDisplayName(p.display_name)
@@ -248,7 +250,7 @@ export default function OrderPlatformsPage() {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      </TableCell>
+                       </TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -257,7 +259,7 @@ export default function OrderPlatformsPage() {
           </CardContent>
         </Card>
 
-        <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        {!isReadOnly && <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Ordering Platform</AlertDialogTitle>
@@ -272,7 +274,7 @@ export default function OrderPlatformsPage() {
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        </AlertDialog>
+        </AlertDialog>}
       </div>
     </ErrorBoundary>
   )
