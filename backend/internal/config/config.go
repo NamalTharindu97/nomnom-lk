@@ -262,7 +262,7 @@ func Load() (*Config, error) {
 
 	v.SetDefault("ADMIN_EMAIL", "admin@nomnom.lk")
 	v.SetDefault("ADMIN_PASSWORD", "")
-	v.SetDefault("DEMO_VIEWER_ENABLED", false)
+	v.SetDefault("DEMO_VIEWER_ENABLED", strings.EqualFold(v.GetString("ENVIRONMENT"), "staging"))
 	v.SetDefault("DEMO_VIEWER_EMAIL", "recruiter-demo@nomnomlk.com")
 	v.SetDefault("DEMO_VIEWER_NAME", "Recruiter Demo")
 	v.SetDefault("DEMO_VIEWER_SESSION_TTL", "30m")

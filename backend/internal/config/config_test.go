@@ -37,6 +37,50 @@ func TestLoadPreservesDevelopmentDefaults(t *testing.T) {
 	require.Equal(t, "30m", cfg.DemoViewer.SessionTTL)
 }
 
+func TestLoadEnablesDemoViewerByDefaultOnlyInStaging(t *testing.T) {
+	original, existed := os.LookupEnv("DEMO_VIEWER_ENABLED")
+	require.NoError(t, os.Unsetenv("DEMO_VIEWER_ENABLED"))
+	t.Cleanup(func() {
+		if existed {
+			require.NoError(t, os.Setenv("DEMO_VIEWER_ENABLED", original))
+			return
+		}
+		require.NoError(t, os.Unsetenv("DEMO_VIEWER_ENABLED"))
+	})
+
+	for _, tt := range []struct {
+		environment string
+		enabled     bool
+	}{
+		{environment: "development", enabled: false},
+		{environment: "test", enabled: false},
+		{environment: "staging", enabled: true},
+	} {
+		t.Run(tt.environment, func(t *testing.T) {
+			t.Setenv("ENVIRONMENT", tt.environment)
+			t.Setenv("DATABASE_URL", "")
+			t.Setenv("REDIS_URL", "")
+
+			cfg, err := Load()
+
+			require.NoError(t, err)
+			require.Equal(t, tt.enabled, cfg.DemoViewer.Enabled)
+		})
+	}
+}
+
+func TestLoadAllowsStagingDemoViewerOverride(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "staging")
+	t.Setenv("DEMO_VIEWER_ENABLED", "false")
+	t.Setenv("DATABASE_URL", "")
+	t.Setenv("REDIS_URL", "")
+
+	cfg, err := Load()
+
+	require.NoError(t, err)
+	require.False(t, cfg.DemoViewer.Enabled)
+}
+
 func TestValidateDemoViewerConfiguration(t *testing.T) {
 	tests := []struct {
 		name     string
