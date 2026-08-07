@@ -222,7 +222,8 @@ Rejection reasons and free-form internal notes are private by default.
 - Return a stable `PORTFOLIO_DEMO_READ_ONLY` error for blocked requests.
 - Block viewer profile, password, deletion, upload, device, favorite, and
   Firebase-linking operations.
-- Add disabled-by-default demo configuration.
+- Add demo configuration that defaults on only in staging and remains disabled
+  by default in every other environment.
 - Add unit tests before allowing dashboard access.
 
 ### Gate
@@ -255,6 +256,10 @@ DEMO_VIEWER_EMAIL=recruiter-demo@nomnomlk.com
 DEMO_VIEWER_NAME=Recruiter Demo
 DEMO_VIEWER_SESSION_TTL=30m
 ```
+
+`DEMO_VIEWER_ENABLED` explicitly overrides the environment default. Staging
+defaults to enabled so immutable image-only deployments cannot omit the demo;
+development, test, and production default to disabled.
 
 ### Work
 
