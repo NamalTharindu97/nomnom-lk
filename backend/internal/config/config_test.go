@@ -31,6 +31,47 @@ func TestLoadPreservesDevelopmentDefaults(t *testing.T) {
 	require.Equal(t, "localhost", cfg.Redis.Host)
 	require.Equal(t, "dev", cfg.R2.Prefix)
 	require.False(t, cfg.Browser.CookieSecure)
+	require.False(t, cfg.DemoViewer.Enabled)
+	require.Equal(t, "recruiter-demo@nomnomlk.com", cfg.DemoViewer.Email)
+	require.Equal(t, "Recruiter Demo", cfg.DemoViewer.Name)
+	require.Equal(t, "30m", cfg.DemoViewer.SessionTTL)
+}
+
+func TestValidateDemoViewerConfiguration(t *testing.T) {
+	tests := []struct {
+		name     string
+		modify   func(*DemoViewerConfig)
+		expected string
+	}{
+		{name: "valid", modify: func(*DemoViewerConfig) {}},
+		{name: "invalid email", modify: func(c *DemoViewerConfig) { c.Email = "invalid" }, expected: "DEMO_VIEWER_EMAIL"},
+		{name: "missing name", modify: func(c *DemoViewerConfig) { c.Name = " " }, expected: "DEMO_VIEWER_NAME"},
+		{name: "invalid ttl", modify: func(c *DemoViewerConfig) { c.SessionTTL = "invalid" }, expected: "DEMO_VIEWER_SESSION_TTL"},
+		{name: "zero ttl", modify: func(c *DemoViewerConfig) { c.SessionTTL = "0s" }, expected: "DEMO_VIEWER_SESSION_TTL"},
+		{name: "excessive ttl", modify: func(c *DemoViewerConfig) { c.SessionTTL = "2h" }, expected: "DEMO_VIEWER_SESSION_TTL"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Server: ServerConfig{Environment: "development"},
+				DemoViewer: DemoViewerConfig{
+					Enabled:    true,
+					Email:      "recruiter-demo@example.test",
+					Name:       "Recruiter Demo",
+					SessionTTL: "30m",
+				},
+			}
+			tt.modify(&cfg.DemoViewer)
+
+			err := cfg.Validate()
+			if tt.expected == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tt.expected)
+		})
+	}
 }
 
 func TestApplySecretFilesMapsEverySupportedSecret(t *testing.T) {

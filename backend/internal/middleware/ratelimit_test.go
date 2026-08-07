@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -29,6 +30,43 @@ func TestRateLimit_NilRedis_PassThrough(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.NotContains(t, w.Header(), "X-RateLimit-Limit")
+}
+
+func TestRateLimitStrict_NilRedisFailsClosed(t *testing.T) {
+	r := gin.New()
+	r.Use(RateLimitStrict(nil, 5, time.Minute, "rl:strict"))
+	r.POST("/demo", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/demo", nil))
+	require.Equal(t, http.StatusServiceUnavailable, w.Code)
+}
+
+func TestRateLimitStrict_EnforcesFivePerIP(t *testing.T) {
+	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	ctx := context.Background()
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skip("Redis not available")
+	}
+	prefix := "rl:strict:" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	defer func() {
+		keys, _ := rdb.Keys(ctx, prefix+":*").Result()
+		for _, key := range keys {
+			rdb.Del(ctx, key)
+		}
+	}()
+	r := gin.New()
+	r.Use(RateLimitStrict(rdb, 5, time.Minute, prefix))
+	r.POST("/demo", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+	for i := 0; i < 5; i++ {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/demo", nil))
+		require.Equal(t, http.StatusOK, w.Code)
+	}
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/demo", nil))
+	require.Equal(t, http.StatusTooManyRequests, w.Code)
 }
 
 func TestRateLimit_TestEnvironment_PassThrough(t *testing.T) {

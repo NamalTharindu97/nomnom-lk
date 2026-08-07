@@ -207,7 +207,7 @@ jobs:
         run: npm run build
         working-directory: admin
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+          NEXT_PUBLIC_API_URL: /api/v1
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -316,6 +316,7 @@ jobs:
           CORS_ORIGINS: "*"
           ADMIN_EMAIL: admin@nomnom.lk
           ADMIN_PASSWORD: Admin@123
+          DEMO_VIEWER_ENABLED: "true"
 
       - name: Start admin
         run: |

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nomnom-lk/backend/internal/models"
 )
 
 func RequireDashboardAccess() gin.HandlerFunc {
@@ -19,7 +20,7 @@ func RequireDashboardAccess() gin.HandlerFunc {
 			return
 		}
 
-		if role != "restaurant_owner" && role != "admin" {
+		if role != string(models.RoleRestaurantOwner) && role != string(models.RoleAdmin) && role != string(models.RolePortfolioViewer) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": gin.H{
 					"code":    "FORBIDDEN",

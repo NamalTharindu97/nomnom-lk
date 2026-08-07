@@ -17,6 +17,7 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Plus, Pencil, Trash2, Share2 } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 interface SocialPlatform {
   id: string
@@ -30,6 +31,7 @@ interface SocialPlatform {
 }
 
 export default function SocialPlatformsPage() {
+  const { isViewer, isReadOnly } = useAuth()
   const [platforms, setPlatforms] = useState<SocialPlatform[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -81,11 +83,11 @@ export default function SocialPlatformsPage() {
     <ErrorBoundary>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Social Platforms</h1><p className="text-muted-foreground text-sm mt-1">Manage social and website link platforms</p></div>
-          {!showForm && <Button onClick={() => setShowForm(true)} size="sm"><Plus className="mr-1 h-4 w-4" />Add Platform</Button>}
+          <div><h1 className="text-2xl font-bold">Social Platforms</h1><p className="text-muted-foreground text-sm mt-1">{isViewer ? "Explore public social link integrations" : "Manage social and website link platforms"}</p></div>
+          {!isReadOnly && !showForm && <Button onClick={() => setShowForm(true)} size="sm"><Plus className="mr-1 h-4 w-4" />Add Platform</Button>}
         </div>
 
-        {showForm && (
+        {!isReadOnly && showForm && (
           <Card>
             <CardHeader><CardTitle className="text-lg">{editId ? "Edit" : "New"} Social Platform</CardTitle><CardDescription>Instagram, Facebook, Website, etc.</CardDescription></CardHeader>
             <CardContent>
@@ -118,9 +120,9 @@ export default function SocialPlatformsPage() {
         <Card>
           <CardHeader><CardTitle className="text-lg">All Platforms ({platforms.length})</CardTitle></CardHeader>
           <CardContent>
-            {loading ? <TableSkeleton columns={4} rows={3} /> : platforms.length === 0 ? <EmptyState icon={<Share2 className="h-8 w-8" />} title="No platforms yet" description="Add social platforms to configure restaurant links" /> : (
+            {loading ? <TableSkeleton columns={isReadOnly ? 4 : 5} rows={3} /> : platforms.length === 0 ? <EmptyState icon={<Share2 className="h-8 w-8" />} title={isViewer ? "No social platforms available" : "No platforms yet"} description={isViewer ? "Social integrations will appear here when available." : "Add social platforms to configure restaurant links"} /> : (
               <Table>
-                <TableHeader><TableRow><TableHead className="w-10">#</TableHead><TableHead>Name</TableHead><TableHead>Slug</TableHead><TableHead>Color</TableHead><TableHead className="w-24">Actions</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead className="w-10">#</TableHead><TableHead>Name</TableHead><TableHead>Slug</TableHead><TableHead>Color</TableHead>{!isReadOnly && <TableHead className="w-24">Actions</TableHead>}</TableRow></TableHeader>
                 <TableBody>
                   {platforms.map((p) => (
                     <TableRow key={p.id}>
@@ -128,12 +130,12 @@ export default function SocialPlatformsPage() {
                       <TableCell className="font-medium">{p.display_name}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{p.slug}</TableCell>
                       <TableCell><div className="flex items-center gap-2"><div className="w-4 h-4 rounded" style={{ backgroundColor: p.primary_color }} /><span className="text-xs font-mono">{p.primary_color}</span></div></TableCell>
-                      <TableCell>
+                      {!isReadOnly && <TableCell>
                         <div className="flex gap-1">
                           <Button size="sm" variant="ghost" onClick={() => { setEditId(p.id); setName(p.name); setDisplayName(p.display_name); setPrimaryColor(p.primary_color); setLogoUrl(p.logo_url || ""); setSortOrder(p.sort_order); setShowForm(true) }}><Pencil className="h-4 w-4" /></Button>
                           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteId(p.id)}><Trash2 className="h-4 w-4" /></Button>
                         </div>
-                      </TableCell>
+                      </TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -142,9 +144,9 @@ export default function SocialPlatformsPage() {
           </CardContent>
         </Card>
 
-        <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        {!isReadOnly && <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
           <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Platform</AlertDialogTitle><AlertDialogDescription>This removes the platform from the list.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground">{deleting ? "Deleting..." : "Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-        </AlertDialog>
+        </AlertDialog>}
       </div>
     </ErrorBoundary>
   )

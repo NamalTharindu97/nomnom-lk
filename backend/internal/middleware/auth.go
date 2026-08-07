@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/nomnom-lk/backend/internal/models"
 )
 
 const (
@@ -82,12 +83,58 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 		c.Set("impersonated_by", claims.ImpersonatedBy)
 		c.Set("impersonated_at", claims.ImpersonatedAt)
 		c.Set(authTransportKey, transport)
+		if claims.Role == string(models.RolePortfolioViewer) && !viewerMethodAllowed(c.Request.Method, c.Request.URL.Path) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": gin.H{
+					"code":    "PORTFOLIO_DEMO_READ_ONLY",
+					"message": "The recruiter demo is read-only",
+				},
+			})
+			return
+		}
 		if transport == authTransportCookie && !validCSRF(c) {
 			abortCSRF(c)
 			return
 		}
 		c.Next()
 	}
+}
+
+func viewerMethodAllowed(method, path string) bool {
+	switch method {
+	case http.MethodGet:
+		return viewerReadAllowed(path)
+	case http.MethodOptions:
+		return true
+	case http.MethodPost:
+		return path == "/api/v1/auth/logout"
+	default:
+		return false
+	}
+}
+
+func viewerReadAllowed(path string) bool {
+	switch path {
+	case "/api/v1/auth/browser/session",
+		"/api/v1/dashboard/stats",
+		"/api/v1/dashboard/restaurants",
+		"/api/v1/dashboard/offers",
+		"/api/v1/admin/stats",
+		"/api/v1/admin/stats/timeline",
+		"/api/v1/admin/analytics/top-restaurants",
+		"/api/v1/admin/analytics/top-offers",
+		"/api/v1/admin/analytics/offer-stats",
+		"/api/v1/admin/analytics/expiring-offers",
+		"/api/v1/admin/categories",
+		"/api/v1/admin/cuisine-tags",
+		"/api/v1/admin/order-platforms",
+		"/api/v1/admin/social-platforms",
+		"/api/v1/admin/banners":
+		return true
+	}
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	return len(parts) == 5 && parts[0] == "api" && parts[1] == "v1" && parts[2] == "dashboard" &&
+		(parts[3] == "restaurants" || parts[3] == "offers") && parts[4] != ""
 }
 
 func IsCookieAuth(c *gin.Context) bool {

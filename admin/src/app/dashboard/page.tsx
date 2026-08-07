@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import {
   Store, Tag, Users, CheckCircle, Smartphone, Clock,
   BarChart3, Ticket, Send, ChevronRight, Eye, Heart,
-  Image as ImageIcon, Settings, RefreshCw,
+  Image as ImageIcon, Settings, RefreshCw, Folder,
 } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
@@ -555,6 +555,82 @@ function AdminDashboard() {
   )
 }
 
+function ViewerDashboard() {
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [timeline, setTimeline] = useState<TimelineData | null>(null)
+  const [topRestaurants, setTopRestaurants] = useState<TopRestaurant[]>([])
+  const [topOffers, setTopOffers] = useState<TopOffer[]>([])
+  const [offerStats, setOfferStats] = useState<OfferStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(false)
+    try {
+      const [statsRes, timelineRes, restaurantsRes, offersRes, offerStatsRes] = await Promise.all([
+        api.get<{ data: Stats }>("/admin/stats"),
+        api.get<{ data: TimelineData }>("/admin/stats/timeline?days=14"),
+        api.get<{ data: TopRestaurant[] }>("/admin/analytics/top-restaurants"),
+        api.get<{ data: { by_favorites: TopOffer[] } }>("/admin/analytics/top-offers"),
+        api.get<{ data: OfferStats }>("/admin/analytics/offer-stats"),
+      ])
+      setStats(statsRes.data)
+      setTimeline(timelineRes.data)
+      setTopRestaurants(restaurantsRes.data || [])
+      setTopOffers(offersRes.data?.by_favorites || [])
+      setOfferStats(offerStatsRes.data)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  if (error && !loading) {
+    return (
+      <Card className="p-6 text-center text-muted-foreground">
+        <p>Failed to load portfolio analytics.</p>
+        <Button variant="outline" size="sm" onClick={load} className="mt-3 gap-1.5">
+          <RefreshCw className="size-3.5" /> Retry
+        </Button>
+      </Card>
+    )
+  }
+
+  if (loading) {
+    return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[1, 2, 3, 4].map(i => <Card key={i}><CardContent className="p-6"><Skeleton className="h-16 w-full" /></CardContent></Card>)}</div>
+  }
+
+  const activityData = timeline?.offers.map((entry, index) => ({
+    name: entry.date.slice(5),
+    offers: entry.count,
+    restaurants: timeline.restaurants[index]?.count ?? 0,
+  })) || []
+  const cards = [
+    { title: "Restaurants", value: stats?.total_restaurants ?? 0, icon: Store },
+    { title: "Offers", value: stats?.total_offers ?? 0, icon: Tag },
+    { title: "Banners", value: stats?.total_banners ?? 0, icon: ImageIcon },
+    { title: "Offer approval", value: `${offerStats?.approval_rate?.toFixed(0) ?? 0}%`, icon: CheckCircle },
+  ]
+
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map(card => <Card key={card.title}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">{card.title}</CardTitle><card.icon className="size-4 text-primary" /></CardHeader><CardContent><p className="text-2xl font-bold">{card.value}</p></CardContent></Card>)}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card><CardHeader><CardTitle className="text-sm font-medium">Portfolio activity</CardTitle></CardHeader><CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={activityData}><XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12 }} /><Tooltip contentStyle={tooltipStyle} /><Bar dataKey="offers" name="Offers" fill="oklch(0.65 0.16 70)" radius={[4, 4, 0, 0]} /><Bar dataKey="restaurants" name="Restaurants" fill="oklch(0.55 0.12 250)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-sm font-medium">Top restaurants by offers</CardTitle></CardHeader><CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={topRestaurants} layout="vertical" margin={{ left: 20, right: 20 }}><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" width={120} axisLine={false} tickLine={false} tick={{ fontSize: 11 }} /><Tooltip contentStyle={tooltipStyle} /><Bar dataKey="offer_count" name="Offers" fill="oklch(0.65 0.16 70)" radius={[0, 4, 4, 0]} /></BarChart></ResponsiveContainer></div></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-sm font-medium">Popular offers</CardTitle></CardHeader><CardContent className="space-y-3">{topOffers.length === 0 ? <p className="text-sm text-muted-foreground">No favorite activity yet</p> : topOffers.slice(0, 5).map((offer, index) => <div key={offer.offer_id} className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm"><span className="truncate font-medium">{index + 1}. {offer.title}</span><span className="shrink-0 text-muted-foreground">{offer.favorite_count} favorites</span></div>)}</CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-sm font-medium">Explore the platform</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2">{[{ href: "/dashboard/restaurants", label: "Explore restaurants", icon: Store }, { href: "/dashboard/offers", label: "Explore offers", icon: Tag }, { href: "/dashboard/banners", label: "View banners", icon: ImageIcon }, { href: "/dashboard/categories", label: "View categories", icon: Folder }].map(action => <a key={action.href} href={action.href} className="flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-accent"><action.icon className="size-4 text-primary" /><span>{action.label}</span></a>)}</CardContent></Card>
+      </div>
+    </>
+  )
+}
+
 function OwnerDashboard() {
   const [now] = useState(() => Date.now())
   const [stats, setStats] = useState<OwnerStats | null>(null)
@@ -767,16 +843,16 @@ function OwnerDashboard() {
 }
 
 export default function DashboardPage() {
-  const { isOwner } = useAuth()
+  const { isAdmin, isOwner, isViewer } = useAuth()
 
   return (
     <ErrorBoundary>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">{isOwner ? "Your business overview" : "Platform overview & analytics"}</p>
+          <p className="text-muted-foreground">{isViewer ? "Explore portfolio-safe platform analytics" : isOwner ? "Your business overview" : "Platform overview & analytics"}</p>
         </div>
-        {isOwner ? <OwnerDashboard /> : <AdminDashboard />}
+        {isViewer ? <ViewerDashboard /> : isOwner ? <OwnerDashboard /> : isAdmin ? <AdminDashboard /> : null}
       </div>
     </ErrorBoundary>
   )
