@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [staging, master]
+    branches: [master]
   pull_request:
     branches: [staging, master]
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -463,8 +464,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'merge_group' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/staging')
+      github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -502,8 +502,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'merge_group' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/staging')
+      github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
         with:
