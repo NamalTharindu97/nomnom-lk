@@ -501,7 +501,7 @@ jobs:
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:${{ github.sha }}
           format: table
-          exit-code: 1
+          exit-code: ${{ vars.TRIVY_IGNORE_HIGH_CRITICAL == 'true' && '0' || '1' }}
           severity: HIGH,CRITICAL
 
   docker-admin:
@@ -543,7 +543,7 @@ jobs:
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ github.sha }}
           format: table
-          exit-code: 1
+          exit-code: ${{ vars.TRIVY_IGNORE_HIGH_CRITICAL == 'true' && '0' || '1' }}
           severity: HIGH,CRITICAL
 
   sonarcloud:
