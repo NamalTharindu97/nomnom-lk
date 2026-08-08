@@ -30,6 +30,7 @@
 5. Dispatch `Deploy Staging` with pre-P52 SHA `76e30e4de5b79c3220c59c9e52b80bdfd0e74a39`.
    Set the protected staging variable `STAGING_DEPLOY_SHA` to that SHA so later
    staging pushes do not silently replace the intentional runtime pin.
+   When repairing recruiter infrastructure in the same run, set `recruiter_source_sha` to its independently pinned P52 image SHA.
 6. Verify staging admin/owner login, API health, public data, Flutter endpoints, absence of the recruiter entry point, and a `404` from the staging demo-session route.
 7. Confirm the dedicated recruiter URL remains on the pinned P52 images.
 
