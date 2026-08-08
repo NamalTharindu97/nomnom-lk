@@ -1,7 +1,9 @@
 name: Deploy Staging
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [staging]
   workflow_dispatch:
     inputs:
@@ -20,7 +22,11 @@ concurrency:
 jobs:
   ship-and-deploy:
     name: Ship prebuilt images and deploy staging
-    if: github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'staging')
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -31,12 +37,10 @@ jobs:
         id: source
         env:
           DISPATCH_SHA: ${{ inputs.source_sha }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -Eeuo pipefail
-          sha=${DISPATCH_SHA:-}
-          if [[ -z "$sha" && "$GITHUB_EVENT_NAME" == "push" ]]; then
-            sha="$GITHUB_SHA"
-          fi
+          sha=${DISPATCH_SHA:-$WORKFLOW_SHA}
           if [[ -z "$sha" ]]; then
             sha=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY.git" refs/heads/staging | cut -f1)
           fi
