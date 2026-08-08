@@ -115,12 +115,13 @@ services:
       - redis_data:/data
     secrets:
       - redis_users_acl
+      - redis_password
     networks:
       - data
     healthcheck:
       test:
         - CMD-SHELL
-        - password=$$(sed -n 's/^user default on >\([^ ]*\).*/\1/p' /run/secrets/redis_users_acl); [ "$$(redis-cli --no-auth-warning -a "$$password" ping)" = PONG ]
+        - REDISCLI_AUTH=$$(cat /run/secrets/redis_password) redis-cli ping | grep -qx PONG
       interval: 10s
       timeout: 5s
       retries: 10
