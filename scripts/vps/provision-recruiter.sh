@@ -67,7 +67,7 @@ create_secret() {
     umask 077
     openssl rand -base64 "$bytes" | tr -d '\n' > "$path"
   fi
-  chmod 600 "$path"
+  chmod 444 "$path"
 }
 create_secret "$SECRET_DIR/database_password" 32
 create_secret "$SECRET_DIR/redis_password" 32
@@ -79,10 +79,10 @@ for secret in r2_access_key r2_secret_key; do
     printf 'Missing staging R2 credential: %s\n' "$secret" >&2
     exit 1
   fi
-  install -m 600 "$STAGING_SECRET_DIR/$secret" "$SECRET_DIR/$secret"
+  install -m 444 "$STAGING_SECRET_DIR/$secret" "$SECRET_DIR/$secret"
 done
 printf 'user default on >%s ~* +@all\n' "$(<"$SECRET_DIR/redis_password")" > "$SECRET_DIR/redis_users_acl"
-chmod 600 "$SECRET_DIR/redis_users_acl"
+chmod 444 "$SECRET_DIR/redis_users_acl"
 
 read_staging_value() {
   local key=$1 fallback=$2 value
@@ -121,6 +121,8 @@ for service in postgres redis; do
     sleep 2
   done
   if [[ $(docker inspect --format '{{.State.Health.Status}}' "$container" 2>/dev/null || true) != healthy ]]; then
+    docker inspect --format '{{json .State.Health}}' "$container" >&2 || true
+    docker logs --tail 100 "$container" >&2 || true
     printf 'Recruiter %s did not become healthy\n' "$service" >&2
     exit 1
   fi
