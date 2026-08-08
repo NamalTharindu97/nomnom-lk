@@ -1,0 +1,154 @@
+name: nomnom-recruiter
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to an immutable full-SHA tag}
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      ENVIRONMENT: staging
+      SERVER_PORT: "8080"
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${DATABASE_USER:-nomnom_recruiter}
+      DATABASE_PASSWORD_FILE: /run/secrets/database_password
+      DATABASE_NAME: ${DATABASE_NAME:-nomnom_recruiter}
+      DATABASE_SSLMODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 720h
+      R2_REGION: auto
+      R2_ACCESS_KEY_FILE: /run/secrets/r2_access_key
+      R2_SECRET_KEY_FILE: /run/secrets/r2_secret_key
+      R2_BUCKET: ${R2_BUCKET:?Set R2_BUCKET}
+      R2_ENDPOINT: ${R2_ENDPOINT:?Set R2_ENDPOINT}
+      R2_SECURE: "true"
+      R2_FORCE_PATH_STYLE: "false"
+      R2_PREFIX: recruiter
+      BROWSER_COOKIE_SECURE: "true"
+      CORS_ORIGINS: https://${RECRUITER_DOMAIN:?Set RECRUITER_DOMAIN}
+      ADMIN_EMAIL: recruiter-admin@nomnomlk.com
+      ADMIN_PASSWORD_FILE: /run/secrets/admin_password
+      DEMO_VIEWER_ENABLED: "true"
+      DEMO_VIEWER_EMAIL: recruiter-demo@nomnomlk.com
+      DEMO_VIEWER_NAME: Recruiter Demo
+      DEMO_VIEWER_SESSION_TTL: 30m
+    expose:
+      - "8080"
+    secrets:
+      - database_password
+      - redis_password
+      - jwt_secret
+      - r2_access_key
+      - r2_secret_key
+      - admin_password
+    networks:
+      edge:
+        aliases:
+          - recruiter-backend
+      data:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    mem_limit: 768m
+    cpus: 1.0
+
+  admin:
+    image: ${ADMIN_IMAGE:?Set ADMIN_IMAGE to an immutable full-SHA tag}
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      API_PROXY_TARGET: http://recruiter-backend:8080
+      NEXT_PUBLIC_API_URL: /api/v1
+      PORT: "3000"
+    expose:
+      - "3000"
+    networks:
+      edge:
+        aliases:
+          - recruiter-admin
+    depends_on:
+      - backend
+    mem_limit: 512m
+    cpus: 0.75
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-nomnom_recruiter}
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+      POSTGRES_DB: ${DATABASE_NAME:-nomnom_recruiter}
+    secrets:
+      - database_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-nomnom_recruiter} -d ${DATABASE_NAME:-nomnom_recruiter}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 1536m
+    cpus: 1.25
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_data:/data
+    secrets:
+      - redis_users_acl
+    networks:
+      - data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - password=$$(sed -n 's/^user default on >\([^ ]*\).*/\1/p' /run/secrets/redis_users_acl); [ "$$(redis-cli --no-auth-warning -a "$$password" ping)" = PONG ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    cpus: 0.5
+
+networks:
+  edge:
+    name: nomnom-recruiter-edge
+  data:
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+
+secrets:
+  database_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom-recruiter/secrets}/database_password
+  redis_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom-recruiter/secrets}/redis_password
+  jwt_secret:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom-recruiter/secrets}/jwt_secret
+  r2_access_key:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom-recruiter/secrets}/r2_access_key
+  r2_secret_key:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom-recruiter/secrets}/r2_secret_key
+  admin_password:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom-recruiter/secrets}/admin_password
+  redis_users_acl:
+    file: ${NOMNOM_SECRET_ROOT:-/etc/nomnom-recruiter/secrets}/redis_users_acl

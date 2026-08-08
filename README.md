@@ -7,7 +7,7 @@ NomNom LK is a full-stack Sri Lankan food-offer discovery platform. Consumers us
 
 ## Recruiter Demo
 
-[**Explore the live read-only dashboard**](https://admin.nomnomlk.com/login)
+[**Explore the live read-only dashboard**](https://demo.nomnomlk.com/login)
 
 Open the login page and select **Explore read-only demo**. No credentials are
 required. The 30-minute recruiter session can explore portfolio-safe analytics,
@@ -55,7 +55,7 @@ Recent reliability work includes:
 |---|---|
 | API | <https://api.nomnomlk.com> |
 | Admin | <https://admin.nomnomlk.com> |
-| Recruiter Demo | <https://admin.nomnomlk.com/login> - select **Explore read-only demo** |
+| Recruiter Demo | <https://demo.nomnomlk.com/login> - select **Explore read-only demo** |
 | Privacy Policy | <https://admin.nomnomlk.com/privacy> |
 | Terms of Service | <https://admin.nomnomlk.com/terms> |
 | Support | <https://admin.nomnomlk.com/support> |

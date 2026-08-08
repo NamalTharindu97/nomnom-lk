@@ -407,7 +407,7 @@ or browser developer tools.
 
 ### Gate
 
-`https://admin.nomnomlk.com/login` provides the verified one-click demo and all
+`https://demo.nomnomlk.com/login` provides the verified one-click demo and all
 production checks pass.
 
 ## Phase 10: CV And GitHub Presentation
@@ -425,7 +425,7 @@ production checks pass.
 
 ```text
 NomNom LK - Food Offers Discovery Platform
-Live demo: https://admin.nomnomlk.com/login
+Live demo: https://demo.nomnomlk.com/login
 Source: https://github.com/NamalTharindu97/nomnom-lk
 
 - Built a full-stack food-offer platform with Flutter, Go/Gin, Next.js,
