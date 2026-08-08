@@ -6,6 +6,7 @@ import 'package:nomnom_lk/l10n/app_localizations.dart';
 import 'package:nomnom_lk/providers/banner_provider.dart';
 import 'package:nomnom_lk/providers/offer_provider.dart';
 import 'package:nomnom_lk/screens/home_screen.dart';
+import 'package:nomnom_lk/widgets/hot_offer_card.dart';
 import '../helpers/mocks.dart';
 
 Widget buildTestApp(OfferProvider provider) {
@@ -24,6 +25,18 @@ Widget buildTestApp(OfferProvider provider) {
 }
 
 void _noop() {}
+
+const _phoneSizes = [
+  Size(320, 568),
+  Size(390, 844),
+  Size(700, 390),
+  Size(844, 390),
+];
+
+void setTestSize(WidgetTester tester, Size size) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+}
 
 void main() {
   group('HomeScreen - Hot Offers Carousel', () {
@@ -82,7 +95,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
-      // Card width = 800*0.48 = 384px, viewport fits ~2 cards, scroll to see third
+      // Hot cards use local clamped widths, so scroll to expose the last card.
       expect(find.text('55%'), findsOneWidget);
       expect(find.text('40%'), findsOneWidget);
       await tester.drag(find.byType(ListView), const Offset(-400, 0));
@@ -96,7 +109,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
 
-      // Card width = 800*0.48 = 384px, viewport fits ~2 cards, scroll to see third
+      // Hot cards use local clamped widths, so scroll to expose the last card.
       expect(find.text('Premium Burger'), findsOneWidget);
       expect(find.text('Chicken Curry'), findsOneWidget);
       await tester.drag(find.byType(ListView), const Offset(-400, 0));
@@ -117,8 +130,7 @@ void main() {
       expect(find.byIcon(Icons.favorite_border_rounded), findsNWidgets(3));
     });
 
-    testWidgets('shows save amount on each card',
-        (WidgetTester tester) async {
+    testWidgets('shows save amount on each card', (WidgetTester tester) async {
       await provider.loadOffers(forceRefresh: true);
       await tester.pumpWidget(buildTestApp(provider));
       await tester.pump();
@@ -126,6 +138,26 @@ void main() {
       // Premium Burger: 2000→900 saves 1100, Chicken Curry: 1500→900 saves 600
       expect(find.textContaining('Save Rs. 1,100'), findsWidgets);
       expect(find.textContaining('Save Rs. 600'), findsWidgets);
+    });
+
+    testWidgets('uses bounded local card sizing on supported phone viewports',
+        (WidgetTester tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await provider.loadOffers(forceRefresh: true);
+
+      for (final size in _phoneSizes) {
+        setTestSize(tester, size);
+        await tester.pumpWidget(buildTestApp(provider));
+        await tester.pump();
+
+        final feedSize = tester.getSize(find.byType(CustomScrollView));
+        final cardSize = tester.getSize(find.byType(HotOfferCard).first);
+        expect(feedSize.width, lessThanOrEqualTo(600));
+        expect(cardSize.width, inInclusiveRange(176, 220));
+        expect(cardSize.height, closeTo(cardSize.width * 1.5, 0.1));
+        expect(tester.takeException(), isNull, reason: '$size overflowed');
+      }
     });
   });
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
@@ -37,7 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.initState();
     _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: AppMotion.entrance,
     )..forward();
 
     _logoAnim = CurvedAnimation(
@@ -60,6 +61,12 @@ class _RegisterScreenState extends State<RegisterScreen>
       parent: _animCtrl,
       curve: const Interval(0.7, 1.0, curve: Curves.easeOutCubic),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduceMotion(context)) _animCtrl.value = 1;
   }
 
   @override
@@ -121,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-            gradient: LinearGradient(
+          gradient: LinearGradient(
             colors: [
               context.colors.background,
               context.colors.backgroundAlt,
@@ -132,239 +139,292 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: Selector<AuthProvider, bool>(
-              selector: (_, provider) => provider.isLoading,
-              builder: (context, isLoading, _) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: Spacings.xl + 4),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 32),
-                        FadeTransition(
-                          opacity: _logoAnim,
-                          child: ScaleTransition(
-                            scale: Tween<double>(begin: 0.8, end: 1).animate(
-                              CurvedAnimation(
-                                parent: _animCtrl,
-                                curve: const Interval(
-                                    0.0, 0.35, curve: Curves.easeOutBack),
-                              ),
-                            ),
-                            child: const AppLogo(),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.3),
-                            end: Offset.zero,
-                          ).animate(_titleAnim),
-                          child: FadeTransition(
-                            opacity: _titleAnim,
-                            child: Text(
-                              AppLocalizations.of(context)!.registerCreateAccount,
-                              textAlign: TextAlign.center,
-                              style: textTheme.titleLarge?.copyWith(
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 36),
-                        SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.3),
-                            end: Offset.zero,
-                          ).animate(_formAnim),
-                          child: FadeTransition(
-                            opacity: _formAnim,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: context.colors.surface,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: context.colors.border,
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(Spacings.lg),
-                              child: Column(
-                                children: [
-                                  TextFormField(
-                                    controller: _nameController,
-                                    textInputAction: TextInputAction.next,
-                                    maxLength: 255,
-                                    validator: (v) =>
-                                        (v == null || v.trim().isEmpty)
-                                            ? AppLocalizations.of(context)!.registerFullNameHint
-                                            : null,
-                                    decoration: InputDecoration(
-                                      hintText: AppLocalizations.of(context)!.registerFullNameLabel,
-                                      counterText: '',
-                                      prefixIcon:
-                                          Icon(Icons.person_outline_rounded),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    maxLength: 254,
-                                    validator: (v) {
-                                      if (v == null || v.trim().isEmpty) {
-                                        return AppLocalizations.of(context)!.registerEmailHint;
-                                      }
-                                      if (!RegExp(
-                                              r'^[^@]+@[^@]+\.[^@]+$')
-                                          .hasMatch(v.trim())) {
-                                        return AppLocalizations.of(context)!.registerEmailInvalid;
-                                      }
-                                      return null;
-                                    },
-                                    decoration: InputDecoration(
-                                      hintText: AppLocalizations.of(context)!.registerEmailLabel,
-                                      counterText: '',
-                                      prefixIcon:
-                                          Icon(Icons.mail_outline_rounded),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: _obscurePassword,
-                                    textInputAction: TextInputAction.next,
-                                    maxLength: 128,
-                                    validator: (v) {
-                                      if (v == null || v.length < 8) {
-                                        return AppLocalizations.of(context)!.registerPasswordMinChars;
-                                      }
-                                      return null;
-                                    },
-                                    decoration: InputDecoration(
-                                      hintText: AppLocalizations.of(context)!.registerPasswordLabel,
-                                      counterText: '',
-                                      prefixIcon: const Icon(
-                                          Icons.lock_outline_rounded),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscurePassword
-                                              ? Icons.visibility_off_rounded
-                                              : Icons.visibility_rounded,
-                                        ),
-                                        onPressed: () => setState(() =>
-                                            _obscurePassword =
-                                                !_obscurePassword),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _confirmController,
-                                    obscureText: _obscureConfirm,
-                                    textInputAction: TextInputAction.done,
-                                    maxLength: 128,
-                                    onFieldSubmitted: (_) => _register(),
-                                    validator: (v) {
-                                      if (v != _passwordController.text) {
-                                        return AppLocalizations.of(context)!.registerPasswordsDoNotMatch;
-                                      }
-                                      return null;
-                                    },
-                                    decoration: InputDecoration(
-                                      hintText: AppLocalizations.of(context)!.registerConfirmPasswordLabel,
-                                      counterText: '',
-                                      prefixIcon: const Icon(
-                                          Icons.lock_outline_rounded),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscureConfirm
-                                              ? Icons.visibility_off_rounded
-                                              : Icons.visibility_rounded,
-                                        ),
-                                        onPressed: () => setState(() =>
-                                            _obscureConfirm =
-                                                !_obscureConfirm),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.3),
-                            end: Offset.zero,
-                          ).animate(_btnAnim),
-                          child: FadeTransition(
-                            opacity: _btnAnim,
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: isLoading ? null : _register,
-                                icon: isLoading
-                                    ? SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Theme.of(context).brightness == Brightness.dark ? context.colors.background : Colors.white,
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.person_add_rounded, size: 22),
-                                label: Text(isLoading
-                                    ? AppLocalizations.of(context)!.registerCreatingAccount
-                                    : AppLocalizations.of(context)!.registerCreateAccountButton),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.3),
-                            end: Offset.zero,
-                          ).animate(_footerAnim),
-                          child: FadeTransition(
-                            opacity: _footerAnim,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!.registerAlreadyHaveAccount,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: context.colors.muted,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () => Navigator.of(context).pop(),
-                                  child: Text(
-                                    AppLocalizations.of(context)!.registerSignInLink,
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                      ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compactHeight = constraints.maxHeight < 650;
+              final horizontalPadding =
+                  constraints.maxWidth < 360 ? Spacings.md : Spacings.xl + 4;
+
+              return Selector<AuthProvider, bool>(
+                selector: (_, provider) => provider.isLoading,
+                builder: (context, isLoading, _) {
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: compactHeight ? Spacings.sm : 0,
                     ),
-                  ),
-                );
-              },
-            ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        key: const ValueKey('register-content'),
+                        constraints: const BoxConstraints(maxWidth: 480),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(height: compactHeight ? 8 : 32),
+                              FadeTransition(
+                                opacity: _logoAnim,
+                                child: ScaleTransition(
+                                  scale:
+                                      Tween<double>(begin: 0.8, end: 1).animate(
+                                    CurvedAnimation(
+                                      parent: _animCtrl,
+                                      curve: const Interval(0.0, 0.35,
+                                          curve: Curves.easeOutBack),
+                                    ),
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: AppLogo(compact: compactHeight),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: compactHeight ? 12 : 24),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.3),
+                                  end: Offset.zero,
+                                ).animate(_titleAnim),
+                                child: FadeTransition(
+                                  opacity: _titleAnim,
+                                  child: Text(
+                                    AppLocalizations.of(context)!
+                                        .registerCreateAccount,
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.titleLarge?.copyWith(
+                                      color: context.colors.textPrimary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: compactHeight ? 16 : 36),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.3),
+                                  end: Offset.zero,
+                                ).animate(_formAnim),
+                                child: FadeTransition(
+                                  opacity: _formAnim,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: context.colors.surface,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: context.colors.border,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.all(Spacings.lg),
+                                    child: Column(
+                                      children: [
+                                        TextFormField(
+                                          controller: _nameController,
+                                          textInputAction: TextInputAction.next,
+                                          maxLength: 255,
+                                          validator: (v) => (v == null ||
+                                                  v.trim().isEmpty)
+                                              ? AppLocalizations.of(context)!
+                                                  .registerFullNameHint
+                                              : null,
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                AppLocalizations.of(context)!
+                                                    .registerFullNameLabel,
+                                            counterText: '',
+                                            prefixIcon: Icon(
+                                                Icons.person_outline_rounded),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        TextFormField(
+                                          controller: _emailController,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          textInputAction: TextInputAction.next,
+                                          maxLength: 254,
+                                          validator: (v) {
+                                            if (v == null || v.trim().isEmpty) {
+                                              return AppLocalizations.of(
+                                                      context)!
+                                                  .registerEmailHint;
+                                            }
+                                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
+                                                .hasMatch(v.trim())) {
+                                              return AppLocalizations.of(
+                                                      context)!
+                                                  .registerEmailInvalid;
+                                            }
+                                            return null;
+                                          },
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                AppLocalizations.of(context)!
+                                                    .registerEmailLabel,
+                                            counterText: '',
+                                            prefixIcon: Icon(
+                                                Icons.mail_outline_rounded),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        TextFormField(
+                                          controller: _passwordController,
+                                          obscureText: _obscurePassword,
+                                          textInputAction: TextInputAction.next,
+                                          maxLength: 128,
+                                          validator: (v) {
+                                            if (v == null || v.length < 8) {
+                                              return AppLocalizations.of(
+                                                      context)!
+                                                  .registerPasswordMinChars;
+                                            }
+                                            return null;
+                                          },
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                AppLocalizations.of(context)!
+                                                    .registerPasswordLabel,
+                                            counterText: '',
+                                            prefixIcon: const Icon(
+                                                Icons.lock_outline_rounded),
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _obscurePassword
+                                                    ? Icons
+                                                        .visibility_off_rounded
+                                                    : Icons.visibility_rounded,
+                                              ),
+                                              onPressed: () => setState(() =>
+                                                  _obscurePassword =
+                                                      !_obscurePassword),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        TextFormField(
+                                          controller: _confirmController,
+                                          obscureText: _obscureConfirm,
+                                          textInputAction: TextInputAction.done,
+                                          maxLength: 128,
+                                          onFieldSubmitted: (_) => _register(),
+                                          validator: (v) {
+                                            if (v != _passwordController.text) {
+                                              return AppLocalizations.of(
+                                                      context)!
+                                                  .registerPasswordsDoNotMatch;
+                                            }
+                                            return null;
+                                          },
+                                          decoration: InputDecoration(
+                                            hintText: AppLocalizations.of(
+                                                    context)!
+                                                .registerConfirmPasswordLabel,
+                                            counterText: '',
+                                            prefixIcon: const Icon(
+                                                Icons.lock_outline_rounded),
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _obscureConfirm
+                                                    ? Icons
+                                                        .visibility_off_rounded
+                                                    : Icons.visibility_rounded,
+                                              ),
+                                              onPressed: () => setState(() =>
+                                                  _obscureConfirm =
+                                                      !_obscureConfirm),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: compactHeight ? 12 : 20),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.3),
+                                  end: Offset.zero,
+                                ).animate(_btnAnim),
+                                child: FadeTransition(
+                                  opacity: _btnAnim,
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: isLoading ? null : _register,
+                                      icon: isLoading
+                                          ? SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? context.colors.background
+                                                    : Colors.white,
+                                              ),
+                                            )
+                                          : const Icon(Icons.person_add_rounded,
+                                              size: 22),
+                                      label: Text(isLoading
+                                          ? AppLocalizations.of(context)!
+                                              .registerCreatingAccount
+                                          : AppLocalizations.of(context)!
+                                              .registerCreateAccountButton),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: compactHeight ? 12 : 24),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.3),
+                                  end: Offset.zero,
+                                ).animate(_footerAnim),
+                                child: FadeTransition(
+                                  opacity: _footerAnim,
+                                  child: Wrap(
+                                    alignment: WrapAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    spacing: 4,
+                                    children: [
+                                      Text(
+                                        AppLocalizations.of(context)!
+                                            .registerAlreadyHaveAccount,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: context.colors.muted,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () =>
+                                            Navigator.of(context).pop(),
+                                        child: Text(
+                                          AppLocalizations.of(context)!
+                                              .registerSignInLink,
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: compactHeight ? 8 : 32),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ),

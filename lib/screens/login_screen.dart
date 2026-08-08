@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_routes.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
@@ -41,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: AppMotion.entrance,
     )..forward();
 
     _logoAnim = CurvedAnimation(
@@ -64,6 +65,12 @@ class _LoginScreenState extends State<LoginScreen>
       parent: _animCtrl,
       curve: const Interval(0.65, 0.95, curve: Curves.easeOutCubic),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduceMotion(context)) _animCtrl.value = 1;
   }
 
   @override
@@ -103,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _syncDataAfterLogin() async {
     try {
       await Future.wait([
-        context.read<OfferProvider>().loadOffers(forceRefresh: true),
+        context.read<OfferProvider>().refreshOffers(),
         context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true),
         context.read<NotificationProvider>().loadUnreadCount(),
       ]);
@@ -148,7 +155,8 @@ class _LoginScreenState extends State<LoginScreen>
       debugPrint('Google sign-in error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.loginErrorGeneric)),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.loginErrorGeneric)),
         );
       }
     } finally {
@@ -181,7 +189,8 @@ class _LoginScreenState extends State<LoginScreen>
         if (msg.contains('verify your email')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(AppLocalizations.of(context)!.loginEmailVerificationRequired),
+              content: Text(
+                  AppLocalizations.of(context)!.loginEmailVerificationRequired),
               action: SnackBarAction(
                 label: AppLocalizations.of(context)!.loginResend,
                 onPressed: () => Navigator.of(context).pushReplacementNamed(
@@ -207,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen>
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
-            gradient: LinearGradient(
+          gradient: LinearGradient(
             colors: [
               context.colors.background,
               context.colors.backgroundAlt,
@@ -218,247 +227,353 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: Selector<AuthProvider, bool>(
-              selector: (_, provider) => provider.isLoading,
-              builder: (context, isLoading, child) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: Spacings.xl + 4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 24),
-                      FadeTransition(
-                        opacity: _logoAnim,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.8, end: 1).animate(
-                            CurvedAnimation(
-                              parent: _animCtrl,
-                              curve: const Interval(
-                                0.0, 0.4, curve: Curves.easeOutBack,
+          child: Selector<AuthProvider, bool>(
+            selector: (_, provider) => provider.isLoading,
+            builder: (context, isLoading, child) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 360;
+                  final isShort = constraints.maxHeight < 700;
+                  final horizontalPadding = isNarrow ? Spacings.md : 28.0;
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          key: const ValueKey('login-content'),
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(height: isShort ? 12 : 24),
+                              FadeTransition(
+                                opacity: _logoAnim,
+                                child: ScaleTransition(
+                                  scale:
+                                      Tween<double>(begin: 0.8, end: 1).animate(
+                                    CurvedAnimation(
+                                      parent: _animCtrl,
+                                      curve: const Interval(
+                                        0.0,
+                                        0.4,
+                                        curve: Curves.easeOutBack,
+                                      ),
+                                    ),
+                                  ),
+                                  child: AppLogo(compact: isNarrow || isShort),
+                                ),
                               ),
-                            ),
-                          ),
-                          child: const AppLogo(),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.3),
-                          end: Offset.zero,
-                        ).animate(_titleAnim),
-                        child: FadeTransition(
-                          opacity: _titleAnim,
-                          child: Text(
-                            AppLocalizations.of(context)!.splashTagline,
-                            textAlign: TextAlign.center,
-                            style: textTheme.titleMedium?.copyWith(
-                              color: context.colors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                              height: 1.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 44),
-                      SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.3),
-                          end: Offset.zero,
-                        ).animate(_googleBtnAnim),
-                        child: FadeTransition(
-                          opacity: _googleBtnAnim,
-                                child: ElevatedButton.icon(
-                                key: const ValueKey('google-sign-in-btn'),
-                                onPressed: isLoading || _isGoogleLoading ? null : _signInWithGoogle,
-                                icon: isLoading || _isGoogleLoading
-                                    ? SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Theme.of(context).brightness == Brightness.dark ? context.colors.background : Colors.white,
-                                        ),
-                                      )
-                                    : const Icon(Icons.g_mobiledata_rounded, size: 28),
-                                label: Text(isLoading || _isGoogleLoading ? AppLocalizations.of(context)!.loginSigningIn : AppLocalizations.of(context)!.loginContinueWithGoogle),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      FadeTransition(
-                        opacity: _dividerAnim,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Divider(color: context.colors.surfaceAlt),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: Spacings.sm + 2),
-                                child: Text(
-                                  AppLocalizations.of(context)!.loginOrContinueWith,
-                                  style: textTheme.titleSmall?.copyWith(
-                                    color: context.colors.muted,
+                              SizedBox(height: isShort ? 16 : 28),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.3),
+                                  end: Offset.zero,
+                                ).animate(_titleAnim),
+                                child: FadeTransition(
+                                  opacity: _titleAnim,
+                                  child: Text(
+                                    AppLocalizations.of(context)!.splashTagline,
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.titleMedium?.copyWith(
+                                      color: context.colors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.2,
+                                    ),
                                   ),
                                 ),
-                            ),
-                            Expanded(
-                              child: Divider(color: context.colors.surfaceAlt),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.3),
-                          end: Offset.zero,
-                        ).animate(_emailBtnAnim),
-                        child: FadeTransition(
-                          opacity: _emailBtnAnim,
-                          child: AnimatedCrossFade(
-                            duration: const Duration(milliseconds: 300),
-                            crossFadeState: _showEmailForm
-                                ? CrossFadeState.showSecond
-                                : CrossFadeState.showFirst,
-                            firstChild: SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                key: const ValueKey('continue-email-btn'),
-                                onPressed: () =>
-                                    setState(() => _showEmailForm = true),
-                                icon: const Icon(Icons.mail_outline_rounded),
-                                label: Text(AppLocalizations.of(context)!.loginContinueWithEmail),
                               ),
-                            ),
-                            secondChild: Form(
-                              key: _formKey,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: context.colors.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: context.colors.border,
+                              SizedBox(height: isShort ? 28 : 44),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.3),
+                                  end: Offset.zero,
+                                ).animate(_googleBtnAnim),
+                                child: FadeTransition(
+                                  opacity: _googleBtnAnim,
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      key: const ValueKey('google-sign-in-btn'),
+                                      onPressed: isLoading || _isGoogleLoading
+                                          ? null
+                                          : _signInWithGoogle,
+                                      icon: _isGoogleLoading
+                                          ? SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? context.colors.background
+                                                    : Colors.white,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.g_mobiledata_rounded,
+                                              size: 28,
+                                            ),
+                                      label: Text(_isGoogleLoading
+                                          ? AppLocalizations.of(context)!
+                                              .loginSigningIn
+                                          : AppLocalizations.of(context)!
+                                              .loginContinueWithGoogle),
+                                    ),
                                   ),
                                 ),
-                                padding: const EdgeInsets.all(Spacings.lg),
-                                child: Column(
+                              ),
+                              SizedBox(height: isShort ? 16 : 24),
+                              FadeTransition(
+                                opacity: _dividerAnim,
+                                child: Row(
                                   children: [
-                                    TextFormField(
-                                      key: const ValueKey('email-field'),
-                                      controller: _emailController,
-                                      keyboardType: TextInputType.emailAddress,
-                                      textInputAction: TextInputAction.next,
-                                      maxLength: 254,
-                                      validator: (v) {
-                                        if (v == null || v.trim().isEmpty) {
-                                          return AppLocalizations.of(context)!.loginEmailHint;
-                                        }
-                                        if (!RegExp(
-                                                r'^[^@]+@[^@]+\.[^@]+$')
-                                            .hasMatch(v.trim())) {
-                                          return AppLocalizations.of(context)!.loginEmailInvalid;
-                                        }
-                                        return null;
-                                      },
-                                      decoration: InputDecoration(
-                                        hintText: AppLocalizations.of(context)!.loginEmailLabel,
-                                        counterText: '',
-                                        prefixIcon: Icon(
-                                            Icons.mail_outline_rounded),
-                                      ),
+                                    Expanded(
+                                      child: Divider(
+                                          color: context.colors.surfaceAlt),
                                     ),
-                                    const SizedBox(height: 4),
-                                    TextFormField(
-                                      key: const ValueKey('password-field'),
-                                      controller: _passwordController,
-                                      obscureText: _obscurePassword,
-                                      textInputAction: TextInputAction.done,
-                                      maxLength: 128,
-                                      onFieldSubmitted: (_) =>
-                                          _signInWithEmail(),
-                                      validator: (v) {
-                                        if (v == null || v.isEmpty) {
-                                          return AppLocalizations.of(context)!.loginPasswordHint;
-                                        }
-                                        if (v.length < 8) {
-                                          return AppLocalizations.of(context)!.loginPasswordMinChars;
-                                        }
-                                        return null;
-                                      },
-                                      decoration: InputDecoration(
-                                        hintText: AppLocalizations.of(context)!.loginPasswordLabel,
-                                        counterText: '',
-                                        prefixIcon: const Icon(
-                                            Icons.lock_outline_rounded),
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                            _obscurePassword
-                                                ? Icons
-                                                    .visibility_off_rounded
-                                                : Icons.visibility_rounded,
-                                          ),
-                                          onPressed: () => setState(() =>
-                                              _obscurePassword =
-                                                  !_obscurePassword),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Spacings.sm + 2),
+                                      child: Text(
+                                        AppLocalizations.of(context)!
+                                            .loginOrContinueWith,
+                                        style: textTheme.titleSmall?.copyWith(
+                                          color: context.colors.muted,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(height: 16),
-                                    SizedBox(
+                                    Expanded(
+                                      child: Divider(
+                                          color: context.colors.surfaceAlt),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: isShort ? 16 : 24),
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.3),
+                                  end: Offset.zero,
+                                ).animate(_emailBtnAnim),
+                                child: FadeTransition(
+                                  opacity: _emailBtnAnim,
+                                  child: AnimatedCrossFade(
+                                    duration: AppMotion.duration(
+                                      context,
+                                      AppMotion.medium,
+                                    ),
+                                    crossFadeState: _showEmailForm
+                                        ? CrossFadeState.showSecond
+                                        : CrossFadeState.showFirst,
+                                    firstChild: SizedBox(
                                       width: double.infinity,
-                                      child: ElevatedButton.icon(
-                                        key: const ValueKey('sign-in-btn'),
-                                        onPressed: isLoading || _isGoogleLoading
-                                            ? null
-                                            : _signInWithEmail,
+                                      child: OutlinedButton.icon(
+                                        key: const ValueKey(
+                                            'continue-email-btn'),
+                                        onPressed: () => setState(
+                                            () => _showEmailForm = true),
                                         icon: const Icon(
-                                            Icons.arrow_forward_rounded),
-                                        label: Text(AppLocalizations.of(context)!.loginSignInButton),
+                                            Icons.mail_outline_rounded),
+                                        label: Text(
+                                            AppLocalizations.of(context)!
+                                                .loginContinueWithEmail),
+                                      ),
+                                    ),
+                                    secondChild: Form(
+                                      key: _formKey,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: context.colors.surface,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: context.colors.border,
+                                          ),
+                                        ),
+                                        padding:
+                                            const EdgeInsets.all(Spacings.lg),
+                                        child: Column(
+                                          children: [
+                                            TextFormField(
+                                              key:
+                                                  const ValueKey('email-field'),
+                                              controller: _emailController,
+                                              keyboardType:
+                                                  TextInputType.emailAddress,
+                                              textInputAction:
+                                                  TextInputAction.next,
+                                              maxLength: 254,
+                                              validator: (v) {
+                                                if (v == null ||
+                                                    v.trim().isEmpty) {
+                                                  return AppLocalizations.of(
+                                                          context)!
+                                                      .loginEmailHint;
+                                                }
+                                                if (!RegExp(
+                                                        r'^[^@]+@[^@]+\.[^@]+$')
+                                                    .hasMatch(v.trim())) {
+                                                  return AppLocalizations.of(
+                                                          context)!
+                                                      .loginEmailInvalid;
+                                                }
+                                                return null;
+                                              },
+                                              decoration: InputDecoration(
+                                                hintText: AppLocalizations.of(
+                                                        context)!
+                                                    .loginEmailLabel,
+                                                counterText: '',
+                                                prefixIcon: Icon(
+                                                    Icons.mail_outline_rounded),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            TextFormField(
+                                              key: const ValueKey(
+                                                  'password-field'),
+                                              controller: _passwordController,
+                                              obscureText: _obscurePassword,
+                                              textInputAction:
+                                                  TextInputAction.done,
+                                              maxLength: 128,
+                                              onFieldSubmitted: (_) =>
+                                                  _signInWithEmail(),
+                                              validator: (v) {
+                                                if (v == null || v.isEmpty) {
+                                                  return AppLocalizations.of(
+                                                          context)!
+                                                      .loginPasswordHint;
+                                                }
+                                                if (v.length < 8) {
+                                                  return AppLocalizations.of(
+                                                          context)!
+                                                      .loginPasswordMinChars;
+                                                }
+                                                return null;
+                                              },
+                                              decoration: InputDecoration(
+                                                hintText: AppLocalizations.of(
+                                                        context)!
+                                                    .loginPasswordLabel,
+                                                counterText: '',
+                                                prefixIcon: const Icon(
+                                                    Icons.lock_outline_rounded),
+                                                suffixIcon: IconButton(
+                                                  icon: Icon(
+                                                    _obscurePassword
+                                                        ? Icons
+                                                            .visibility_off_rounded
+                                                        : Icons
+                                                            .visibility_rounded,
+                                                  ),
+                                                  onPressed: () => setState(
+                                                      () => _obscurePassword =
+                                                          !_obscurePassword),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: ElevatedButton.icon(
+                                                key: const ValueKey(
+                                                    'sign-in-btn'),
+                                                onPressed: isLoading ||
+                                                        _isGoogleLoading
+                                                    ? null
+                                                    : _signInWithEmail,
+                                                icon: isLoading
+                                                    ? SizedBox(
+                                                        width: 20,
+                                                        height: 20,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color: Theme.of(context)
+                                                                      .brightness ==
+                                                                  Brightness
+                                                                      .dark
+                                                              ? context.colors
+                                                                  .background
+                                                              : Colors.white,
+                                                        ),
+                                                      )
+                                                    : const Icon(Icons
+                                                        .arrow_forward_rounded),
+                                                label: Text(isLoading
+                                                    ? AppLocalizations.of(
+                                                            context)!
+                                                        .loginSigningIn
+                                                    : AppLocalizations.of(
+                                                            context)!
+                                                        .loginSignInButton),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              FadeTransition(
+                                opacity: _emailBtnAnim,
+                                child: Wrap(
+                                  alignment: WrapAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .loginNoAccount,
+                                      style: textTheme.titleSmall?.copyWith(
+                                        color: context.colors.muted,
+                                      ),
+                                    ),
+                                    TextButton(
+                                      key: const ValueKey('sign-up-link'),
+                                      onPressed: () =>
+                                          Navigator.of(context).pushNamed(
+                                        AppRoutes.register,
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        minimumSize: const Size(48, 48),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: Spacings.xs,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        AppLocalizations.of(context)!
+                                            .loginRegisterLink,
+                                        style: textTheme.titleSmall?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
+                              SizedBox(height: isShort ? 16 : 40),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      FadeTransition(
-                        opacity: _emailBtnAnim,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.loginNoAccount,
-                              style: textTheme.titleSmall?.copyWith(
-                                color: context.colors.muted,
-                              ),
-                            ),
-                            GestureDetector(
-                              key: const ValueKey('sign-up-link'),
-                              onTap: () => Navigator.of(context).pushNamed(
-                                AppRoutes.register,
-                              ),
-                                  child: Text(
-                                    AppLocalizations.of(context)!.loginRegisterLink,
-                                  style: textTheme.titleSmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ),

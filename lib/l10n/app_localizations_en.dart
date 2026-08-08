@@ -588,4 +588,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reconnecting => 'Reconnecting...';
+
+  @override
+  String get editProfileSaving => 'Saving...';
+
+  @override
+  String get deleteAccountTitle => 'Delete Account';
+
+  @override
+  String get deleteAccountConfirmation => 'Your account will be scheduled for deletion in 30 days. You can cancel at any time during this period. This action cannot be undone after the 30-day window.';
+
+  @override
+  String get deleteAccountSubtitle => 'Schedule account deletion in 30 days';
+
+  @override
+  String get deleteAccountScheduleError => 'Failed to schedule deletion';
+
+  @override
+  String get linkOpenError => 'Could not open link';
+
+  @override
+  String platformNotInstalled(String platform) {
+    return '$platform not installed';
+  }
+
+  @override
+  String platformInstallPrompt(String platform) {
+    return 'Install $platform from the store to order?';
+  }
+
+  @override
+  String get platformInstall => 'Install';
 }

@@ -90,6 +90,28 @@ void main() {
       expect(handler.resolved, isFalse);
     });
 
+    for (final path in [
+      '/favorites',
+      '/notifications',
+      '/notifications/unread-count',
+      '/users/me',
+    ]) {
+      test('private $path responses are never cached', () {
+        final options = _getOptions(path: path);
+        interceptor.onResponse(
+          _buildResponse(options, {'private': true}),
+          _ResponseHandler(),
+        );
+
+        final handler = _RequestHandler();
+        interceptor.onRequest(options, handler);
+
+        expect(interceptor.cachedEntryCount, 0);
+        expect(handler.nextCalled, isTrue);
+        expect(handler.resolved, isFalse);
+      });
+    }
+
     test('GET cache hit resolves with cached data', () {
       final reqOpts = _getOptions();
       final data = {'id': 1, 'name': 'Burger Deal'};
@@ -111,7 +133,8 @@ void main() {
       final postOpts = _postOptions();
 
       final getOpts = _getOptions();
-      interceptor.onResponse(_buildResponse(getOpts, {'cached': true}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(getOpts, {'cached': true}), _ResponseHandler());
 
       interceptor.onRequest(postOpts, handler);
 
@@ -134,7 +157,8 @@ void main() {
       final shortTtl = CacheInterceptor(ttl: const Duration(milliseconds: 1));
       final opts = _getOptions();
 
-      shortTtl.onResponse(_buildResponse(opts, {'old': true}), _ResponseHandler());
+      shortTtl.onResponse(
+          _buildResponse(opts, {'old': true}), _ResponseHandler());
 
       await Future.delayed(const Duration(milliseconds: 10));
 
@@ -149,8 +173,10 @@ void main() {
       final opts1 = _getOptions(path: '/api/a');
       final opts2 = _getOptions(path: '/api/b');
 
-      interceptor.onResponse(_buildResponse(opts1, {'a': 1}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(opts2, {'b': 2}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts1, {'a': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts2, {'b': 2}), _ResponseHandler());
 
       // Access opts1 (moves to end)
       interceptor.onRequest(opts1, _RequestHandler());
@@ -206,8 +232,10 @@ void main() {
     test('same-key GET response overwrites previous', () {
       final opts = _getOptions(path: '/api/dup');
 
-      interceptor.onResponse(_buildResponse(opts, {'v': 1}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(opts, {'v': 2}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'v': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'v': 2}), _ResponseHandler());
 
       expect(interceptor.cachedEntryCount, 1);
 
@@ -222,7 +250,8 @@ void main() {
       final opts = _getOptions();
       final cachedData = {'id': 99, 'fallback': true};
 
-      interceptor.onResponse(_buildResponse(opts, cachedData), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, cachedData), _ResponseHandler());
 
       final handler = _ErrorHandler();
       interceptor.onError(_buildError(opts), handler);
@@ -242,7 +271,8 @@ void main() {
     test('propagates error for non-GET requests', () {
       final postOpts = _postOptions();
       final getOpts = _getOptions();
-      interceptor.onResponse(_buildResponse(getOpts, {'data': 'exists'}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(getOpts, {'data': 'exists'}), _ResponseHandler());
 
       final handler = _ErrorHandler();
       interceptor.onError(_buildError(postOpts), handler);
@@ -254,8 +284,10 @@ void main() {
       final opts1 = _getOptions(path: '/api/a');
       final opts2 = _getOptions(path: '/api/b');
 
-      interceptor.onResponse(_buildResponse(opts1, {'a': 1}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(opts2, {'b': 2}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts1, {'a': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts2, {'b': 2}), _ResponseHandler());
 
       // Error fallback on opts1 moves it to end
       interceptor.onError(_buildError(opts1), _ErrorHandler());
@@ -263,11 +295,14 @@ void main() {
       expect(interceptor.cachedEntryCount, 2);
     });
 
-    test('GET error resolves stale data even when entry is expired (resilience fallback)', () async {
+    test(
+        'GET error resolves stale data even when entry is expired (resilience fallback)',
+        () async {
       final shortTtl = CacheInterceptor(ttl: const Duration(milliseconds: 1));
       final opts = _getOptions();
 
-      shortTtl.onResponse(_buildResponse(opts, {'stale': true}), _ResponseHandler());
+      shortTtl.onResponse(
+          _buildResponse(opts, {'stale': true}), _ResponseHandler());
 
       await Future.delayed(const Duration(milliseconds: 10));
 
@@ -285,7 +320,8 @@ void main() {
       final shortTtl = CacheInterceptor(ttl: const Duration(milliseconds: 5));
       final opts = _getOptions();
 
-      shortTtl.onResponse(_buildResponse(opts, {'stale': true}), _ResponseHandler());
+      shortTtl.onResponse(
+          _buildResponse(opts, {'stale': true}), _ResponseHandler());
       expect(shortTtl.cachedEntryCount, 1);
 
       await Future.delayed(const Duration(milliseconds: 20));
@@ -299,7 +335,8 @@ void main() {
 
     test('valid entry within TTL resolves from cache', () {
       final opts = _getOptions();
-      interceptor.onResponse(_buildResponse(opts, {'fresh': true}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'fresh': true}), _ResponseHandler());
 
       final handler = _RequestHandler();
       interceptor.onRequest(opts, handler);
@@ -312,7 +349,8 @@ void main() {
       final shortTtl = CacheInterceptor(ttl: const Duration(milliseconds: 50));
       final opts = _getOptions();
 
-      shortTtl.onResponse(_buildResponse(opts, {'data': 1}), _ResponseHandler());
+      shortTtl.onResponse(
+          _buildResponse(opts, {'data': 1}), _ResponseHandler());
 
       // 20ms in — still valid
       await Future.delayed(const Duration(milliseconds: 20));
@@ -335,9 +373,12 @@ void main() {
       final opts2 = _getOptions(path: '/api/offers/123');
       final opts3 = _getOptions(path: '/api/restaurants');
 
-      interceptor.onResponse(_buildResponse(opts1, {'list': true}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(opts2, {'detail': true}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(opts3, {'restaurants': true}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts1, {'list': true}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts2, {'detail': true}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts3, {'restaurants': true}), _ResponseHandler());
       expect(interceptor.cachedEntryCount, 3);
 
       interceptor.invalidate('/api/offers');
@@ -351,7 +392,8 @@ void main() {
 
     test('non-matching path leaves cache untouched', () {
       final opts = _getOptions(path: '/api/offers');
-      interceptor.onResponse(_buildResponse(opts, {'data': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'data': 1}), _ResponseHandler());
 
       interceptor.invalidate('/api/users');
 
@@ -414,7 +456,8 @@ void main() {
 
     test('cache is fully invalidated after clear', () {
       final opts = _getOptions();
-      interceptor.onResponse(_buildResponse(opts, {'data': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'data': 1}), _ResponseHandler());
       interceptor.clear();
 
       final handler = _RequestHandler();
@@ -426,7 +469,8 @@ void main() {
 
   group('maxEntries', () {
     test('evicts oldest entry when limit is reached', () {
-      final small = CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 3);
+      final small =
+          CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 3);
 
       final o1 = _getOptions(path: '/api/1');
       final o2 = _getOptions(path: '/api/2');
@@ -454,7 +498,8 @@ void main() {
     });
 
     test('cache hit refreshes entry preventing eviction', () {
-      final small = CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 3);
+      final small =
+          CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 3);
 
       final o1 = _getOptions(path: '/api/1');
       final o2 = _getOptions(path: '/api/2');
@@ -481,7 +526,8 @@ void main() {
     });
 
     test('maxEntries=1 allows only one entry', () {
-      final one = CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 1);
+      final one =
+          CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 1);
 
       final o1 = _getOptions(path: '/api/first');
       final o2 = _getOptions(path: '/api/second');
@@ -502,7 +548,8 @@ void main() {
     });
 
     test('onRequest LRU move also respects maxEntries', () {
-      final small = CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 2);
+      final small =
+          CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 2);
 
       final o1 = _getOptions(path: '/api/1');
       final o2 = _getOptions(path: '/api/2');
@@ -527,7 +574,8 @@ void main() {
     });
 
     test('onError LRU move also respects maxEntries', () {
-      final small = CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 2);
+      final small =
+          CacheInterceptor(ttl: const Duration(minutes: 5), maxEntries: 2);
 
       final o1 = _getOptions(path: '/api/1');
       final o2 = _getOptions(path: '/api/2');
@@ -582,10 +630,12 @@ void main() {
     test('same key overwrites without increasing count', () {
       final opts = _getOptions(path: '/api/same');
 
-      interceptor.onResponse(_buildResponse(opts, {'v': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'v': 1}), _ResponseHandler());
       expect(interceptor.cachedEntryCount, 1);
 
-      interceptor.onResponse(_buildResponse(opts, {'v': 2}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'v': 2}), _ResponseHandler());
       expect(interceptor.cachedEntryCount, 1);
     });
 
@@ -609,8 +659,10 @@ void main() {
       final optsEn = _getOptions(lang: 'en');
       final optsSi = _getOptions(lang: 'si');
 
-      interceptor.onResponse(_buildResponse(optsEn, {'lang': 'en'}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(optsSi, {'lang': 'si'}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(optsEn, {'lang': 'en'}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(optsSi, {'lang': 'si'}), _ResponseHandler());
 
       expect(interceptor.cachedEntryCount, 2);
 
@@ -625,7 +677,8 @@ void main() {
 
     test('defaults to en when Accept-Language header is missing', () {
       final opts = _getOptions(); // no lang
-      interceptor.onResponse(_buildResponse(opts, {'data': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts, {'data': 1}), _ResponseHandler());
 
       final handler = _RequestHandler();
       interceptor.onRequest(_getOptions(), handler);
@@ -636,8 +689,10 @@ void main() {
       final opts1 = _getOptions(path: '/api/a');
       final opts2 = _getOptions(path: '/api/b');
 
-      interceptor.onResponse(_buildResponse(opts1, {'a': 1}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(opts2, {'b': 2}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts1, {'a': 1}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(opts2, {'b': 2}), _ResponseHandler());
 
       expect(interceptor.cachedEntryCount, 2);
 
@@ -654,8 +709,10 @@ void main() {
       final optsEn = _getOptions(path: '/api/data', lang: 'en');
       final optsTa = _getOptions(path: '/api/data', lang: 'ta');
 
-      interceptor.onResponse(_buildResponse(optsEn, {'en': true}), _ResponseHandler());
-      interceptor.onResponse(_buildResponse(optsTa, {'ta': true}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(optsEn, {'en': true}), _ResponseHandler());
+      interceptor.onResponse(
+          _buildResponse(optsTa, {'ta': true}), _ResponseHandler());
 
       expect(interceptor.cachedEntryCount, 2);
     });

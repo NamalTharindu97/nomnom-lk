@@ -28,6 +28,8 @@ class RestaurantProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _isSearching = false;
+  int _restaurantsRequest = 0;
+  int _searchRequest = 0;
   String? _error;
   String? _searchError;
   int _currentPage = 1;
@@ -46,6 +48,7 @@ class RestaurantProvider extends ChangeNotifier {
 
   Future<void> loadRestaurants({bool forceRefresh = false}) async {
     if (!forceRefresh && _restaurants.isNotEmpty) return;
+    final request = ++_restaurantsRequest;
     _setLoading(true);
     _error = null;
     _currentPage = 1;
@@ -61,12 +64,18 @@ class RestaurantProvider extends ChangeNotifier {
 
     if (_isOnline) {
       try {
-        final result = await _service.fetchRestaurants(page: _currentPage);
+        final result = await _service.fetchRestaurants(
+          page: _currentPage,
+          forceRefresh: forceRefresh,
+        );
+        if (request != _restaurantsRequest) return;
         _restaurants = result.data;
         _hasMore = result.hasMore;
         _total = result.total;
-        await _restaurantStore.saveRestaurantsByPage(_currentPage, _restaurants);
+        await _restaurantStore.saveRestaurantsByPage(
+            _currentPage, _restaurants);
       } catch (e) {
+        if (request != _restaurantsRequest) return;
         _error = 'failedLoadPullRetry';
         debugPrint('Failed to load restaurants: $e');
       }
@@ -103,9 +112,11 @@ class RestaurantProvider extends ChangeNotifier {
   }
 
   Future<void> searchRestaurants(String query) async {
+    final request = ++_searchRequest;
     if (query.trim().isEmpty) {
       _searchResults = const [];
       _searchError = null;
+      _isSearching = false;
       notifyListeners();
       return;
     }
@@ -114,12 +125,17 @@ class RestaurantProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final result = await _service.fetchRestaurants(query: query);
+      if (request != _searchRequest) return;
       _searchResults = result.data;
     } catch (_) {
+      if (request != _searchRequest) return;
       _searchError = 'searchFailedTryAgain';
+    } finally {
+      if (request == _searchRequest) {
+        _isSearching = false;
+        notifyListeners();
+      }
     }
-    _isSearching = false;
-    notifyListeners();
   }
 
   void _setLoading(bool value) {

@@ -114,6 +114,7 @@ void main() {
       expect(provider.notifications[0].isRead, isTrue);
       expect(provider.notifications[1].isRead, isFalse);
       expect(provider.unreadCount, 1);
+      expect(store.cachedNotifications![0]['is_read'], isTrue);
     });
 
     test('does nothing for already-read notification', () async {
@@ -145,6 +146,24 @@ void main() {
 
       expect(provider.notifications.every((n) => n.isRead), isTrue);
       expect(provider.unreadCount, 0);
+      expect(
+        store.cachedNotifications!
+            .every((notification) => notification['is_read'] == true),
+        isTrue,
+      );
     });
+  });
+
+  test('resetForAccountChange clears private notification state', () async {
+    service.notifications = [_makeNotification()];
+    service.unreadCount = 1;
+    await provider.loadNotifications();
+    await provider.loadUnreadCount();
+
+    provider.resetForAccountChange();
+
+    expect(provider.notifications, isEmpty);
+    expect(provider.unreadCount, 0);
+    expect(provider.error, isNull);
   });
 }

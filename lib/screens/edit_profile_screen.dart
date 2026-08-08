@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
@@ -8,12 +9,18 @@ import 'package:provider/provider.dart';
 
 import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../utils/spacings.dart';
+
+Uint8List? _encodeAvatarJpeg(Uint8List rawBytes) {
+  final decoded = img.decodeImage(rawBytes);
+  return decoded == null ? null : img.encodeJpg(decoded, quality: 85);
+}
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -49,7 +56,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final picked = await _picker.pickImage(source: source, maxWidth: 256, maxHeight: 256);
+    final picked =
+        await _picker.pickImage(source: source, maxWidth: 256, maxHeight: 256);
     if (picked == null) return;
     setState(() {
       _selectedAvatarPath = picked.path;
@@ -96,8 +104,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       debugPrint('upload: converting $path to JPEG');
       final rawBytes = await File(path).readAsBytes();
-      final decoded = img.decodeImage(rawBytes);
-      if (decoded == null) {
+      final jpgBytes = await compute(_encodeAvatarJpeg, rawBytes);
+      if (jpgBytes == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(AppLocalizations.of(context)!.uploadFailed)),
@@ -105,10 +113,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
         return null;
       }
-      final jpgBytes = img.encodeJpg(decoded, quality: 85);
       final tmpFile = File('${Directory.systemTemp.path}/avatar_upload.jpg');
       await tmpFile.writeAsBytes(jpgBytes);
       debugPrint('upload: converted to JPEG, size=${jpgBytes.length}');
+      if (!mounted) {
+        await tmpFile.delete();
+        return null;
+      }
 
       final api = context.read<ApiClient>();
       final response = await api.postMultipart(
@@ -125,7 +136,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload returned unexpected format: ${response.keys}')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.uploadFailed)),
         );
       }
       return null;
@@ -151,6 +162,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (_selectedAvatarPath != null && avatarUrl == null) {
         setState(() => _isUploadingImage = true);
         avatarUrl = await _uploadImage(_selectedAvatarPath!);
+        if (!mounted) return;
         setState(() => _isUploadingImage = false);
 
         if (avatarUrl == null && mounted) {
@@ -177,7 +189,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
 
       if (response['data'] != null) {
-        final updated = AppUser.fromJson(response['data'] as Map<String, dynamic>);
+        final updated =
+            AppUser.fromJson(response['data'] as Map<String, dynamic>);
         context.read<AuthProvider>().updateUser(updated);
       }
 
@@ -188,7 +201,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.editProfileSaveError)),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!.editProfileSaveError)),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -209,131 +223,201 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       appBar: AppBar(
         title: Text(loc.editProfileTitle),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(Spacings.lg),
-        children: [
-          GestureDetector(
-            onTap: _isUploadingImage ? null : _showImagePickerSheet,
-            child: SizedBox(
-              width: 88,
-              height: 88,
-              child: Stack(
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      color: AppColors.curry,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.curry.withValues(alpha: 0.35),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: displayAvatarPath != null
-                          ? Image.file(File(displayAvatarPath), fit: BoxFit.cover)
-                          : displayAvatarUrl != null
-                              ? Image.network(ApiConfig.resolveUrl(displayAvatarUrl), fit: BoxFit.cover)
-                              : Center(
-                                  child: Text(
-                                    ((user?.name ?? '?').isEmpty ? '?' : user!.name).substring(0, 1).toUpperCase(),
-                                    style: textTheme.displaySmall?.copyWith(
-                                      color: colors.background,
-                                      fontWeight: FontWeight.w900,
+      body: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.fromLTRB(
+            constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+            Spacings.lg,
+            constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+            Spacings.lg + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: GestureDetector(
+                        onTap: _isUploadingImage ? null : _showImagePickerSheet,
+                        child: SizedBox(
+                          width: 88,
+                          height: 88,
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 88,
+                                height: 88,
+                                decoration: BoxDecoration(
+                                  color: AppColors.curry,
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.curry
+                                          .withValues(alpha: 0.35),
+                                      blurRadius: 24,
+                                      offset: const Offset(0, 8),
                                     ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: AnimatedSwitcher(
+                                    duration: AppMotion.duration(
+                                      context,
+                                      AppMotion.short,
+                                    ),
+                                    child: displayAvatarPath != null
+                                        ? Image.file(
+                                            File(displayAvatarPath),
+                                            key: ValueKey(displayAvatarPath),
+                                            cacheWidth: 256,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : displayAvatarUrl != null
+                                            ? CachedNetworkImage(
+                                                key: ValueKey(displayAvatarUrl),
+                                                imageUrl: ApiConfig.resolveUrl(
+                                                  displayAvatarUrl,
+                                                ),
+                                                memCacheWidth: (88 *
+                                                        MediaQuery
+                                                            .devicePixelRatioOf(
+                                                                context))
+                                                    .round(),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Center(
+                                                key: const ValueKey(
+                                                  'edit-avatar-fallback',
+                                                ),
+                                                child: Text(
+                                                  ((user?.name ?? '?').isEmpty
+                                                          ? '?'
+                                                          : user!.name)
+                                                      .substring(0, 1)
+                                                      .toUpperCase(),
+                                                  style: textTheme.displaySmall
+                                                      ?.copyWith(
+                                                    color: colors.background,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                              ),
                                   ),
                                 ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: colors.surfaceAlt, width: 2.5),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: colors.surface,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: colors.surfaceAlt, width: 2.5),
+                                  ),
+                                  child: _isUploadingImage
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(6),
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        )
+                                      : Icon(Icons.camera_alt_rounded,
+                                          size: 16,
+                                          color: context.colors.muted),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: _isUploadingImage
-                          ? const Padding(
-                              padding: EdgeInsets.all(6),
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(Icons.camera_alt_rounded, size: 16, color: context.colors.muted),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 32),
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextFormField(
+                            controller: _nameController,
+                            style: TextStyle(color: colors.textPrimary),
+                            decoration: InputDecoration(
+                              labelText: loc.editProfileNameLabel,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person_outline_rounded,
+                                  color: colors.muted),
+                            ),
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? loc.editProfileNameRequired
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _phoneController,
+                            style: TextStyle(color: colors.textPrimary),
+                            decoration: InputDecoration(
+                              labelText: loc.editProfilePhoneLabel,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.phone_outlined,
+                                  color: colors.muted),
+                            ),
+                            keyboardType: TextInputType.phone,
+                            scrollPadding: const EdgeInsets.all(80),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            initialValue: user?.email ?? '',
+                            style: TextStyle(color: colors.textSecondary),
+                            decoration: InputDecoration(
+                              labelText: loc.editProfileEmailLabel,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email_outlined,
+                                  color: colors.muted),
+                            ),
+                            readOnly: true,
+                            enabled: false,
+                          ),
+                          const SizedBox(height: 32),
+                          FilledButton.icon(
+                            onPressed: _isSaving ? null : _save,
+                            icon: _isSaving
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? context.colors.background
+                                            : Colors.white),
+                                  )
+                                : const Icon(Icons.check_rounded),
+                            label: Text(
+                              _isSaving
+                                  ? loc.editProfileSaving
+                                  : loc.editProfileSave,
+                            ),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 32),
-          Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  style: TextStyle(color: colors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: loc.editProfileNameLabel,
-                    border: const OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person_outline_rounded, color: colors.muted),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? loc.editProfileNameRequired : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _phoneController,
-                  style: TextStyle(color: colors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: loc.editProfilePhoneLabel,
-                    border: const OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone_outlined, color: colors.muted),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  initialValue: user?.email ?? '',
-                  style: TextStyle(color: colors.textSecondary),
-                  decoration: InputDecoration(
-                    labelText: loc.editProfileEmailLabel,
-                    border: const OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined, color: colors.muted),
-                  ),
-                  readOnly: true,
-                  enabled: false,
-                ),
-                const SizedBox(height: 32),
-                FilledButton.icon(
-                  onPressed: _isSaving ? null : _save,
-                  icon: _isSaving
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).brightness == Brightness.dark ? context.colors.background : Colors.white),
-                        )
-                      : const Icon(Icons.check_rounded),
-                  label: Text(_isSaving ? 'Saving...' : loc.editProfileSave),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

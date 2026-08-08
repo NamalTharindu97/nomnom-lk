@@ -53,5 +53,34 @@ void main() {
       ));
       expect(find.byType(FilledButton), findsNothing);
     });
+
+    testWidgets('scrolls safely on a short landscape phone', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(700, 390);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(wrapWithApp(const EmptyState(
+        icon: icon,
+        title: 'A longer empty state title for landscape phones',
+        message:
+            'A longer translated explanation that can occupy several lines without overflowing the available short height.',
+      )));
+
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('supports an unbounded-height list parent', (tester) async {
+      await tester.pumpWidget(wrapWithApp(
+        ListView(
+          children: const [
+            EmptyState(icon: icon, title: title, message: message),
+          ],
+        ),
+      ));
+
+      expect(find.text(title), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

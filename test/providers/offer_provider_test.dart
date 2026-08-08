@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nomnom_lk/models/offer.dart';
 import 'package:nomnom_lk/models/paginated_response.dart';
@@ -11,6 +13,7 @@ class _FailingOfferService extends MockApiOfferService {
   Future<PaginatedResponse<Offer>> fetchOffers({
     String? query,
     int page = 1,
+    bool forceRefresh = false,
   }) async {
     throw Exception('Network error');
   }
@@ -27,6 +30,7 @@ class _MultiPageOfferService extends MockApiOfferService {
   Future<PaginatedResponse<Offer>> fetchOffers({
     String? query,
     int page = 1,
+    bool forceRefresh = false,
   }) async {
     final idx = page - 1;
     if (idx < 0 || idx >= _pages.length) {
@@ -60,6 +64,42 @@ class _FailingFavoritesService extends MockApiFavoritesService {
   }
 }
 
+class _RemoteFavoritesService extends MockApiFavoritesService {
+  _RemoteFavoritesService(this.favorites);
+
+  List<Offer> favorites;
+
+  @override
+  Future<List<Offer>> fetchFavorites() async => favorites;
+}
+
+class _ControlledFavoritesService extends MockApiFavoritesService {
+  final completer = Completer<List<Offer>>();
+
+  @override
+  Future<List<Offer>> fetchFavorites() => completer.future;
+}
+
+class _StatefulFavoriteStore extends MockFavoriteStore {
+  _StatefulFavoriteStore([Set<String>? initial]) : ids = {...?initial};
+
+  Set<String> ids;
+
+  @override
+  Set<String> getFavorites() => {...ids};
+
+  @override
+  Future<void> addFavorite(String offerId) async => ids.add(offerId);
+
+  @override
+  Future<void> removeFavorite(String offerId) async => ids.remove(offerId);
+
+  @override
+  Future<void> syncFromRemote(Set<String> remoteIds) async {
+    ids = {...remoteIds};
+  }
+}
+
 class _CachedOfferStore extends MockOfferStore {
   final List<Offer> _cached;
 
@@ -67,6 +107,34 @@ class _CachedOfferStore extends MockOfferStore {
 
   @override
   List<Offer>? getOffersByPage(int page) => _cached;
+}
+
+class _ControlledOfferSearchService extends MockApiOfferService {
+  _ControlledOfferSearchService() : super(offers: const []);
+
+  final requests = <String, Completer<PaginatedResponse<Offer>>>{};
+
+  @override
+  Future<PaginatedResponse<Offer>> fetchOffers({
+    String? query,
+    int page = 1,
+    bool forceRefresh = false,
+  }) {
+    if (query == null) {
+      return super.fetchOffers(page: page, forceRefresh: forceRefresh);
+    }
+    return (requests[query] ??= Completer<PaginatedResponse<Offer>>()).future;
+  }
+
+  void complete(String query, Offer offer) {
+    requests[query]!.complete(PaginatedResponse(
+      data: [offer],
+      page: 1,
+      perPage: 20,
+      total: 1,
+      totalPages: 1,
+    ));
+  }
 }
 
 OfferProvider _createProvider({
@@ -240,6 +308,75 @@ void main() {
     });
   });
 
+  group('loadFavorites', () {
+    test('empty remote result clears stale local favorites', () async {
+      final favoriteStore = _StatefulFavoriteStore({'fav-1'});
+      final provider = _createProvider(
+        offerService: MockApiOfferService(offers: [makeOffer(id: 'fav-1')]),
+        favoritesService: _RemoteFavoritesService([]),
+        favoriteStore: favoriteStore,
+      );
+
+      await provider.loadOffers();
+      await provider.loadFavorites();
+
+      expect(provider.favoriteOffers, isEmpty);
+      expect(favoriteStore.ids, isEmpty);
+    });
+
+    test('remote favorites replace stale local IDs', () async {
+      final favoriteStore = _StatefulFavoriteStore({'old', 'kept'});
+      final provider = _createProvider(
+        offerService: MockApiOfferService(offers: [
+          makeOffer(id: 'old'),
+          makeOffer(id: 'kept'),
+        ]),
+        favoritesService: _RemoteFavoritesService([makeOffer(id: 'kept')]),
+        favoriteStore: favoriteStore,
+      );
+
+      await provider.loadOffers();
+      await provider.loadFavorites();
+
+      expect(provider.favoriteOffers.map((offer) => offer.id), ['kept']);
+      expect(favoriteStore.ids, {'kept'});
+    });
+
+    test('older favorite load cannot undo a newer toggle', () async {
+      final favoritesService = _ControlledFavoritesService();
+      final provider = _createProvider(
+        offerService: MockApiOfferService(offers: [makeOffer(id: 'fav-1')]),
+        favoritesService: favoritesService,
+        favoriteStore: _StatefulFavoriteStore(),
+      );
+      await provider.loadOffers();
+
+      final pendingLoad = provider.loadFavorites();
+      await provider.toggleFavorite('fav-1');
+      favoritesService.completer.complete([]);
+      await pendingLoad;
+
+      expect(provider.favoriteOffers.map((offer) => offer.id), ['fav-1']);
+    });
+  });
+
+  test('resetForAccountChange clears only user-derived favorite state',
+      () async {
+    final provider = _createProvider(
+      offerService: MockApiOfferService(offers: [
+        makeOffer(id: 'fav-1').copyWith(isFavorite: true),
+      ]),
+    );
+    await provider.loadOffers();
+
+    provider.resetForAccountChange();
+
+    expect(provider.offers, hasLength(1));
+    expect(provider.favoriteOffers, isEmpty);
+    expect(provider.searchResults, isEmpty);
+    expect(provider.hasLoaded, isTrue);
+  });
+
   group('filterByCuisine', () {
     test('filters offers by cuisine tag', () async {
       final offers = [
@@ -403,6 +540,37 @@ void main() {
   });
 
   group('searchOffers', () {
+    test('keeps the newest results when an older search finishes last',
+        () async {
+      final service = _ControlledOfferSearchService();
+      final provider = _createProvider(offerService: service);
+
+      final older = provider.searchOffers('older');
+      final newer = provider.searchOffers('newer');
+      service.complete('newer', makeOffer(id: 'newer', title: 'Newer'));
+      await newer;
+      service.complete('older', makeOffer(id: 'older', title: 'Older'));
+      await older;
+
+      expect(provider.searchResults.single.id, 'newer');
+      expect(provider.isSearching, isFalse);
+    });
+
+    test('clearing an active search resets loading state', () async {
+      final service = _ControlledOfferSearchService();
+      final provider = _createProvider(offerService: service);
+
+      final active = provider.searchOffers('active');
+      expect(provider.isSearching, isTrue);
+      await provider.searchOffers('');
+      expect(provider.isSearching, isFalse);
+
+      service.complete('active', makeOffer(id: 'stale'));
+      await active;
+      expect(provider.searchResults, isEmpty);
+      expect(provider.isSearching, isFalse);
+    });
+
     test('populates searchResults matching the query', () async {
       final offers = [
         makeOffer(id: '1', title: 'Pizza Deal'),

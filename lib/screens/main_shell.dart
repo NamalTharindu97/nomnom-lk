@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../providers/notification_provider.dart';
 import '../providers/offer_provider.dart';
@@ -24,6 +26,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   late int _selectedIndex;
+  int _searchFocusRequest = 0;
   DateTime _lastResume = DateTime(2000);
 
   @override
@@ -33,6 +36,27 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     if (_selectedIndex == 3) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<NotificationProvider>().loadNotifications();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant MainShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab == oldWidget.initialTab ||
+        widget.initialTab == _selectedIndex) {
+      return;
+    }
+
+    _selectedIndex = widget.initialTab;
+    if (_selectedIndex == 1) {
+      _searchFocusRequest++;
+    }
+    if (_selectedIndex == 3) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<ApiClient>().invalidateCache('/notifications');
         context.read<NotificationProvider>().loadNotifications();
       });
     }
@@ -57,7 +81,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   void _selectTab(int index) {
-    setState(() => _selectedIndex = index);
+    if (index != _selectedIndex && !AppMotion.reduceMotion(context)) {
+      HapticFeedback.selectionClick();
+    }
+    setState(() {
+      _selectedIndex = index;
+      if (index == 1) _searchFocusRequest++;
+    });
     if (index == 3) {
       context.read<ApiClient>().invalidateCache('/notifications');
       context.read<NotificationProvider>().loadNotifications();
@@ -67,8 +97,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomeScreen(onSearchTap: () => _selectTab(1)),
-      const SearchScreen(),
+      HomeScreen(
+        onSearchTap: () => _selectTab(1),
+        isActive: _selectedIndex == 0,
+      ),
+      SearchScreen(
+        isActive: _selectedIndex == 1,
+        focusRequest: _searchFocusRequest,
+      ),
       const FavoritesScreen(),
       const NotificationsScreen(),
       ProfileScreen(onNavigateToTab: (index) => _selectTab(index)),
@@ -77,62 +113,74 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: pages,
+        children: [
+          for (var index = 0; index < pages.length; index++)
+            TickerMode(enabled: index == _selectedIndex, child: pages[index]),
+        ],
       ),
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: context.colors.surfaceAlt.withValues(alpha: 0.5)),
+            top: BorderSide(
+                color: context.colors.surfaceAlt.withValues(alpha: 0.5)),
           ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _selectTab,
-          type: BottomNavigationBarType.fixed,
-          items: [
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                isSelected: _selectedIndex == 0,
-                icon: Icons.local_fire_department_outlined,
-                activeIcon: Icons.local_fire_department_rounded,
-              ),
-              label: AppLocalizations.of(context)!.navHome,
-            ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                isSelected: _selectedIndex == 1,
-                icon: Icons.search_rounded,
-                activeIcon: Icons.search_rounded,
-              ),
-              label: AppLocalizations.of(context)!.navSearch,
-            ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                isSelected: _selectedIndex == 2,
-                icon: Icons.favorite_border_rounded,
-                activeIcon: Icons.favorite_rounded,
-              ),
-              label: AppLocalizations.of(context)!.navFavorites,
-            ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                isSelected: _selectedIndex == 3,
-                icon: Icons.notifications_outlined,
-                activeIcon: Icons.notifications_rounded,
-                badge: context.watch<NotificationProvider>().unreadCount,
-              ),
-              label: AppLocalizations.of(context)!.navNotifications,
-            ),
-            BottomNavigationBarItem(
-              icon: _NavIcon(
-                isSelected: _selectedIndex == 4,
-                icon: Icons.person_outline_rounded,
-                activeIcon: Icons.person_rounded,
-              ),
-              label: AppLocalizations.of(context)!.navProfile,
-            ),
-          ],
-          selectedItemColor: AppColors.curry,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth <= 360;
+            return BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _selectTab,
+              type: BottomNavigationBarType.fixed,
+              iconSize: isCompact ? 22 : 24,
+              selectedFontSize: isCompact ? 10 : 11,
+              unselectedFontSize: isCompact ? 9 : 10,
+              items: [
+                BottomNavigationBarItem(
+                  icon: _NavIcon(
+                    isSelected: _selectedIndex == 0,
+                    icon: Icons.local_fire_department_outlined,
+                    activeIcon: Icons.local_fire_department_rounded,
+                  ),
+                  label: AppLocalizations.of(context)!.navHome,
+                ),
+                BottomNavigationBarItem(
+                  icon: _NavIcon(
+                    isSelected: _selectedIndex == 1,
+                    icon: Icons.search_rounded,
+                    activeIcon: Icons.search_rounded,
+                  ),
+                  label: AppLocalizations.of(context)!.navSearch,
+                ),
+                BottomNavigationBarItem(
+                  icon: _NavIcon(
+                    isSelected: _selectedIndex == 2,
+                    icon: Icons.favorite_border_rounded,
+                    activeIcon: Icons.favorite_rounded,
+                  ),
+                  label: AppLocalizations.of(context)!.navFavorites,
+                ),
+                BottomNavigationBarItem(
+                  icon: _NavIcon(
+                    isSelected: _selectedIndex == 3,
+                    icon: Icons.notifications_outlined,
+                    activeIcon: Icons.notifications_rounded,
+                    badge: context.watch<NotificationProvider>().unreadCount,
+                  ),
+                  label: AppLocalizations.of(context)!.navNotifications,
+                ),
+                BottomNavigationBarItem(
+                  icon: _NavIcon(
+                    isSelected: _selectedIndex == 4,
+                    icon: Icons.person_outline_rounded,
+                    activeIcon: Icons.person_rounded,
+                  ),
+                  label: AppLocalizations.of(context)!.navProfile,
+                ),
+              ],
+              selectedItemColor: AppColors.curry,
+            );
+          },
         ),
       ),
     );
@@ -155,11 +203,17 @@ class _NavIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      switchInCurve: Curves.elasticOut,
-      switchOutCurve: Curves.easeOut,
+      duration: AppMotion.duration(context, AppMotion.short),
+      switchInCurve: AppMotion.standardCurve,
+      switchOutCurve: AppMotion.reverseCurve,
       transitionBuilder: (child, animation) {
-        return ScaleTransition(scale: animation, child: child);
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
+            child: child,
+          ),
+        );
       },
       child: badge != null && badge! > 0
           ? Badge(

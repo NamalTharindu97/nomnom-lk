@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +9,7 @@ import '../core/api_config.dart';
 import '../core/app_routes.dart';
 import '../core/app_store.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
@@ -45,22 +48,43 @@ class ProfileScreen extends StatelessWidget {
           builder: (context, authProvider, child) {
             final user = authProvider.user ?? AppUser.guest();
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(Spacings.lg, 18, Spacings.lg, Spacings.xxl),
-              children: [
-                const SizedBox(height: 8),
-                _ProfileHeader(user: user, onEditProfile: () => Navigator.of(context).pushNamed(AppRoutes.editProfile)),
-                const SizedBox(height: 28),
-                _StatsRow(user: user, onNavigateToTab: onNavigateToTab),
-                const SizedBox(height: 28),
-                _MenuSection(user: user, onNavigateToTab: onNavigateToTab),
-                const SizedBox(height: 32),
-                _SignOutButton(
-                  isGuest: user.isGuest,
-                  isLoading: authProvider.isLoading,
-                  onSignOut: () => _signOut(context),
+            return LayoutBuilder(
+              builder: (context, constraints) => ListView(
+                padding: EdgeInsets.fromLTRB(
+                  constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+                  18,
+                  constraints.maxWidth < 360 ? Spacings.md : Spacings.lg,
+                  Spacings.xxl,
                 ),
-              ],
+                children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 8),
+                          _ProfileHeader(
+                              user: user,
+                              onEditProfile: () => Navigator.of(context)
+                                  .pushNamed(AppRoutes.editProfile)),
+                          const SizedBox(height: 28),
+                          _StatsRow(
+                              user: user, onNavigateToTab: onNavigateToTab),
+                          const SizedBox(height: 28),
+                          _MenuSection(
+                              user: user, onNavigateToTab: onNavigateToTab),
+                          const SizedBox(height: 32),
+                          _SignOutButton(
+                            isGuest: user.isGuest,
+                            isLoading: authProvider.isLoading,
+                            onSignOut: () => _signOut(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -79,11 +103,19 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = context.colors;
+    final editProfile = user.isLoggedIn && onEditProfile != null
+        ? () {
+            if (!AppMotion.reduceMotion(context)) {
+              HapticFeedback.selectionClick();
+            }
+            onEditProfile!();
+          }
+        : null;
 
     return Column(
       children: [
         GestureDetector(
-          onTap: user.isLoggedIn ? onEditProfile : null,
+          onTap: editProfile,
           child: Stack(
             children: [
               Container(
@@ -102,19 +134,33 @@ class _ProfileHeader extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: user.avatarUrl != null
-                      ? Image.network(ApiConfig.resolveUrl(user.avatarUrl!), fit: BoxFit.cover)
-                      : Center(
-                          child: Text(
-                            user.name.isEmpty ? '?' : user.name.substring(0, 1).toUpperCase(),
-                            style: textTheme.headlineMedium?.copyWith(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? colors.background
-                                  : Colors.white,
-                              fontWeight: FontWeight.w900,
+                  child: AnimatedSwitcher(
+                    duration: AppMotion.duration(context, AppMotion.short),
+                    child: user.avatarUrl != null
+                        ? CachedNetworkImage(
+                            key: ValueKey(user.avatarUrl),
+                            imageUrl: ApiConfig.resolveUrl(user.avatarUrl!),
+                            memCacheWidth:
+                                (72 * MediaQuery.devicePixelRatioOf(context))
+                                    .round(),
+                            fit: BoxFit.cover,
+                          )
+                        : Center(
+                            key: const ValueKey('avatar-fallback'),
+                            child: Text(
+                              user.name.isEmpty
+                                  ? '?'
+                                  : user.name.substring(0, 1).toUpperCase(),
+                              style: textTheme.headlineMedium?.copyWith(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? colors.background
+                                    : Colors.white,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
-                        ),
+                  ),
                 ),
               ),
               if (user.isLoggedIn)
@@ -141,7 +187,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         GestureDetector(
-          onTap: user.isLoggedIn ? onEditProfile : null,
+          onTap: editProfile,
           child: Text(
             user.name,
             style: textTheme.titleLarge?.copyWith(
@@ -161,7 +207,8 @@ class _ProfileHeader extends StatelessWidget {
         ],
         const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: Spacings.sm, vertical: 5),
+          padding:
+              const EdgeInsets.symmetric(horizontal: Spacings.sm, vertical: 5),
           decoration: BoxDecoration(
             color: AppColors.curry.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
@@ -171,7 +218,8 @@ class _ProfileHeader extends StatelessWidget {
                 ? AppLocalizations.of(context)!.generalGuest
                 : switch (user.role) {
                     'admin' => AppLocalizations.of(context)!.profileAdmin,
-                    'restaurant_owner' => AppLocalizations.of(context)!.profileRestaurantOwner,
+                    'restaurant_owner' =>
+                      AppLocalizations.of(context)!.profileRestaurantOwner,
                     _ => AppLocalizations.of(context)!.profileFoodie,
                   },
             style: textTheme.labelMedium?.copyWith(
@@ -196,42 +244,55 @@ class _StatsRow extends StatelessWidget {
     return Selector<OfferProvider, int>(
       selector: (_, provider) => provider.favoriteOffers.length,
       builder: (context, favoriteCount, child) {
-        return Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.favorite_rounded,
-                iconColor: AppColors.chili,
-                value: '$favoriteCount',
-                label: AppLocalizations.of(context)!.profileSaved,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Consumer<RestaurantProvider>(
-                builder: (context, provider, _) {
-                  return _StatCard(
-                    icon: Icons.storefront_rounded,
-                    iconColor: AppColors.ocean,
-                    value: '${provider.total}',
-                    label: AppLocalizations.of(context)!.restaurantsTitle,
-                    onTap: provider.restaurants.isEmpty
-                        ? null
-                        : () => Navigator.of(context).pushNamed(AppRoutes.restaurants),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.calendar_month_rounded,
-                iconColor: AppColors.lime,
-                value: user.isGuest ? '-' : '1m',
-                label: AppLocalizations.of(context)!.profileMemberSince,
-              ),
-            ),
-          ],
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 360;
+            final cardWidth = compact
+                ? (constraints.maxWidth - 12) / 2
+                : (constraints.maxWidth - 24) / 3;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              children: [
+                SizedBox(
+                  width: cardWidth,
+                  child: _StatCard(
+                    icon: Icons.favorite_rounded,
+                    iconColor: AppColors.chili,
+                    value: '$favoriteCount',
+                    label: AppLocalizations.of(context)!.profileSaved,
+                  ),
+                ),
+                SizedBox(
+                  width: cardWidth,
+                  child: Consumer<RestaurantProvider>(
+                    builder: (context, provider, _) {
+                      return _StatCard(
+                        icon: Icons.storefront_rounded,
+                        iconColor: AppColors.ocean,
+                        value: '${provider.total}',
+                        label: AppLocalizations.of(context)!.restaurantsTitle,
+                        onTap: provider.restaurants.isEmpty
+                            ? null
+                            : () => Navigator.of(context)
+                                .pushNamed(AppRoutes.restaurants),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(
+                  width: cardWidth,
+                  child: _StatCard(
+                    icon: Icons.calendar_month_rounded,
+                    iconColor: AppColors.lime,
+                    value: user.isGuest ? '-' : '1m',
+                    label: AppLocalizations.of(context)!.profileMemberSince,
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -281,6 +342,9 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: textTheme.labelSmall?.copyWith(
                 color: context.colors.muted,
                 fontWeight: FontWeight.w600,
@@ -318,12 +382,22 @@ class _MenuSection extends StatelessWidget {
             subtitle: AppLocalizations.of(context)!.profileSavedDeals,
             onTap: onNavigateToTab != null
                 ? () => onNavigateToTab!(2)
-                : () => Navigator.of(context).pushNamed(AppRoutes.home, arguments: 2),
+                : () => Navigator.of(context)
+                    .pushNamed(AppRoutes.home, arguments: 2),
           ),
           _MenuDivider(),
           _ThemeTile(),
           _MenuDivider(),
           _LanguageTile(),
+          _MenuDivider(),
+          _MenuTile(
+            icon: Icons.notifications_outlined,
+            iconColor: AppColors.curry,
+            title: AppLocalizations.of(context)!.profileNotificationPreferences,
+            subtitle: AppLocalizations.of(context)!.profileManageNotifications,
+            onTap: () =>
+                Navigator.of(context).pushNamed(AppRoutes.notificationPrefs),
+          ),
           _MenuDivider(),
           _MenuTile(
             icon: Icons.edit_outlined,
@@ -338,7 +412,8 @@ class _MenuSection extends StatelessWidget {
             iconColor: AppColors.lime,
             title: AppLocalizations.of(context)!.profileShareApp,
             subtitle: AppLocalizations.of(context)!.profileShareAppSubtitle,
-            onTap: () => Share.share('${AppLocalizations.of(context)!.profileShareAppMessage}\n${AppStore.storeUrl}'),
+            onTap: () => Share.share(
+                '${AppLocalizations.of(context)!.profileShareAppMessage}\n${AppStore.storeUrl}'),
           ),
           _MenuDivider(),
           _MenuTile(
@@ -366,15 +441,18 @@ class _MenuSection extends StatelessWidget {
             icon: Icons.privacy_tip_outlined,
             iconColor: context.colors.textSecondary,
             title: AppLocalizations.of(context)!.profilePrivacyPolicy,
-            subtitle: AppLocalizations.of(context)!.profilePrivacyPolicySubtitle,
-            onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/privacy'),
+            subtitle:
+                AppLocalizations.of(context)!.profilePrivacyPolicySubtitle,
+            onTap: () =>
+                _openLegalUrl(context, '${ApiConfig.adminUrl}/privacy'),
           ),
           _MenuDivider(),
           _MenuTile(
             icon: Icons.description_outlined,
             iconColor: context.colors.textSecondary,
             title: AppLocalizations.of(context)!.profileTermsOfService,
-            subtitle: AppLocalizations.of(context)!.profileTermsOfServiceSubtitle,
+            subtitle:
+                AppLocalizations.of(context)!.profileTermsOfServiceSubtitle,
             onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/terms'),
           ),
           _MenuDivider(),
@@ -383,15 +461,18 @@ class _MenuSection extends StatelessWidget {
             iconColor: context.colors.textSecondary,
             title: AppLocalizations.of(context)!.profileSupport,
             subtitle: AppLocalizations.of(context)!.profileSupportSubtitle,
-            onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/support'),
+            onTap: () =>
+                _openLegalUrl(context, '${ApiConfig.adminUrl}/support'),
           ),
           _MenuDivider(),
           _MenuTile(
             icon: Icons.delete_outline_rounded,
             iconColor: Colors.red.shade300,
             title: AppLocalizations.of(context)!.profileDeleteAccountWeb,
-            subtitle: AppLocalizations.of(context)!.profileDeleteAccountWebSubtitle,
-            onTap: () => _openLegalUrl(context, '${ApiConfig.adminUrl}/delete-account'),
+            subtitle:
+                AppLocalizations.of(context)!.profileDeleteAccountWebSubtitle,
+            onTap: () =>
+                _openLegalUrl(context, '${ApiConfig.adminUrl}/delete-account'),
           ),
           if (!user.isGuest) ...[
             _MenuDivider(),
@@ -413,7 +494,8 @@ class _ThemeTile extends StatelessWidget {
     return InkWell(
       onTap: themeProvider.toggle,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacings.md, vertical: Spacings.sm + 2),
         child: Row(
           children: [
             Container(
@@ -424,7 +506,9 @@ class _ThemeTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                themeProvider.isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                themeProvider.isDark
+                    ? Icons.dark_mode_rounded
+                    : Icons.light_mode_rounded,
                 color: AppColors.curry,
                 size: 20,
               ),
@@ -442,7 +526,9 @@ class _ThemeTile extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    themeProvider.isDark ? AppLocalizations.of(context)!.profileDarkMode : AppLocalizations.of(context)!.profileLightMode,
+                    themeProvider.isDark
+                        ? AppLocalizations.of(context)!.profileDarkMode
+                        : AppLocalizations.of(context)!.profileLightMode,
                     style: textTheme.bodySmall?.copyWith(
                       color: context.colors.muted,
                     ),
@@ -471,7 +557,8 @@ class _LanguageTile extends StatelessWidget {
     final localeProvider = context.watch<LocaleProvider>();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacings.md, vertical: Spacings.sm + 2),
       child: Row(
         children: [
           Container(
@@ -499,11 +586,11 @@ class _LanguageTile extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                  Text(
-                    '${localeProvider.flag} ${localeProvider.displayName}',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: context.colors.muted,
-                    ),
+                Text(
+                  '${localeProvider.flag} ${localeProvider.displayName}',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: context.colors.muted,
+                  ),
                 ),
               ],
             ),
@@ -511,11 +598,13 @@ class _LanguageTile extends StatelessWidget {
           PopupMenuButton<String>(
             onSelected: (code) {
               localeProvider.setLocale(code);
-              context.read<OfferProvider>().loadOffers(forceRefresh: true);
-              context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
+              context
+                  .read<RestaurantProvider>()
+                  .loadRestaurants(forceRefresh: true);
             },
             itemBuilder: (_) => localeProvider.supportedLocales.map((l) {
-              return PopupMenuItem(value: l.code, child: Text('${l.flag}  ${l.name}'));
+              return PopupMenuItem(
+                  value: l.code, child: Text('${l.flag}  ${l.name}'));
             }).toList(),
             icon: const Icon(Icons.arrow_drop_down_rounded),
           ),
@@ -548,7 +637,8 @@ class _MenuTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacings.md, vertical: Spacings.sm + 2),
         child: Row(
           children: [
             Container(
@@ -628,8 +718,11 @@ class _SignOutButton extends StatelessWidget {
               )
             : const Icon(Icons.logout_rounded),
         label: Text(
-          isGuest ? AppLocalizations.of(context)!.loginSignInButton : AppLocalizations.of(context)!.generalLogout,
-          style: textTheme.bodyLarge?.copyWith(color: null, fontWeight: FontWeight.w700),
+          isGuest
+              ? AppLocalizations.of(context)!.loginSignInButton
+              : AppLocalizations.of(context)!.generalLogout,
+          style: textTheme.bodyLarge
+              ?.copyWith(color: null, fontWeight: FontWeight.w700),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.chili,
@@ -659,16 +752,17 @@ class _DeleteAccountTileState extends State<_DeleteAccountTile> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Delete Account'),
-            content: const Text(
-              'Your account will be scheduled for deletion in 30 days. '
-              'You can cancel at any time during this period. '
-              'This action cannot be undone after the 30-day window.',
+            title: Text(AppLocalizations.of(context)!.deleteAccountTitle),
+            content: Text(
+              AppLocalizations.of(context)!.deleteAccountConfirmation,
             ),
+            actionsAlignment: MainAxisAlignment.end,
+            actionsOverflowAlignment: OverflowBarAlignment.end,
+            actionsOverflowButtonSpacing: Spacings.xs,
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(AppLocalizations.of(context)!.generalCancel),
               ),
               TextButton(
                 onPressed: () async {
@@ -690,18 +784,25 @@ class _DeleteAccountTileState extends State<_DeleteAccountTile> {
                   } catch (_) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to schedule deletion')),
+                      SnackBar(
+                        content: Text(AppLocalizations.of(context)!
+                            .deleteAccountScheduleError),
+                      ),
                     );
                   }
                 },
-                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                child: Text(
+                  AppLocalizations.of(context)!.generalDelete,
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
             ],
           ),
         );
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacings.md, vertical: Spacings.sm + 2),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacings.md, vertical: Spacings.sm + 2),
         child: Row(
           children: [
             Container(
@@ -711,7 +812,8 @@ class _DeleteAccountTileState extends State<_DeleteAccountTile> {
                 color: AppColors.chili.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.delete_forever_rounded, color: AppColors.chili, size: 20),
+              child: const Icon(Icons.delete_forever_rounded,
+                  color: AppColors.chili, size: 20),
             ),
             const SizedBox(width: Spacings.md),
             Expanded(
@@ -719,15 +821,18 @@ class _DeleteAccountTileState extends State<_DeleteAccountTile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Delete Account',
+                    AppLocalizations.of(context)!.deleteAccountTitle,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.chili,
-                      fontWeight: FontWeight.w600,
-                    ),
+                          color: AppColors.chili,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   Text(
-                    'Schedule account deletion in 30 days',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.muted),
+                    AppLocalizations.of(context)!.deleteAccountSubtitle,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: colors.muted),
                   ),
                 ],
               ),
@@ -744,7 +849,7 @@ Future<void> _openLegalUrl(BuildContext context, String url) async {
   if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not open link')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.linkOpenError)),
     );
   }
 }

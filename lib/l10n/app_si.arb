@@ -179,5 +179,16 @@
   "offerNoAppFound": "සුසංගත යෙදුමක් හමු නොවීය",
   "editProfileCamera": "කැමරාව",
   "editProfileGallery": "ගැලරිය",
-  "reconnecting": "නැවත සම්බන්ධ වෙමින්..."
+  "reconnecting": "නැවත සම්බන්ධ වෙමින්...",
+  "editProfileSaving": "සුරකිමින්...",
+  "deleteAccountTitle": "ගිණුම මකා දමන්න",
+  "deleteAccountConfirmation": "ඔබේ ගිණුම දින 30කින් මකා දැමීමට සැලසුම් කෙරේ. මෙම කාලය තුළ ඕනෑම වේලාවක එය අවලංගු කළ හැක. දින 30කට පසු මෙම ක්‍රියාව අහෝසි කළ නොහැක.",
+  "deleteAccountSubtitle": "දින 30කින් ගිණුම මකා දැමීමට සැලසුම් කරන්න",
+  "deleteAccountScheduleError": "ගිණුම මකා දැමීම සැලසුම් කිරීමට නොහැකි විය",
+  "linkOpenError": "සබැඳිය විවෘත කිරීමට නොහැකි විය",
+  "platformNotInstalled": "{platform} ස්ථාපනය කර නැත",
+  "@platformNotInstalled": {"placeholders": {"platform": {"type": "String"}}},
+  "platformInstallPrompt": "ඇණවුම් කිරීමට වෙළඳසැලෙන් {platform} ස්ථාපනය කරන්නද?",
+  "@platformInstallPrompt": {"placeholders": {"platform": {"type": "String"}}},
+  "platformInstall": "ස්ථාපනය කරන්න"
 }

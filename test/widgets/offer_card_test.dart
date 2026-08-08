@@ -137,6 +137,33 @@ void main() {
       expect(route.settings.name, AppRoutes.offerDetails);
       expect(route.settings.arguments, '42');
     });
+
+    testWidgets('keeps long pricing rows within a 320px phone',
+        (WidgetTester tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 568);
+      offer = makeOffer(
+        id: 'narrow',
+        title: 'A very long offer title that must truncate safely',
+        restaurantName: 'A very long restaurant name for a narrow phone',
+        originalPrice: 99999999,
+        offerPrice: 88888888,
+      );
+
+      await tester.pumpWidget(
+        buildTestApp(
+          provider: provider,
+          child: OfferCard(offer: offer),
+          observer: observer,
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.getSize(find.byType(OfferCard)).width, 320);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

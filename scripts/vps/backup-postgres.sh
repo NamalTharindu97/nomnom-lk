@@ -12,6 +12,12 @@ compose_dir="$nomnom_root/compose"
 env_file="$nomnom_root/config/compose.env"
 secret_root="$nomnom_root/secrets"
 
+journal_event() {
+  if command -v logger >/dev/null 2>&1; then
+    logger --tag nomnom-backup -- "$1" || true
+  fi
+}
+
 set -a
 # shellcheck disable=SC1090
 source "$env_file"
@@ -28,8 +34,24 @@ done
 
 workdir=$(mktemp -d)
 rclone_config="$workdir/rclone.conf"
+backup_succeeded=false
 cleanup() {
-  rm -rf "$workdir"
+  local exit_status=$?
+  local cleanup_failed=false
+  set +e
+  if ! rm -rf "$workdir"; then
+    cleanup_failed=true
+    journal_event "backup_cleanup_failed"
+    printf 'Backup temporary files could not be removed\n' >&2
+  fi
+  if [[ "$backup_succeeded" != true ]]; then
+    journal_event "backup_failed exit_status=$exit_status"
+  fi
+  trap - EXIT
+  if [[ "$cleanup_failed" == true && "$exit_status" -eq 0 ]]; then
+    exit 1
+  fi
+  exit "$exit_status"
 }
 trap cleanup EXIT
 
@@ -47,6 +69,7 @@ chmod 0600 "$rclone_config"
 
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 filename="nomnom-${timestamp}.dump.age"
+journal_event "backup_started object=$filename"
 partial="$workdir/$filename.partial"
 encrypted="$workdir/$filename"
 recipient=$(<"$secret_root/backup/age_recipient")
@@ -74,4 +97,6 @@ rclone --config "$rclone_config" copyto "$encrypted" \
 rclone --config "$rclone_config" copyto "$workdir/$filename.sha256" \
   "backup:${BACKUP_R2_BUCKET}/${prefix}/${filename}.sha256"
 
+backup_succeeded=true
+journal_event "backup_succeeded object=$prefix/$filename"
 printf 'Encrypted PostgreSQL backup uploaded: %s/%s\n' "$prefix" "$filename"

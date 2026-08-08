@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../utils/spacings.dart';
 
@@ -44,17 +45,35 @@ class _SkeletonCircle extends StatelessWidget {
   }
 }
 
+class _MotionShimmer extends StatelessWidget {
+  const _MotionShimmer({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (AppMotion.reduceMotion(context)) return child;
+    return Shimmer.fromColors(
+      baseColor: context.colors.surface,
+      highlightColor: context.colors.surfaceAlt,
+      child: child,
+    );
+  }
+}
+
 class OfferCardShimmer extends StatelessWidget {
   const OfferCardShimmer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: context.colors.surface,
-      highlightColor: context.colors.surfaceAlt,
+    return _MotionShimmer(
       child: Container(
-        height: 280,
-        margin: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.md),
+        margin: const EdgeInsets.fromLTRB(
+          Spacings.md,
+          0,
+          Spacings.md,
+          Spacings.md,
+        ),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
@@ -62,11 +81,15 @@ class OfferCardShimmer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: context.colors.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.colors.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8),
+                  ),
+                ),
               ),
             ),
             Padding(
@@ -113,12 +136,15 @@ class RestaurantCardShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: context.colors.surface,
-      highlightColor: context.colors.surfaceAlt,
+    return _MotionShimmer(
       child: Container(
         height: 100,
-        margin: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.sm),
+        margin: const EdgeInsets.fromLTRB(
+          Spacings.md,
+          0,
+          Spacings.md,
+          Spacings.sm,
+        ),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
@@ -134,9 +160,17 @@ class RestaurantCardShimmer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const _SkeletonBlock(width: 140, height: 14),
+                    const FractionallySizedBox(
+                      widthFactor: 0.65,
+                      alignment: Alignment.centerLeft,
+                      child: _SkeletonBlock(height: 14),
+                    ),
                     const SizedBox(height: Spacings.xs),
-                    const _SkeletonBlock(width: 200, height: 12),
+                    const FractionallySizedBox(
+                      widthFactor: 0.9,
+                      alignment: Alignment.centerLeft,
+                      child: _SkeletonBlock(height: 12),
+                    ),
                     const SizedBox(height: Spacings.xs),
                     const _SkeletonBlock(width: 80, height: 10),
                   ],
@@ -162,9 +196,7 @@ class HotOfferShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: context.colors.surface,
-      highlightColor: context.colors.surfaceAlt,
+    return _MotionShimmer(
       child: Container(
         width: width,
         height: height,

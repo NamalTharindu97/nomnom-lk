@@ -12,6 +12,12 @@ env_file="$nomnom_root/config/compose.env"
 secret_root="$nomnom_root/secrets"
 previous_root="$nomnom_root/secrets.previous"
 
+journal_event() {
+  if command -v logger >/dev/null 2>&1; then
+    logger --tag nomnom-deploy -- "$1" || true
+  fi
+}
+
 if [[ ! -r "$env_file" ]]; then
   printf 'Compose environment file is unavailable\n' >&2
   exit 1
@@ -51,17 +57,36 @@ require_immutable_image() {
 for variable in CADDY_IMAGE POSTGRES_IMAGE REDIS_IMAGE BACKEND_IMAGE ADMIN_IMAGE; do
   require_immutable_image "$variable"
 done
+journal_event "deployment_started backend_image=$BACKEND_IMAGE admin_image=$ADMIN_IMAGE"
 
 # Invoked indirectly by the EXIT trap.
 # shellcheck disable=SC2317
 rollback_secrets() {
-  if [[ -d "$previous_root" ]]; then
-    failed_root="$nomnom_root/secrets.failed.$(date +%s)"
-    mv "$secret_root" "$failed_root"
-    mv "$previous_root" "$secret_root"
-    docker compose --env-file "$env_file" -f "$compose_dir/compose.yml" up -d
-    printf 'Deployment failed; previous secrets restored\n' >&2
+  if [[ ! -d "$previous_root" ]]; then
+    return 2
   fi
+
+  local failed_root="$nomnom_root/secrets.failed.$(date +%s)"
+  local current_secrets_moved=false
+  if [[ -d "$secret_root" ]]; then
+    if ! mv "$secret_root" "$failed_root"; then
+      printf 'Deployment failed; current secrets could not be isolated\n' >&2
+      return 1
+    fi
+    current_secrets_moved=true
+  fi
+  if ! mv "$previous_root" "$secret_root"; then
+    if [[ "$current_secrets_moved" == true ]]; then
+      mv "$failed_root" "$secret_root" || true
+    fi
+    printf 'Deployment failed; previous secrets could not be restored\n' >&2
+    return 1
+  fi
+  if ! docker compose --env-file "$env_file" -f "$compose_dir/compose.yml" up -d; then
+    printf 'Deployment failed; services did not restart with previous secrets\n' >&2
+    return 1
+  fi
+  printf 'Deployment failed; previous secrets restored\n' >&2
 }
 
 deployment_succeeded=false
@@ -70,16 +95,35 @@ old_admin_id=$(docker inspect --format '{{.Image}}' nomnom-admin-1 2>/dev/null |
 # Invoked indirectly by the EXIT trap.
 # shellcheck disable=SC2317
 finish() {
+  local exit_status=$?
+  set +e
   if [[ "$deployment_succeeded" != true ]]; then
+    journal_event "deployment_failed exit_status=$exit_status"
     if [[ -n "$old_backend_id" && -n "$old_admin_id" ]]; then
+      journal_event "application_rollback_started"
       BACKEND_IMAGE=$old_backend_id
       ADMIN_IMAGE=$old_admin_id
       export BACKEND_IMAGE ADMIN_IMAGE
-      docker compose --env-file "$env_file" -f "$compose_dir/compose.yml" up -d --no-deps backend admin
-      printf 'Deployment failed; previous application images restored\n' >&2
+      if docker compose --env-file "$env_file" -f "$compose_dir/compose.yml" up -d --no-deps backend admin; then
+        journal_event "application_rollback_completed"
+        printf 'Deployment failed; previous application images restored\n' >&2
+      else
+        journal_event "application_rollback_failed"
+      fi
     fi
     rollback_secrets
+    case $? in
+      0) journal_event "secret_rollback_completed" ;;
+      2) journal_event "secret_rollback_unavailable" ;;
+      *) journal_event "secret_rollback_failed" ;;
+    esac
+    if [[ -x /usr/local/sbin/nomnom-refresh-log-links ]]; then
+      NOMNOM_COMPOSE_PROJECT=nomnom \
+        NOMNOM_LOG_ROOT=/var/log/nomnom/production \
+        /usr/local/sbin/nomnom-refresh-log-links || journal_event "rollback_log_link_refresh_failed"
+    fi
   fi
+  return "$exit_status"
 }
 trap finish EXIT
 
@@ -91,6 +135,15 @@ docker compose --env-file "$env_file" -f compose.yml up -d
 health_url=${HEALTH_URL:?Set HEALTH_URL in the server compose environment}
 for _ in $(seq 1 60); do
   if curl --fail --silent --show-error --output /dev/null "$health_url"; then
+    if [[ ! -x /usr/local/sbin/nomnom-refresh-log-links ]]; then
+      journal_event "log_link_refresh_missing"
+      printf 'Named log refresh helper is not installed\n' >&2
+      exit 1
+    fi
+    NOMNOM_COMPOSE_PROJECT=nomnom \
+      NOMNOM_LOG_ROOT=/var/log/nomnom/production \
+      /usr/local/sbin/nomnom-refresh-log-links
+    journal_event "log_links_refreshed"
     if [[ "$images_supplied" == true ]]; then
       update_image_reference() {
         local key=$1
@@ -108,6 +161,7 @@ for _ in $(seq 1 60); do
     fi
     rm -rf "$previous_root"
     deployment_succeeded=true
+    journal_event "deployment_succeeded backend_image=$BACKEND_IMAGE admin_image=$ADMIN_IMAGE"
     printf 'Deployment health check passed\n'
     exit 0
   fi

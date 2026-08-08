@@ -3,20 +3,19 @@ import 'package:flutter/material.dart';
 
 import '../core/api_config.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 
 class OfferImage extends StatelessWidget {
   const OfferImage({
     super.key,
     required this.imageUrl,
-    this.heroTag,
     this.borderRadius = const BorderRadius.all(Radius.circular(8)),
     this.height,
     this.width,
   });
 
   final String imageUrl;
-  final String? heroTag;
   final BorderRadius borderRadius;
   final double? height;
   final double? width;
@@ -34,28 +33,34 @@ class OfferImage extends StatelessWidget {
       );
     }
 
-    final image = ClipRRect(
+    return ClipRRect(
       borderRadius: borderRadius,
       child: SizedBox(
         height: height,
         width: width,
-        child: CachedNetworkImage(
-          imageUrl: ApiConfig.resolveUrl(imageUrl),
-          fit: BoxFit.cover,
-          placeholder: (context, url) => const _ImageFallback(isLoading: true),
-          errorWidget: (context, url, error) {
-            debugPrint('OfferImage error: $error for URL: $url');
-            return const _ImageFallback();
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+            final cacheWidth = constraints.hasBoundedWidth
+                ? (constraints.maxWidth * pixelRatio).round()
+                : null;
+            return CachedNetworkImage(
+              imageUrl: ApiConfig.resolveUrl(imageUrl),
+              fit: BoxFit.cover,
+              memCacheWidth: cacheWidth,
+              fadeInDuration: AppMotion.duration(context, AppMotion.short),
+              fadeOutDuration: Duration.zero,
+              placeholder: (context, url) =>
+                  const _ImageFallback(isLoading: true),
+              errorWidget: (context, url, error) {
+                debugPrint('OfferImage error: $error for URL: $url');
+                return const _ImageFallback();
+              },
+            );
           },
         ),
       ),
     );
-
-    if (heroTag == null) {
-      return image;
-    }
-
-    return Hero(tag: heroTag!, child: image);
   }
 }
 
@@ -79,7 +84,7 @@ class _ImageFallback extends StatelessWidget {
         ),
       ),
       child: Center(
-        child: isLoading
+        child: isLoading && !AppMotion.reduceMotion(context)
             ? const SizedBox(
                 width: 24,
                 height: 24,

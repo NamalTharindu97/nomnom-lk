@@ -1,538 +1,354 @@
 # NomNom LK
 
-[![CI](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/test.yml)
+[![CI](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/ci.yml/badge.svg?branch=staging)](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/ci.yml)
+[![Deploy Staging](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/deploy-staging.yml/badge.svg)](https://github.com/NamalTharindu97/nomnom-lk/actions/workflows/deploy-staging.yml)
 
-NomNom LK is a full-stack Sri Lankan food offers discovery platform. Users browse, search, and save deals from restaurants across Sri Lanka. Restaurant owners manage their own offers; admins oversee the platform.
+NomNom LK is a full-stack Sri Lankan food-offer discovery platform. Consumers use the Flutter app to discover, search, and save offers. Restaurant owners manage owner-scoped restaurants and offers, while administrators handle approvals, users, banners, notifications, coupons, analytics, audit logs, and platform configuration.
 
-## Tech Stack
+## Current Status
+
+The core product and Play Store compliance fixes are complete. Staging is deployed on a Contabo VPS with HTTPS, immutable-image CI/CD, migrated data, Sentry crash reporting, and public legal pages. Current release work is focused on Play Store listing assets, the Data Safety form, and final production promotion.
+
+| Area | Status |
+|---|---|
+| Integration branch | Protected `staging` |
+| Production branch | Protected `master` |
+| Logging | Correlated diagnostics with bounded retention and stable host aliases |
+| Flutter tests | 344 passing |
+| Backend tests | 145 passing |
+| Admin E2E tests | 53+ passing |
+| Staging deployment | Healthy |
+| Production promotion | Pending approval |
+
+Recent reliability work includes:
+
+- SSE immediate response flush, 15-second heartbeat, 30-second Flutter timeout, and silent reconnects
+- Private favorites, notifications, unread count, and current-user responses excluded from HTTP caching
+- Authoritative favorite reconciliation, including empty sets and cross-device removals
+- Race-safe favorite toggles, notification persistence, logout, and account switching
+- Adaptive Flutter phone layouts, reduced-motion support, and smoother transitions
+- Structured backend panic diagnostics and Flutter-to-backend request-ID correlation
+- Five-file Docker log rotation with stable `/var/log/nomnom` service aliases
+
+## Live Services
+
+| Service | URL |
+|---|---|
+| API | <https://api.nomnomlk.com> |
+| Admin | <https://admin.nomnomlk.com> |
+| Privacy Policy | <https://admin.nomnomlk.com/privacy> |
+| Terms of Service | <https://admin.nomnomlk.com/terms> |
+| Support | <https://admin.nomnomlk.com/support> |
+| Account Deletion | <https://admin.nomnomlk.com/delete-account> |
+
+These are staging services until the protected production promotion is completed.
+
+## Technology
 
 | Layer | Stack |
-|-------|-------|
-| **Frontend** | Flutter + Dio + Provider + firebase_messaging |
-| **Admin** | Next.js 16 + Tailwind v4 + shadcn/ui + react-hook-form + Zod |
-| **Backend** | Go + Gin + GORM + PostgreSQL 16 + Redis 7 |
-| **Auth** | Firebase Auth + JWT |
-| **Storage** | MinIO (dev) / Cloudflare R2 (prod) |
-| **MCP/SSE** | Real-time offer sync via Server-Sent Events |
-| **Infra** | Docker + Render Blueprint |
+|---|---|
+| Mobile | Flutter 3.44, Dart, Provider, Dio, Hive, Firebase Messaging, Sentry |
+| Admin | Next.js 16, React 19, Tailwind CSS v4, shadcn/ui, React Hook Form, Zod |
+| Backend | Go 1.25, Gin, GORM |
+| Data | PostgreSQL 16, Redis 7 |
+| Authentication | Firebase Auth and backend JWT |
+| Storage | MinIO locally, Cloudflare R2 when hosted |
+| Notifications | Firebase Cloud Messaging HTTP v1 |
+| Real-time updates | Server-Sent Events |
+| Infrastructure | Docker, Contabo VPS, Caddy, Cloudflare, GitHub Actions |
 
-## Architecture
+## Repository Layout
 
-- `backend/` — Go API server (Gin + GORM), `go run ./cmd/server` with Air hot reload
-- `admin/` — Next.js dashboard for admins & restaurant owners
-- `lib/` — Flutter mobile app (Android + iOS)
-- `plans/` — Detailed phase plans for feature work
+```text
+.
+├── admin/                  Next.js admin and owner dashboard
+├── backend/                Go API and local infrastructure
+├── lib/                    Flutter application source
+├── test/                   Flutter unit and widget tests
+├── deploy/vps/             VPS Compose and deployment configuration
+├── scripts/                Build and deployment scripts
+├── plans/                  Detailed implementation and release plans
+├── docs/                   Knowledge base and deployment documentation
+├── ARCHITECTURE.md         System design and key decisions
+└── AGENTS.md               Current project context and engineering rules
+```
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for full architecture documentation.
-
----
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed system design.
 
 ## Prerequisites
 
-- **Go** 1.22+
-- **Node.js** 20+
-- **Flutter** 3.29+
-- **Docker Desktop** (for infra)
-- **Firebase project** (optional, for auth/push)
+- Go 1.25 with the toolchain declared in `backend/go.mod`
+- Node.js 20+
+- Flutter 3.44+
+- JDK 17 for Android builds
+- Docker Desktop or another Docker-compatible runtime
+- Air for backend hot reload
+- Firebase configuration only when testing Firebase Auth or FCM
 
----
+## Local Setup
 
-## Quick Start
+### 1. Start infrastructure
 
-```bash
-# 1. Start infrastructure (PostgreSQL 16, Redis 7, MinIO)
-cd backend
-docker compose up -d
-cd ..
-
-# 2. Seed database (first time only)
-cd backend
-go run ./scripts/seed.go
-cd ..
-
-# 3. Start backend (port 8080)
-cd backend
-make run
-
-# 4. Start admin dashboard (port 3000)
-cd admin
-npm install
-npm run dev
-
-# 5. Run Flutter app on emulator
-flutter run
-```
-
-Local login credentials come from the ignored `backend/.env` and development
-seed configuration. Never reuse development credentials in hosted environments.
-
----
-
-## Backend Commands
+Docker is used locally for PostgreSQL 16, Redis 7, and MinIO only.
 
 ```bash
 cd backend
-
-# Start infra (Postgres, Redis, MinIO)
 docker compose up -d
-
-# Stop infra
-docker compose down
-
-# Check infra status
 docker compose ps
-
-# Run backend with hot reload (requires Air)
-make run
-
-# Run backend without hot reload
-go run ./cmd/server
-
-# Build backend
-go build ./cmd/server
-
-# Run all tests
-go test ./...
-
-# Run unit tests only
-go test ./internal/services/...
-go test ./internal/middleware/...
-
-# Seed database
-go run ./scripts/seed.go
-
-# Run database migrations
-go run ./scripts/migrate.go
-
-# Lint backend
-golangci-lint run
-
-# Security scan
-govulncheck ./...
 ```
 
-### Database Management
+### 2. Configure the backend
+
+Create `backend/.env` from the repository's local example or documented environment settings. Keep all credentials outside Git.
+
+Firebase Auth and FCM degrade gracefully when local Firebase credentials are absent.
+
+### 3. Seed development data
 
 ```bash
-# Connect to PostgreSQL
-psql -h localhost -p 5432 -U nomnom -d nomnom
-
-# Default password: (check docker-compose.yml)
-
-# View tables
-\dt
-
-# View offer count
-SELECT COUNT(*) FROM offers;
-
-# View restaurant count
-SELECT COUNT(*) FROM restaurants;
-
-# View banner stats
-SELECT id, title, status, click_count FROM banners WHERE status = 'active';
-```
-
----
-
-## Admin Dashboard Commands
-
-```bash
-cd admin
-
-# Install dependencies
-npm install
-
-# Start dev server (port 3000, with HMR)
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm run start
-
-# Lint
-npm run lint
-
-# Type check
-npx tsc --noEmit
-
-# Run unit tests
-npx vitest run
-
-# Run E2E tests (requires backend running)
-npx playwright test
-
-# Run specific E2E test
-npx playwright test tests/offers.spec.ts
-
-# Run E2E tests with UI
-npx playwright test --ui
-
-# View E2E test report
-npx playwright show-report
-
-# Check for security vulnerabilities
-npm audit --audit-level=high
-```
-
-### E2E Test Accounts
-
-E2E credentials are isolated test fixtures defined in `admin/tests/` and the CI
-workflow. They must never be accepted by staging or production.
-
----
-
-## Flutter Commands
-
-```bash
-# List available devices
-flutter devices
-
-# List available emulators
-flutter emulators
-
-# Start a specific emulator
-flutter emulators --launch Pixel_8_API_35
-
-# Run on emulator
-flutter run -d emulator-5554
-
-# Run on connected device
-flutter run
-
-# Hot reload (while running)
-# Press 'r' in the terminal
-
-# Hot restart (while running)
-# Press 'R' in the terminal
-
-# Build debug APK
-flutter build apk --debug
-
-# Build release APK
-flutter build apk --release
-
-# Build release AAB (for Play Store)
-flutter build appbundle --release
-
-# Build with custom API endpoint
-flutter build apk --release \
-  --dart-define=API_BASE_URL=https://your-api.onrender.com/api/v1
-
-# Analyze code (find errors/warnings)
-flutter analyze lib/
-
-# Run all tests
-flutter test
-
-# Run specific test
-flutter test test/banner_provider_test.dart
-
-# Regenerate localization files
-flutter gen-l10n
-
-# Regenerate app icons
-dart run flutter_launcher_icons
-
-# Regenerate splash screen
-dart run flutter_native_splash:create
-
-# Clean build cache
-flutter clean
-
-# Get dependencies
-flutter pub get
-
-# Check for outdated dependencies
-flutter pub outdated
-```
-
-### Android Emulator Commands
-
-```bash
-# Start emulator via command line
-~/Library/Android/sdk/emulator/emulator -avd Pixel_8_API_35 &
-
-# List running emulators
-~/Library/Android/sdk/emulator/emulator -list-avds
-
-# Install APK on emulator
-~/Library/Android/sdk/platform-tools/adb install path/to/app.apk
-
-# Check if app is running
-~/Library/Android/sdk/platform-tools/adb shell pidof com.nomnomlk.nomnom_lk
-
-# Take screenshot
-~/Library/Android/sdk/platform-tools/adb shell screencap -p /sdcard/screenshot.png
-~/Library/Android/sdk/platform-tools/adb pull /sdcard/screenshot.png .
-
-# Clear app data
-~/Library/Android/sdk/platform-tools/adb shell pm clear com.nomnomlk.nomnom_lk
-```
-
----
-
-## Release Build Commands
-
-### Android Release
-
-```bash
-# Generate release keystore (one-time setup)
-keytool -genkey -v \
-  -keystore ~/.keystores/upload-keystore.jks \
-  -keyalg RSA -keysize 2048 \
-  -validity 10000 \
-  -alias upload \
-  -dname "CN=NomNom LK, OU=Development, O=NomNom, L=Colombo, ST=Western, C=LK"
-
-# Copy and edit key.properties template
-cp android/key.properties.example android/key.properties
-# Edit android/key.properties with your keystore paths and passwords
-
-# Build release AAB + APK
-./scripts/build-android-release.sh
-
-# Or build manually
-flutter build appbundle --release
-flutter build apk --release
-
-# Build with production API
-flutter build appbundle --release \
-  --dart-define=API_BASE_URL=https://nomnom-lk-api.onrender.com/api/v1
-```
-
-### iOS Release (Future)
-
-```bash
-# Build iOS release
-flutter build ipa --release \
-  --dart-define=API_BASE_URL=https://nomnom-lk-api.onrender.com/api/v1
-
-# Open in Xcode for archiving
-open ios/Runner.xcworkspace
-```
-
----
-
-## Testing Commands
-
-```bash
-# === Backend Tests ===
 cd backend
-go test ./...                    # All tests
-go test ./internal/middleware/    # Middleware tests
-go test ./internal/services/      # Service tests
-go test -v ./...                  # Verbose output
-go test -coverprofile=coverage.txt ./...  # With coverage
+make seed
+```
 
-# === Admin Unit Tests ===
+Development seed accounts must never be reused in staging or production.
+
+### 4. Start the API
+
+```bash
+cd backend
+make run
+```
+
+The local API runs at `http://localhost:8080`.
+
+### 5. Start the admin dashboard
+
+```bash
 cd admin
-npx vitest run                   # All unit tests
-npx vitest run --coverage        # With coverage
+npm install
+npm run dev
+```
 
-# === Admin E2E Tests ===
+The local admin dashboard runs at `http://localhost:3000`.
+
+### 6. Run Flutter
+
+```bash
+flutter pub get
+flutter run
+```
+
+Android emulators use `http://10.0.2.2:8080/api/v1` as the local API fallback. A compile-time endpoint can be provided when needed:
+
+```bash
+flutter run \
+  --dart-define=API_BASE_URL=https://api.nomnomlk.com/api/v1
+```
+
+## Common Commands
+
+### Backend
+
+```bash
+cd backend
+
+make infra              # Start PostgreSQL, Redis, and MinIO
+make infra-down         # Stop local infrastructure
+make run                # Run with Air hot reload
+make build              # Build the API binary
+make seed               # Seed local development data
+make migrate            # Run tagged migrations
+make test               # Run backend package tests
+make test-integration   # Run integration tests
+make lint               # Run golangci-lint
+
+go test ./...           # Run the complete Go suite
+govulncheck ./...       # Check known Go vulnerabilities
+```
+
+### Admin
+
+```bash
 cd admin
-npx playwright test              # All E2E tests (53 tests)
-npx playwright test --reporter=list  # List reporter
-npx playwright test tests/offers.spec.ts  # Single test file
-npx playwright test -g "should create"   # By test name
 
-# === Flutter Tests ===
-flutter test                     # All tests (20 tests)
-flutter test test/banner_provider_test.dart  # Single test
-flutter test --coverage         # With coverage
+npm install
+npm run dev
+npm run lint
+npx tsc --noEmit
+npm run test:unit
+npm run test:e2e
+npm run build
 ```
 
----
+Playwright tests use isolated fixtures from `admin/tests/`. Test credentials must never be accepted by hosted environments.
 
-## Deployment Commands
-
-### Render.com Deployment
+### Flutter
 
 ```bash
-# 1. Push to GitHub
-git push origin master
-
-# 2. Connect repo to Render Dashboard
-# - Go to https://dashboard.render.com
-# - New > Blueprint
-# - Connect GitHub repo
-# - Render detects render.yaml
-
-# 3. Set environment variables in Render Dashboard:
-#    DATABASE_URL, REDIS_URL, MINIO_*, JWT_SECRET,
-#    FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
-
-# 4. Verify deployment
-curl https://your-app.onrender.com/health
-
-# === Deploy Admin Dashboard ===
-# Render auto-deploys from render.yaml
-# Admin URL: https://your-admin.onrender.com
-
-# === Deploy Backend ===
-# Render auto-deploys from render.yaml
-# Backend URL: https://your-api.onrender.com
+flutter analyze --no-fatal-infos
+flutter test
+flutter test --coverage
+flutter gen-l10n
+flutter build apk --debug
+flutter build appbundle --release
 ```
 
----
+After every Flutter source change, rebuild and rerun the app on an emulator or physical device.
 
-## API Endpoints
+## Testing
+
+The protected CI workflow runs on pull requests and pushes targeting `staging` and `master`.
 
 ```bash
-# Health check
-curl http://localhost:8080/health
+# Backend
+cd backend
+go test ./...
+go test -tags=integration ./internal/handlers/... -timeout 120s
 
-# Login
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  --data-binary @/path/to/private-local-login-payload.json
+# Admin
+cd admin
+npm run lint
+npx tsc --noEmit
+npm run test:unit
+npm run test:e2e
 
-# Get restaurants
-curl http://localhost:8080/api/v1/restaurants
-
-# Get offers
-curl http://localhost:8080/api/v1/offers
-
-# Get active banners
-curl http://localhost:8080/api/v1/banners/active
-
-# Dashboard stats (requires admin/owner JWT)
-curl -H "Authorization: Bearer <token>" \
-  http://localhost:8080/api/v1/dashboard/stats
+# Flutter
+flutter analyze --no-fatal-infos
+flutter test
 ```
 
----
+CI also performs secret scanning, dependency audits, Go vulnerability checks, coverage uploads, Android App Bundle generation and metadata verification, container builds, and container security scans.
 
-## Git Workflow
+## Git And Deployment Workflow
+
+NomNom LK uses protected `staging` and `master` branches:
+
+1. Create a feature, fix, or phase branch from the latest `origin/staging`.
+2. Make the smallest change and run targeted regression tests.
+3. Run the relevant complete test and build suites.
+4. Push the branch and open a pull request targeting `staging`.
+5. Merge only after the required Backend, Admin, and Flutter checks pass.
+6. A successful post-merge staging CI run triggers immutable image deployment to the VPS.
+7. Verify staging before requesting production promotion.
+8. Promote only the exact staging-tested SHA through the protected production workflow and manual GitHub environment approval.
+
+Never push directly to `master`, deploy mutable `latest` images, or rebuild artifacts during production promotion.
+
+Relevant workflows:
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/deploy-staging.yml`
+- `.github/workflows/promote-production.yml`
+- `.github/workflows/rollback-production.yml`
+
+See [deploy/vps/README.md](deploy/vps/README.md) and [plans/production-git-cicd-plan.md](plans/production-git-cicd-plan.md) for operational details.
+
+## Server Logs
+
+Hosted services write structured output to Docker's bounded `json-file` logs.
+Each service retains five files of up to 10 MB. The VPS exposes stable,
+root-owned aliases outside the containers:
+
+```text
+/var/log/nomnom/backend.json.log
+/var/log/nomnom/admin.json.log
+/var/log/nomnom/caddy.json.log
+/var/log/nomnom/postgres.json.log
+/var/log/nomnom/redis.json.log
+```
+
+Inspect clean output through the allowlisted helper:
 
 ```bash
-# Create feature branch
-git checkout -b phase/P39-feature-name
-
-# Stage and commit
-git add -A
-git commit -m "P39: Feature description"
-
-# Push branch
-git push origin phase/P39-feature-name
-
-# Merge to master (after review)
-git checkout master
-git merge phase/P39-feature-name --no-ff -m "Merge phase/P39-feature-name"
-
-# Push master
-git push origin master
-
-# Keep branch on remote for reference
+ssh nomnom-live
+nomnom-logs status
+nomnom-logs paths
+nomnom-logs backend --since 30m
+nomnom-logs backend --since 2h --follow
+journalctl -t nomnom-deploy-staging --since today
 ```
 
----
+The aliases are refreshed automatically after container recreation. Docker owns
+rotation of the underlying files; do not rotate or write through the aliases.
+See [VPS logging and debugging](docs/deployment/vps-logging.md) for request-ID
+correlation, panic diagnostics, operational journals, and retention details.
 
-## Environment Variables
+## Android Release
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SERVER_PORT` | Backend port | `8080` |
-| `PORT` | Cloud port (Render/Heroku) | fallback |
-| `DATABASE_URL` | PostgreSQL connection | `postgres://nomnom:nomnom@localhost:5432/nomnom?sslmode=disable` |
-| `REDIS_URL` | Redis connection | `redis://localhost:6379` |
-| `JWT_SECRET` | JWT signing key | `dev-secret` |
-| `API_BASE_URL` | Flutter API endpoint | `http://10.0.2.2:8080/api/v1` |
+Release signing files are intentionally excluded from Git. The Gradle release build fails fast when `android/key.properties` is missing.
 
----
+```bash
+# Build using the local signing configuration
+API_BASE_URL=https://api.nomnomlk.com/api/v1 \
+  ./scripts/build-android-release.sh
 
-## Default Ports
+# Or build the AAB directly
+flutter build appbundle --release \
+  --dart-define=API_BASE_URL=https://api.nomnomlk.com/api/v1 \
+  --dart-define=APP_ENV=production
+```
+
+Never place keystore passwords, signing keys, Sentry DSNs, Firebase credentials, or production secrets in source files or documentation.
+
+Release planning:
+
+- [Play Store release plan](plans/play-store-release-plan.md)
+- [Android go-live plan](plans/android-google-play-go-live-plan.md)
+- [Release checklist](plans/p43-release-plan.md)
+
+## API Examples
+
+```bash
+# Health
+curl https://api.nomnomlk.com/health
+
+# Public restaurants
+curl https://api.nomnomlk.com/api/v1/restaurants
+
+# Public offers
+curl https://api.nomnomlk.com/api/v1/offers
+
+# Active banners
+curl https://api.nomnomlk.com/api/v1/banners/active
+
+# SSE stream
+curl -N https://api.nomnomlk.com/api/v1/events
+```
+
+Authenticated requests require a valid token obtained through the supported application login flow. Do not place credentials or tokens in shell history or committed examples.
+
+## Default Local Ports
 
 | Service | Port |
-|---------|------|
+|---|---|
 | Backend API | `8080` |
-| Admin Dashboard | `3000` |
+| Admin dashboard | `3000` |
 | PostgreSQL | `5432` |
 | Redis | `6379` |
 | MinIO API | `9000` |
-| MinIO Console | `9001` |
-| Flutter (debug) | varies |
+| MinIO console | `9001` |
 
----
+## Documentation
 
-## Troubleshooting
+- [Project knowledge-base home](docs/Home.md)
+- [Plans index](docs/Plans%20Index.md)
+- [Decisions index](docs/Decisions%20Index.md)
+- [Deployment overview](docs/deployment/README.md)
+- [VPS logging and debugging](docs/deployment/vps-logging.md)
+- [VPS deployment plan](plans/contabo-vps-deployment-plan.md)
+- [Play Store release plan](plans/play-store-release-plan.md)
+- [Architecture](ARCHITECTURE.md)
 
-```bash
-# Backend won't start — check if port is in use
-lsof -i :8080
+The repository documentation is the shared source of truth. Personal Obsidian settings and external vaults are not committed.
 
-# Kill process on port
-kill -9 $(lsof -t -i :8080)
+## Security
 
-# Database connection refused — restart Docker
-cd backend && docker compose restart
+- Do not commit secrets, passwords, tokens, private keys, keystores, or Firebase credential files.
+- Hosted account passwords must be unique and must not reuse development seed values.
+- Private mobile data must not use shared HTTP cache entries.
+- Authentication, RBAC, owner scoping, rate limiting, account deletion, audit logging, and account isolation are covered by automated tests.
+- Report suspected credential exposure immediately and rotate affected values.
 
-# Flutter build fails — clean and rebuild
-flutter clean && flutter pub get
+## License
 
-# Admin build fails — clear Next.js cache
-cd admin && rm -rf .next && npm run build
-
-# E2E tests fail — ensure backend is running
-cd backend && go run ./cmd/server &
-cd admin && npx playwright test
-```
-
----
-
-## Obsidian Knowledge Base
-
-The project root is an Obsidian vault. Open it in Obsidian to browse and link documentation.
-
-### Setup
-
-```bash
-brew install --cask obsidian  # macOS
-# Or download from https://obsidian.md
-```
-
-1. Open Obsidian
-2. Select **Open folder as vault**
-3. Open the project root: `/Users/namal/dev/MobileApps/NomNom LK`
-4. Start from `docs/Home.md`
-
-### Structure
-
-| Path | Purpose |
-|------|---------|
-| `docs/Home.md` | Dashboard — start here |
-| `docs/Plans Index.md` | All implementation plans |
-| `docs/Decisions Index.md` | Architecture decisions |
-| `docs/Inbox.md` | Quick capture |
-| `docs/templates/` | Reusable templates |
-| `docs/decisions/` | Decision records |
-| `docs/notes/` | Research and investigations |
-| `AGENTS.md` | Current project status |
-| `README.md` | Commands and setup |
-| `ARCHITECTURE.md` | System design |
-| `plans/` | Implementation plans |
-
-### Templates
-
-| Template | Use for |
-|----------|---------|
-| Project Note | Feature work, research, investigations |
-| Decision | Architecture or technical choices |
-| Bug Investigation | Complex defect tracking |
-| Meeting Note | Meeting notes and action items |
-
-### Workflow
-
-1. Open `docs/Home.md` to navigate the project
-2. Capture quick ideas in `docs/Inbox.md`
-3. Use templates for structured documentation
-4. Move completed items to proper locations
-5. Keep `AGENTS.md` updated for official project status
-
-### Notes
-
-- `.obsidian/` is git-ignored (personal settings)
-- All notes use standard Markdown links (works in GitHub too)
-- Never commit secrets, tokens, or credentials
+No public license has been declared. All rights are reserved unless a license is added explicitly.

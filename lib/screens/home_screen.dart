@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/context_colors.dart';
 import '../models/offer.dart';
 import '../providers/offer_provider.dart';
@@ -21,9 +23,11 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     required this.onSearchTap,
+    this.isActive = true,
   });
 
   final VoidCallback onSearchTap;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -46,29 +50,44 @@ class HomeScreen extends StatelessWidget {
             }
             return false;
           },
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              Selector<OfferProvider, int>(
-                selector: (_, p) => p.total,
-                builder: (_, total, __) => SliverToBoxAdapter(
-                  child: _HomeHeader(
-                    offerCount: total,
-                    onSearchTap: onSearchTap,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final feedWidth = constraints.maxWidth.clamp(0.0, 600.0);
+              return Center(
+                child: SizedBox(
+                  width: feedWidth,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      Selector<OfferProvider, int>(
+                        selector: (_, p) => p.total,
+                        builder: (_, total, __) => SliverToBoxAdapter(
+                          child: _HomeHeader(
+                            offerCount: total,
+                            onSearchTap: onSearchTap,
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: FeaturedBannerCarousel(isActive: isActive),
+                      ),
+                      const SliverToBoxAdapter(
+                          child: SizedBox(height: Spacings.md)),
+                      const SliverToBoxAdapter(child: _HotOffersSection()),
+                      SliverToBoxAdapter(child: _SectionDivider()),
+                      const SliverToBoxAdapter(
+                          child: SizedBox(height: Spacings.sm)),
+                      SliverToBoxAdapter(child: _CuisineFilterChips()),
+                      SliverToBoxAdapter(child: _CategoryFilterChips()),
+                      SliverToBoxAdapter(child: _AllOffersHeader()),
+                      const SliverToBoxAdapter(
+                          child: SizedBox(height: Spacings.xs)),
+                      _HomeBody(),
+                    ],
                   ),
                 ),
-              ),
-              const SliverToBoxAdapter(child: FeaturedBannerCarousel()),
-              const SliverToBoxAdapter(child: SizedBox(height: Spacings.md)),
-              const SliverToBoxAdapter(child: _HotOffersSection()),
-              SliverToBoxAdapter(child: _SectionDivider()),
-              const SliverToBoxAdapter(child: SizedBox(height: Spacings.sm)),
-              SliverToBoxAdapter(child: _CuisineFilterChips()),
-              SliverToBoxAdapter(child: _CategoryFilterChips()),
-              SliverToBoxAdapter(child: _AllOffersHeader()),
-              const SliverToBoxAdapter(child: SizedBox(height: Spacings.xs)),
-              _HomeBody(),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -103,7 +122,6 @@ class _HomeBody extends StatelessWidget {
         if (state.error != null && offers.isEmpty) {
           final loc = AppLocalizations.of(context)!;
           return SliverFillRemaining(
-            hasScrollBody: false,
             child: EmptyState(
               icon: Icons.wifi_off_rounded,
               title: loc.generalError,
@@ -119,7 +137,6 @@ class _HomeBody extends StatelessWidget {
 
         if (offers.isEmpty) {
           return SliverFillRemaining(
-            hasScrollBody: false,
             child: EmptyState(
               icon: Icons.no_food_rounded,
               title: AppLocalizations.of(context)!.homeNoDeals,
@@ -222,19 +239,26 @@ class _HomeHeader extends StatelessWidget {
             Row(
               children: [
                 const AppLogo(compact: true),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: Spacings.xs, vertical: Spacings.xs),
-                  decoration: BoxDecoration(
-                    color: context.colors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    t.homeDealCount(offerCount),
-                    style: textTheme.labelLarge?.copyWith(
-                      color: AppColors.curry,
-                      fontWeight: FontWeight.w900,
+                const SizedBox(width: Spacings.sm),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Spacings.xs, vertical: Spacings.xs),
+                      decoration: BoxDecoration(
+                        color: context.colors.surfaceAlt,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        t.homeDealCount(offerCount),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.labelLarge?.copyWith(
+                          color: AppColors.curry,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -354,73 +378,86 @@ class _HotOffersSection extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).languageCode;
 
-    return Selector<OfferProvider, _HotState>(
-      selector: (_, p) => _HotState(
-        offers: p.hotOffers,
-        isLoading: p.isLoading && !p.hasLoaded,
-      ),
-      shouldRebuild: (prev, next) => prev != next,
-      builder: (_, state, __) {
-        if (state.isLoading) {
-          return _buildLoading(context);
-        }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth =
+            (constraints.maxWidth * _cardScale).clamp(176.0, 220.0);
+        final cardHeight = cardWidth * _cardAspect;
 
-        final hotOffers = state.offers;
-        if (hotOffers.isEmpty) return const SizedBox.shrink();
+        return Selector<OfferProvider, _HotState>(
+          selector: (_, p) => _HotState(
+            offers: p.hotOffers,
+            isLoading: p.isLoading && !p.hasLoaded,
+          ),
+          shouldRebuild: (prev, next) => prev != next,
+          builder: (_, state, __) {
+            if (state.isLoading) {
+              return _buildLoading(context, cardWidth, cardHeight);
+            }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                left: Spacings.md,
-                bottom: Spacings.sm,
-                right: Spacings.md,
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.local_fire_department_rounded,
-                      color: AppColors.chili, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    AppLocalizations.of(context)!.homeHotOffers,
-                    style: textTheme.titleSmall?.copyWith(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
+            final hotOffers = state.offers;
+            if (hotOffers.isEmpty) return const SizedBox.shrink();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: Spacings.md,
+                    bottom: Spacings.sm,
+                    right: Spacings.md,
                   ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: _cardHeight(context),
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: Spacings.md),
-                physics: const BouncingScrollPhysics(),
-                clipBehavior: Clip.none,
-                separatorBuilder: (_, __) => const SizedBox(width: Spacings.sm),
-                itemCount: hotOffers.length + _endPad(hotOffers.length),
-                itemBuilder: (context, index) {
-                  if (index >= hotOffers.length) {
-                    return const SizedBox(width: Spacings.md);
-                  }
-                  final offer = hotOffers[index];
-                  return SizedBox(
-                    width: _cardWidth(context),
-                    child: HotOfferCard(offer: offer, locale: locale),
-                  );
-                },
-              ),
-            ),
-          ],
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_fire_department_rounded,
+                          color: AppColors.chili, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        AppLocalizations.of(context)!.homeHotOffers,
+                        style: textTheme.titleSmall?.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: cardHeight,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: Spacings.md),
+                    physics: const BouncingScrollPhysics(),
+                    clipBehavior: Clip.none,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: Spacings.sm),
+                    itemCount: hotOffers.length + _endPad(hotOffers.length),
+                    itemBuilder: (context, index) {
+                      if (index >= hotOffers.length) {
+                        return const SizedBox(width: Spacings.md);
+                      }
+                      final offer = hotOffers[index];
+                      return SizedBox(
+                        width: cardWidth,
+                        child: HotOfferCard(offer: offer, locale: locale),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildLoading(BuildContext context) {
-    final height = _cardHeight(context);
+  Widget _buildLoading(
+    BuildContext context,
+    double cardWidth,
+    double cardHeight,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -443,7 +480,7 @@ class _HotOffersSection extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: height,
+          height: cardHeight,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),
@@ -451,19 +488,14 @@ class _HotOffersSection extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: Spacings.sm),
             itemCount: 3,
             itemBuilder: (_, __) => HotOfferShimmer(
-              width: _cardWidth(context),
-              height: height,
+              width: cardWidth,
+              height: cardHeight,
             ),
           ),
         ),
       ],
     );
   }
-
-  double _cardWidth(BuildContext context) =>
-      MediaQuery.of(context).size.width * _cardScale;
-
-  double _cardHeight(BuildContext context) => _cardWidth(context) * _cardAspect;
 
   int _endPad(int count) => count > 1 ? 1 : 0;
 }
@@ -603,44 +635,57 @@ class _FilterChip extends StatefulWidget {
   State<_FilterChip> createState() => _FilterChipState();
 }
 
-class _FilterChipState extends State<_FilterChip>
-    with SingleTickerProviderStateMixin {
+class _FilterChipState extends State<_FilterChip> {
   double _scale = 1.0;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final reduceMotion = AppMotion.reduceMotion(context);
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _scale = 0.93),
-      onTapUp: (_) => setState(() => _scale = 1.0),
-      onTapCancel: () => setState(() => _scale = 1.0),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _scale,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: Spacings.sm + 2, vertical: Spacings.xs),
-          decoration: BoxDecoration(
-            color:
-                widget.isSelected ? AppColors.curry : context.colors.surfaceAlt,
-            borderRadius: BorderRadius.circular(20),
-            border: widget.isSelected
-                ? null
-                : Border.all(
-                    color: context.colors.textPrimary.withValues(alpha: 0.08)),
-          ),
-          child: Text(
-            widget.label,
-            style: textTheme.labelMedium?.copyWith(
+    return Semantics(
+      button: true,
+      selected: widget.isSelected,
+      child: GestureDetector(
+        onTapDown: (_) {
+          if (!reduceMotion) setState(() => _scale = 0.96);
+        },
+        onTapUp: (_) => setState(() => _scale = 1.0),
+        onTapCancel: () => setState(() => _scale = 1.0),
+        onTap: () {
+          if (!reduceMotion) HapticFeedback.selectionClick();
+          widget.onTap();
+        },
+        child: AnimatedScale(
+          scale: _scale,
+          duration: AppMotion.duration(context, AppMotion.press),
+          curve: AppMotion.standardCurve,
+          child: AnimatedContainer(
+            duration: AppMotion.duration(context, AppMotion.short),
+            curve: AppMotion.standardCurve,
+            padding: const EdgeInsets.symmetric(
+                horizontal: Spacings.sm + 2, vertical: Spacings.xs),
+            decoration: BoxDecoration(
               color: widget.isSelected
-                  ? (Theme.of(context).brightness == Brightness.dark
-                      ? context.colors.background
-                      : Colors.white)
-                  : context.colors.textSecondary,
-              fontWeight: FontWeight.w700,
+                  ? AppColors.curry
+                  : context.colors.surfaceAlt,
+              borderRadius: BorderRadius.circular(20),
+              border: widget.isSelected
+                  ? null
+                  : Border.all(
+                      color:
+                          context.colors.textPrimary.withValues(alpha: 0.08)),
+            ),
+            child: Text(
+              widget.label,
+              style: textTheme.labelMedium?.copyWith(
+                color: widget.isSelected
+                    ? (Theme.of(context).brightness == Brightness.dark
+                        ? context.colors.background
+                        : Colors.white)
+                    : context.colors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

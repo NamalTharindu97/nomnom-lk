@@ -8,8 +8,12 @@ import 'package:nomnom_lk/providers/notification_provider.dart';
 import 'package:nomnom_lk/screens/notifications_screen.dart';
 import '../helpers/mocks.dart';
 
-Widget buildTestApp(NotificationProvider provider) {
+Widget buildTestApp(
+  NotificationProvider provider, {
+  Locale locale = const Locale('en'),
+}) {
   return MaterialApp(
+    locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: ChangeNotifierProvider<NotificationProvider>.value(
@@ -67,6 +71,54 @@ void main() {
 
       expect(find.text('New Deal'), findsOneWidget);
       expect(find.text('Update'), findsOneWidget);
+    });
+
+    testWidgets('long localized content reflows at compact and landscape sizes',
+        (WidgetTester tester) async {
+      final mockService = MockApiNotificationService();
+      mockService.notifications = [
+        AppNotification(
+          id: 'long',
+          type: 'offer',
+          title:
+              'A very long notification title that must remain bounded on a narrow phone',
+          body:
+              'A long notification body that should be constrained and safely truncated '
+              'without changing notification provider state.',
+          isRead: false,
+          createdAt: DateTime.now(),
+        ),
+      ];
+      final provider = NotificationProvider(
+        mockService,
+        notificationStore: MockNotificationStore(),
+      );
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      tester.view.devicePixelRatio = 1;
+
+      for (final size in const [
+        Size(320, 568),
+        Size(390, 844),
+        Size(700, 390),
+        Size(844, 390),
+      ]) {
+        tester.view.physicalSize = size;
+        await tester.pumpWidget(buildTestApp(
+          provider,
+          locale: const Locale('ta'),
+        ));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull, reason: 'Failed at $size');
+      }
+
+      final title = tester.widget<Text>(find.textContaining(
+        'A very long notification title',
+      ));
+      expect(title.maxLines, isNull);
+      expect(title.overflow, isNull);
     });
   });
 }

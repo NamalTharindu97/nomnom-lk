@@ -19,6 +19,12 @@ compose_dir="$nomnom_root/compose"
 env_file="$nomnom_root/config/compose.env"
 secret_root="$nomnom_root/secrets"
 
+journal_event() {
+  if command -v logger >/dev/null 2>&1; then
+    logger --tag nomnom-restore -- "$1" || true
+  fi
+}
+
 set -a
 # shellcheck disable=SC1090
 source "$env_file"
@@ -37,15 +43,36 @@ identity="$workdir/age-identity.txt"
 rclone_config="$workdir/rclone.conf"
 verification_db="nomnom_restore_$(date -u +%Y%m%d%H%M%S)_$$"
 database_created=false
+restore_succeeded=false
 
 cleanup() {
+  local exit_status=$?
+  local cleanup_failed=false
+  set +e
   if [[ "$database_created" == true ]]; then
-    docker compose --env-file "$env_file" -f "$compose_dir/compose.yml" \
-      exec -T postgres dropdb -U "$DATABASE_USER" --if-exists "$verification_db" >/dev/null 2>&1 || true
+    if ! docker compose --env-file "$env_file" -f "$compose_dir/compose.yml" \
+      exec -T postgres dropdb -U "$DATABASE_USER" --if-exists "$verification_db" >/dev/null 2>&1; then
+      cleanup_failed=true
+      journal_event "restore_database_cleanup_failed backup_id=$backup_id"
+      printf 'Disposable restore database could not be removed\n' >&2
+    fi
   fi
-  rm -rf "$workdir"
+  if ! rm -rf "$workdir"; then
+    cleanup_failed=true
+    journal_event "restore_file_cleanup_failed backup_id=$backup_id"
+    printf 'Restore temporary files could not be removed\n' >&2
+  fi
+  if [[ "$restore_succeeded" != true ]]; then
+    journal_event "restore_failed backup_id=$backup_id exit_status=$exit_status"
+  fi
+  trap - EXIT
+  if [[ "$cleanup_failed" == true && "$exit_status" -eq 0 ]]; then
+    exit 1
+  fi
+  exit "$exit_status"
 }
 trap cleanup EXIT
+journal_event "restore_started backup_id=$backup_id"
 
 cat > "$identity"
 identity_size=$(wc -c < "$identity")
@@ -96,4 +123,6 @@ if [[ ! "$table_count" =~ ^[1-9][0-9]*$ ]]; then
   exit 1
 fi
 
+restore_succeeded=true
+journal_event "restore_succeeded backup_id=$backup_id table_count=$table_count"
 printf 'Backup restored successfully into disposable verification database (%s tables)\n' "$table_count"

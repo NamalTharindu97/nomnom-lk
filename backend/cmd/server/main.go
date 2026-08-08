@@ -34,17 +34,22 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	logger := zerolog.New(os.Stderr).With().
+		Timestamp().
+		Str("service", "backend").
+		Str("environment", cfg.Server.Environment).
+		Logger()
 
 	if cfg.Sentry.DSN != "" {
 		if err := sentry.Init(sentry.ClientOptions{
 			Dsn:              cfg.Sentry.DSN,
 			Environment:      cfg.Server.Environment,
+			AttachStacktrace: true,
 			TracesSampleRate: 0.2,
 		}); err != nil {
 			logger.Warn().Err(err).Msg("Failed to initialize Sentry")
 		} else {
-			defer sentry.Flush(2 * 1000)
+			defer sentry.Flush(2 * time.Second)
 			logger.Info().Msg("Sentry initialized")
 		}
 	}
@@ -68,7 +73,9 @@ func main() {
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
 	logger.Info().Str("addr", addr).Msg("Starting server")
 	if err := r.Run(addr); err != nil {
-		logger.Fatal().Err(err).Msg("Failed to start server")
+		logger.Error().Err(err).Msg("Failed to start server")
+		sentry.Flush(2 * time.Second)
+		os.Exit(1)
 	}
 }
 
@@ -93,11 +100,11 @@ func bootstrapAdmin(db *gorm.DB, adminCfg *config.AdminConfig, logger zerolog.Lo
 
 	now := time.Now()
 	admin := models.User{
-		Email:          adminCfg.Email,
-		PasswordHash:   hashedPassword,
-		Name:           "Admin",
-		Role:           models.RoleAdmin,
-		IsActive:       true,
+		Email:           adminCfg.Email,
+		PasswordHash:    hashedPassword,
+		Name:            "Admin",
+		Role:            models.RoleAdmin,
+		IsActive:        true,
 		EmailVerifiedAt: &now,
 	}
 

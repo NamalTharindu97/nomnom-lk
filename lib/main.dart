@@ -9,7 +9,6 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'core/api_config.dart';
 import 'core/app_routes.dart';
-import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import 'models/offer.dart';
@@ -64,8 +63,9 @@ void main() async {
       options.environment = ApiConfig.appEnv;
       options.release = ApiConfig.buildSha;
       options.tracesSampleRate = 0.2;
-    }, appRunner: () => runApp(NomNomBootstrap(
-        themeProvider: themeProvider, localeProvider: localeProvider)));
+    },
+        appRunner: () => runApp(NomNomBootstrap(
+            themeProvider: themeProvider, localeProvider: localeProvider)));
   } else {
     runApp(NomNomBootstrap(
         themeProvider: themeProvider, localeProvider: localeProvider));
@@ -87,6 +87,35 @@ class NomNomBootstrap extends StatelessWidget {
     final restaurantStore = RestaurantStore();
     final favoriteStore = FavoriteStore();
     final notificationStore = NotificationStore();
+    final offerProvider = OfferProvider(
+      offerService: ApiOfferService(apiClient),
+      favoritesService: ApiFavoritesService(apiClient),
+      favoriteStore: favoriteStore,
+      offerStore: offerStore,
+      connectivityService: connectivityService,
+    );
+    offerProvider.setLocaleProvider(localeProvider);
+    final notificationProvider = NotificationProvider(
+      ApiNotificationService(apiClient),
+      notificationStore: notificationStore,
+    );
+    final restaurantProvider = RestaurantProvider(
+      ApiRestaurantService(apiClient),
+      restaurantStore: restaurantStore,
+      connectivityService: connectivityService,
+    );
+    final authProvider = AuthProvider(
+      ApiAuthService(apiClient),
+      apiClient: apiClient,
+      favoriteStore: favoriteStore,
+      notificationStore: notificationStore,
+      offerStore: offerStore,
+      restaurantStore: restaurantStore,
+      onAccountCleared: () {
+        offerProvider.resetForAccountChange();
+        notificationProvider.resetForAccountChange();
+      },
+    );
 
     return MultiProvider(
       providers: [
@@ -98,42 +127,10 @@ class NomNomBootstrap extends StatelessWidget {
         Provider<NotificationStore>.value(value: notificationStore),
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: localeProvider),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(
-            ApiAuthService(apiClient),
-            apiClient: apiClient,
-            favoriteStore: favoriteStore,
-            notificationStore: notificationStore,
-            offerStore: offerStore,
-            restaurantStore: restaurantStore,
-          ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) {
-            final provider = OfferProvider(
-              offerService: ApiOfferService(apiClient),
-              favoritesService: ApiFavoritesService(apiClient),
-              favoriteStore: favoriteStore,
-              offerStore: offerStore,
-              connectivityService: connectivityService,
-            );
-            provider.setLocaleProvider(localeProvider);
-            return provider;
-          },
-        ),
-        ChangeNotifierProvider(
-          create: (_) => NotificationProvider(
-            ApiNotificationService(apiClient),
-            notificationStore: notificationStore,
-          ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => RestaurantProvider(
-            ApiRestaurantService(apiClient),
-            restaurantStore: restaurantStore,
-            connectivityService: connectivityService,
-          ),
-        ),
+        ChangeNotifierProvider(create: (_) => authProvider),
+        ChangeNotifierProvider(create: (_) => offerProvider),
+        ChangeNotifierProvider(create: (_) => notificationProvider),
+        ChangeNotifierProvider(create: (_) => restaurantProvider),
         ChangeNotifierProvider(
           create: (_) => BannerProvider(ApiBannerService(apiClient)),
         ),
@@ -247,6 +244,7 @@ class _SseListenerState extends State<_SseListener>
   Timer? _debounce;
   Timer? _pollTimer;
   bool _needsOfferRefresh = false;
+  bool _needsFavoriteRefresh = false;
   bool _needsRestaurantRefresh = false;
   bool _needsBannerRefresh = false;
   bool _hasSseConnection = false;
@@ -272,10 +270,19 @@ class _SseListenerState extends State<_SseListener>
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
       apiClient.invalidateCache('/offers');
-      context.read<OfferProvider>().refreshOffers();
+      _refreshOffersForSession();
       apiClient.invalidateCache('/restaurants');
       context.read<RestaurantProvider>().loadRestaurants(forceRefresh: true);
     });
+  }
+
+  void _refreshOffersForSession() {
+    final offerProvider = context.read<OfferProvider>();
+    if (context.read<AuthProvider>().isLoggedIn) {
+      offerProvider.refreshOffers();
+    } else {
+      offerProvider.loadOffers(forceRefresh: true);
+    }
   }
 
   Future<void> _initSse() async {
@@ -320,7 +327,12 @@ class _SseListenerState extends State<_SseListener>
         break;
       case 'favorite.added':
       case 'favorite.removed':
-        _needsOfferRefresh = true;
+        final eventUserId = event.data['user_id']?.toString();
+        final activeUserId = context.read<AuthProvider>().user?.id;
+        if (eventUserId == activeUserId) {
+          _needsOfferRefresh = true;
+          _needsFavoriteRefresh = true;
+        }
         break;
     }
     _debounce?.cancel();
@@ -331,7 +343,11 @@ class _SseListenerState extends State<_SseListener>
     final apiClient = context.read<ApiClient>();
     if (_needsOfferRefresh) {
       apiClient.invalidateCache('/offers');
-      context.read<OfferProvider>().refreshOffers();
+      if (_needsFavoriteRefresh) {
+        apiClient.invalidateCache('/favorites');
+        _needsFavoriteRefresh = false;
+      }
+      _refreshOffersForSession();
       _needsOfferRefresh = false;
     }
     if (_needsRestaurantRefresh) {
@@ -365,78 +381,7 @@ class _SseListenerState extends State<_SseListener>
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_sseService == null) return widget.child;
-    return ValueListenableBuilder<bool>(
-      valueListenable: _sseService!.reconnectingNotifier,
-      builder: (_, isReconnecting, __) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isReconnecting)
-              Material(
-                color: AppColors.curry.withValues(alpha: 0.1),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-                    child: Row(
-                      children: [
-                        const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.curry,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context)!.reconnecting,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.curry,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            Expanded(child: widget.child),
-          ],
-        );
-      },
-    );
-  }
-}
-
-PageRoute<void> _buildSlideUpRoute({
-  required RouteSettings settings,
-  required WidgetBuilder builder,
-}) {
-  return PageRouteBuilder<void>(
-    settings: settings,
-    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.15),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutQuart,
-          reverseCurve: Curves.easeInQuart,
-        )),
-        child: FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
-      );
-    },
-    transitionDuration: const Duration(milliseconds: 350),
-  );
+  Widget build(BuildContext context) => widget.child;
 }
 
 class NomNomApp extends StatelessWidget {
@@ -502,14 +447,14 @@ class NomNomApp extends StatelessWidget {
         }
 
         if (settings.name == AppRoutes.editProfile) {
-          return _buildSlideUpRoute(
+          return MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => const EditProfileScreen(),
           );
         }
 
         if (settings.name == AppRoutes.notificationPrefs) {
-          return _buildSlideUpRoute(
+          return MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => const NotificationPrefsScreen(),
           );
@@ -522,7 +467,7 @@ class NomNomApp extends StatelessWidget {
             final String id => id,
             _ => settings.name?.split('/').last ?? '',
           };
-          return _buildSlideUpRoute(
+          return MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => OfferDetailsScreen(offerId: offerId),
           );

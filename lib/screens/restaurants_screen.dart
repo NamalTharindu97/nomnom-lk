@@ -8,6 +8,7 @@ import '../providers/restaurant_provider.dart';
 import 'package:nomnom_lk/l10n/app_localizations.dart';
 import '../utils/spacings.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/motion_switcher.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/stagger_item.dart';
 
@@ -64,7 +65,10 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    AppLocalizations.of(context)!.restaurantsTotal(provider.total),
+                    AppLocalizations.of(context)!
+                        .restaurantsTotal(provider.total),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.labelSmall?.copyWith(
                       color: AppColors.curry,
                       fontWeight: FontWeight.w700,
@@ -81,74 +85,122 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: () =>
-                    context.read<RestaurantProvider>().refreshRestaurants(),
-                color: context.colors.background,
-                backgroundColor: AppColors.curry,
-                child: Consumer<RestaurantProvider>(
-                  builder: (context, provider, child) {
-                    if (provider.isLoading) {
-                      return const RestaurantShimmerList();
-                    }
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final feedWidth = constraints.maxWidth.clamp(0.0, 600.0);
+                  return Center(
+                    child: SizedBox(
+                      width: feedWidth,
+                      height: constraints.maxHeight,
+                      child: RefreshIndicator(
+                        onRefresh: () => context
+                            .read<RestaurantProvider>()
+                            .refreshRestaurants(),
+                        color: context.colors.background,
+                        backgroundColor: AppColors.curry,
+                        child: Consumer<RestaurantProvider>(
+                          builder: (context, provider, child) {
+                            if (provider.isLoading) {
+                              return const MotionSwitcher(
+                                child: RestaurantShimmerList(
+                                  key: ValueKey('restaurants-loading'),
+                                ),
+                              );
+                            }
 
-                    if (provider.error != null) {
-                      final loc = AppLocalizations.of(context)!;
-                      return ListView(
-                        children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
-                            child: EmptyState(
-                              icon: Icons.wifi_off_rounded,
-                              title: loc.restaurantsFailedToLoad,
-                              message: _resolveError(provider.error!, loc),
-                              onRetry: provider.refreshRestaurants,
-                            ),
-                          ),
-                        ],
-                      );
-                    }
+                            if (provider.error != null) {
+                              final loc = AppLocalizations.of(context)!;
+                              return MotionSwitcher(
+                                child: ListView(
+                                  key: const ValueKey('restaurants-error'),
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(
+                                      height: constraints.maxHeight,
+                                      child: EmptyState(
+                                        icon: Icons.wifi_off_rounded,
+                                        title: loc.restaurantsFailedToLoad,
+                                        message:
+                                            _resolveError(provider.error!, loc),
+                                        onRetry: provider.refreshRestaurants,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
 
-                    final restaurants = provider.restaurants;
-                    if (restaurants.isEmpty) {
-                      return EmptyState(
-                        icon: Icons.storefront_outlined,
-                        title: AppLocalizations.of(context)!.restaurantsEmpty,
-                        message: AppLocalizations.of(context)!.searchEmptySubtitle,
-                      );
-                    }
+                            final restaurants = provider.restaurants;
+                            if (restaurants.isEmpty) {
+                              return MotionSwitcher(
+                                child: ListView(
+                                  key: const ValueKey('restaurants-empty'),
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(
+                                      height: constraints.maxHeight,
+                                      child: EmptyState(
+                                        icon: Icons.storefront_outlined,
+                                        title: AppLocalizations.of(context)!
+                                            .restaurantsEmpty,
+                                        message: AppLocalizations.of(context)!
+                                            .searchEmptySubtitle,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
 
-                    return NotificationListener<ScrollNotification>(
-                      onNotification: (notification) {
-                        if (notification is ScrollEndNotification &&
-                            notification.metrics.pixels >=
-                                notification.metrics.maxScrollExtent - 200) {
-                          provider.loadMoreRestaurants();
-                        }
-                        return false;
-                      },
-                      child: ListView.builder(
-                        padding: const EdgeInsets.only(bottom: Spacings.md),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: restaurants.length + (provider.isLoadingMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index >= restaurants.length) {
-                            return const Padding(
-                              padding: EdgeInsets.all(Spacings.md),
-                              child: Center(
-                                child: CircularProgressIndicator(strokeWidth: 2.4),
+                            return MotionSwitcher(
+                              child: NotificationListener<ScrollNotification>(
+                                key: const ValueKey('restaurants-list'),
+                                onNotification: (notification) {
+                                  if (notification is ScrollEndNotification &&
+                                      notification.metrics.pixels >=
+                                          notification.metrics.maxScrollExtent -
+                                              200) {
+                                    provider.loadMoreRestaurants();
+                                  }
+                                  return false;
+                                },
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.only(
+                                      bottom: Spacings.md),
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  itemCount: restaurants.length +
+                                      (provider.isLoadingMore ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index >= restaurants.length) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(Spacings.md),
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2.4),
+                                        ),
+                                      );
+                                    }
+                                    return StaggerItem(
+                                      key: ValueKey(
+                                          'restaurant-${restaurants[index].id}'),
+                                      index: index,
+                                      child: _RestaurantCard(
+                                        restaurant: restaurants[index],
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             );
-                          }
-                          return StaggerItem(
-                            index: index,
-                            child: _RestaurantCard(restaurant: restaurants[index]),
-                          );
-                        },
+                          },
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -168,13 +220,20 @@ class _RestaurantCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Spacings.md, 0, Spacings.md, Spacings.sm),
+      padding: const EdgeInsets.fromLTRB(
+        Spacings.md,
+        0,
+        Spacings.md,
+        Spacings.sm,
+      ),
       child: Container(
         padding: const EdgeInsets.all(Spacings.md),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
-           border: Border.all(color: context.colors.textPrimary.withValues(alpha: 0.08)),
+          border: Border.all(
+            color: context.colors.textPrimary.withValues(alpha: 0.08),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,15 +248,15 @@ class _RestaurantCard extends StatelessWidget {
             const SizedBox(height: Spacings.xxs),
             if (restaurant.cuisineTags.isNotEmpty) ...[
               const SizedBox(height: Spacings.xs),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: Spacings.xxs,
-                    children: restaurant.cuisineTags.map((tag) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacings.xs,
-                          vertical: Spacings.xxs,
-                        ),
+              Wrap(
+                spacing: 6,
+                runSpacing: Spacings.xxs,
+                children: restaurant.cuisineTags.map((tag) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacings.xs,
+                      vertical: Spacings.xxs,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.curry.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),

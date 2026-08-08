@@ -7,6 +7,13 @@ import 'package:nomnom_lk/providers/restaurant_provider.dart';
 import 'package:nomnom_lk/screens/restaurants_screen.dart';
 import '../helpers/mocks.dart';
 
+const _phoneSizes = [
+  Size(320, 568),
+  Size(390, 844),
+  Size(700, 390),
+  Size(844, 390),
+];
+
 Widget buildTestApp(RestaurantProvider provider) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -53,6 +60,51 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
+    });
+
+    testWidgets('keeps empty content within parent phone constraints',
+        (WidgetTester tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final provider = RestaurantProvider(
+        MockApiRestaurantService(restaurants: []),
+        restaurantStore: MockRestaurantStore(),
+        connectivityService: MockConnectivityService(),
+      );
+
+      for (final size in _phoneSizes) {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = size;
+        await tester.pumpWidget(buildTestApp(provider));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: '$size overflowed');
+      }
+    });
+
+    testWidgets('keeps the landscape restaurant feed one column and bounded',
+        (WidgetTester tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(844, 390);
+      final provider = RestaurantProvider(
+        MockApiRestaurantService(restaurants: [
+          makeRestaurant(id: 'r1', name: 'Landscape Restaurant'),
+        ]),
+        restaurantStore: MockRestaurantStore(),
+        connectivityService: MockConnectivityService(),
+      );
+      await provider.loadRestaurants(forceRefresh: true);
+
+      await tester.pumpWidget(buildTestApp(provider));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(ListView), findsOneWidget);
+      expect(tester.getSize(find.byType(ListView)).width, 600);
+      expect(find.text('Landscape Restaurant'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

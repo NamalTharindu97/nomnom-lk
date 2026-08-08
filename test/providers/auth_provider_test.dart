@@ -189,6 +189,42 @@ void main() {
       expect(provider.user, isNull);
       expect(provider.isLoading, isFalse);
     });
+
+    test('clears in-memory account state before logout completes', () async {
+      var accountStateClearCount = 0;
+      final accountAwareProvider = AuthProvider(
+        authService,
+        apiClient: apiClient,
+        favoriteStore: favoriteStore,
+        notificationStore: notificationStore,
+        offerStore: offerStore,
+        restaurantStore: restaurantStore,
+        onAccountCleared: () => accountStateClearCount++,
+      );
+      authService.userToReturn = _makeUser();
+      await accountAwareProvider.signInWithEmail(
+        'test@example.com',
+        'password',
+      );
+
+      await accountAwareProvider.signOut();
+
+      expect(accountStateClearCount, 2);
+    });
+
+    test('completes local sign out when the remote logout fails', () async {
+      authService.userToReturn = _makeUser();
+      await provider.signInWithEmail('test@example.com', 'password');
+      authService.exceptionToThrow = Exception('network failure');
+
+      await provider.signOut();
+
+      expect(provider.user, isNull);
+      expect(provider.isLoading, isFalse);
+      expect(provider.isInitialized, isTrue);
+      expect(apiClient.cacheCleared, isTrue);
+      expect(apiClient.clearTokensCalled, isTrue);
+    });
   });
 
   group('updateUser', () {

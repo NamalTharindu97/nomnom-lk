@@ -1206,6 +1206,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reconnecting...'**
   String get reconnecting;
+
+  /// No description provided for @editProfileSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get editProfileSaving;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will be scheduled for deletion in 30 days. You can cancel at any time during this period. This action cannot be undone after the 30-day window.'**
+  String get deleteAccountConfirmation;
+
+  /// No description provided for @deleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule account deletion in 30 days'**
+  String get deleteAccountSubtitle;
+
+  /// No description provided for @deleteAccountScheduleError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to schedule deletion'**
+  String get deleteAccountScheduleError;
+
+  /// No description provided for @linkOpenError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open link'**
+  String get linkOpenError;
+
+  /// No description provided for @platformNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'{platform} not installed'**
+  String platformNotInstalled(String platform);
+
+  /// No description provided for @platformInstallPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Install {platform} from the store to order?'**
+  String platformInstallPrompt(String platform);
+
+  /// No description provided for @platformInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get platformInstall;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

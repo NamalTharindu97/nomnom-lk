@@ -588,4 +588,35 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get reconnecting => 'மீண்டும் இணைக்கிறது...';
+
+  @override
+  String get editProfileSaving => 'சேமிக்கிறது...';
+
+  @override
+  String get deleteAccountTitle => 'கணக்கை நீக்கு';
+
+  @override
+  String get deleteAccountConfirmation => 'உங்கள் கணக்கு 30 நாட்களில் நீக்குவதற்குத் திட்டமிடப்படும். இந்தக் காலத்தில் எப்போது வேண்டுமானாலும் ரத்து செய்யலாம். 30 நாட்களுக்குப் பிறகு இந்தச் செயலை மாற்ற முடியாது.';
+
+  @override
+  String get deleteAccountSubtitle => '30 நாட்களில் கணக்கை நீக்கத் திட்டமிடுக';
+
+  @override
+  String get deleteAccountScheduleError => 'கணக்கு நீக்குதலைத் திட்டமிட முடியவில்லை';
+
+  @override
+  String get linkOpenError => 'இணைப்பைத் திறக்க முடியவில்லை';
+
+  @override
+  String platformNotInstalled(String platform) {
+    return '$platform நிறுவப்படவில்லை';
+  }
+
+  @override
+  String platformInstallPrompt(String platform) {
+    return 'ஆர்டர் செய்ய கடையிலிருந்து $platform-ஐ நிறுவவா?';
+  }
+
+  @override
+  String get platformInstall => 'நிறுவுக';
 }
