@@ -561,7 +561,7 @@ export default function BannersPage() {
                         <TableCell>
                           <div className="relative h-16 w-32 rounded-md overflow-hidden bg-muted group">
                             {b.image ? (
-                              <Image src={b.image} alt={b.title || ""} fill className="object-cover" sizes="128px" loading="eager" />
+                              <Image src={b.image} alt={b.title || ""} fill className="object-cover" sizes="128px" loading="eager" unoptimized />
                             ) : (
                               <div className="size-full flex items-center justify-center text-muted-foreground/30">
                                 <ImageIcon className="size-5" />
@@ -570,7 +570,7 @@ export default function BannersPage() {
                             {b.image && (
                               <div className="pointer-events-none absolute -top-2 left-full ml-2 z-50 hidden group-hover:block">
                                 <div className="relative h-36 w-64 rounded-lg overflow-hidden shadow-xl border border-border">
-                                  <Image src={b.image} alt={b.title || ""} fill className="object-cover" sizes="256px" loading="lazy" />
+                                  <Image src={b.image} alt={b.title || ""} fill className="object-cover" sizes="256px" loading="lazy" unoptimized />
                                 </div>
                               </div>
                             )}
