@@ -19,6 +19,7 @@
 - Clone staging data once, clear session/device/notification/audit/favorite data, anonymize all non-viewer accounts, and disable their login.
 - Reuse approved R2 reads so existing restaurant/offer images continue to render. New object keys use the `recruiter` prefix; viewer upload routes remain denied.
 - Pin recruiter images to a full staging-tested P52 SHA.
+- Run recruiter deployment tooling from the current protected `staging` branch independently of the pinned recruiter application image SHA.
 
 ## Deployment Order
 
