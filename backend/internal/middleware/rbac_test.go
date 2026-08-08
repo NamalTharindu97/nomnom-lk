@@ -60,17 +60,6 @@ func TestRequireDashboardAccess_UserBlocked(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
-func TestRequireDashboardAccess_PortfolioViewerAllowed(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(setRole("portfolio_viewer"), RequireDashboardAccess())
-	r.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
-
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/test", nil))
-	assert.Equal(t, http.StatusOK, w.Code)
-}
-
 func TestOwnerScoped_Admin_NoScope(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -113,34 +102,4 @@ func TestOwnerScoped_Owner_HasScope(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-}
-
-func TestOwnerScoped_ExplicitPlatformScopes(t *testing.T) {
-	for _, tt := range []struct {
-		name string
-		role string
-		want DashboardScope
-	}{
-		{name: "admin", role: "admin", want: DashboardScopePlatform},
-		{name: "viewer", role: "portfolio_viewer", want: DashboardScopePortfolioPlatform},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			r := gin.New()
-			r.Use(setRole(tt.role), OwnerScoped())
-			r.GET("/test", func(c *gin.Context) {
-				scope, exists := GetDashboardScope(c)
-				assert.True(t, exists)
-				assert.Equal(t, tt.want, scope)
-				ownerID, resolved := GetDashboardOwnerID(c)
-				assert.True(t, resolved)
-				assert.Equal(t, uuid.Nil, ownerID)
-				_, ownerExists := c.Get("owner_scope_id")
-				assert.False(t, ownerExists)
-				c.Status(http.StatusOK)
-			})
-			w := httptest.NewRecorder()
-			r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/test", nil))
-			assert.Equal(t, http.StatusOK, w.Code)
-		})
-	}
 }

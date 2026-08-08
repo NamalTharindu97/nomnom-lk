@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/response"
@@ -27,18 +26,6 @@ func (h *SocialPlatformHandler) List(c *gin.Context) {
 	}
 	if platforms == nil {
 		platforms = []models.SocialPlatform{}
-	}
-	if middleware.IsPortfolioViewer(c) {
-		data := make([]gin.H, len(platforms))
-		for i, platform := range platforms {
-			data[i] = gin.H{
-				"id": platform.ID, "name": platform.Name, "slug": platform.Slug,
-				"display_name": platform.DisplayName, "primary_color": platform.PrimaryColor,
-				"logo_url": platform.LogoURL, "sort_order": platform.SortOrder,
-			}
-		}
-		response.Success(c, data)
-		return
 	}
 	response.Success(c, platforms)
 }

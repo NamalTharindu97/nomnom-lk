@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/nomnom-lk/backend/internal/middleware"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
 	"github.com/nomnom-lk/backend/pkg/response"
@@ -28,14 +27,6 @@ func (h *CuisineTagHandler) List(c *gin.Context) {
 	}
 	if tags == nil {
 		tags = []models.CuisineTag{}
-	}
-	if middleware.IsPortfolioViewer(c) {
-		data := make([]gin.H, len(tags))
-		for i, tag := range tags {
-			data[i] = gin.H{"id": tag.ID, "name": tag.Name}
-		}
-		response.Success(c, data)
-		return
 	}
 	response.Success(c, tags)
 }

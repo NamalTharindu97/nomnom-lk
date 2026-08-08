@@ -9,7 +9,6 @@ import (
 	"github.com/nomnom-lk/backend/internal/dto/request"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -186,19 +185,8 @@ func TestDashboardService_ListOffers_CacheDisabled(t *testing.T) {
 	offerRepo.offers[uuid.New()] = &models.Offer{ID: uuid.New(), Status: models.OfferPending}
 
 	// rdb is nil, so caching is disabled — goes straight to repo
-	offers, total, err := svc.ListOffers(context.Background(), ownerID, "", "", 1, 10, "", true)
+	offers, total, err := svc.ListOffers(context.Background(), ownerID, "", "", 1, 10, "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), total)
 	assert.Len(t, offers, 2)
-}
-
-func TestDashboardService_ListOffers_PortfolioReadDoesNotTouchCache(t *testing.T) {
-	svc, _, offerRepo, _ := setupDashboardService()
-	svc.rdb = redis.NewClient(&redis.Options{Addr: "127.0.0.1:1"})
-	offerRepo.offers[uuid.New()] = &models.Offer{ID: uuid.New(), Status: models.OfferApproved}
-
-	offers, total, err := svc.ListOffers(context.Background(), uuid.Nil, "", "", 1, 10, "", false)
-	require.NoError(t, err)
-	require.Equal(t, int64(1), total)
-	require.Len(t, offers, 1)
 }

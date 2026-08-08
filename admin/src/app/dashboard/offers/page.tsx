@@ -52,7 +52,7 @@ const STATUSES = ["all", "approved", "pending", "rejected", "expired"]
 
 
 export default function OffersPage() {
-  const { isAdmin, isOwner, isViewer, isReadOnly } = useAuth()
+  const { isAdmin, isOwner } = useAuth()
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -150,9 +150,9 @@ export default function OffersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Offers</h1>
-            <p className="text-muted-foreground">{isViewer ? "Explore published offer workflows" : isOwner ? "Manage your offers" : "Manage food offers"}</p>
+            <p className="text-muted-foreground">{isOwner ? "Manage your offers" : "Manage food offers"}</p>
           </div>
-          {!isReadOnly && <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => csvExport("offers", ["Title", "Restaurant", "Original Price", "Offer Price", "Status", "End Date"], offers.map(o => [o.title, o.restaurant?.name || "", String(o.original_price), String(o.offer_price), o.status, o.end_date ? new Date(o.end_date).toLocaleDateString() : ""]))} disabled={offers.length === 0}>
               <Download className="mr-2 size-4" />
               Export CSV
@@ -161,13 +161,13 @@ export default function OffersPage() {
               <Plus className="mr-2 size-4" />
               New Offer
             </Button>
-          </div>}
+          </div>
         </div>
 
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <CardTitle>{isOwner ? "My Offers" : isViewer ? "Explore Offers" : "All Offers"}</CardTitle>
+              <CardTitle>{isOwner ? "My Offers" : "All Offers"}</CardTitle>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -220,7 +220,7 @@ export default function OffersPage() {
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>End Date</TableHead>
-                   {!isReadOnly && <TableHead className="text-right">Actions</TableHead>}
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -230,8 +230,8 @@ export default function OffersPage() {
                   <EmptyState
                     icon={<Tag className="size-10 text-muted-foreground/50" />}
                     title="No offers found"
-                    description={search || statusFilter !== "all" ? "Try adjusting your search or filters." : isViewer ? "No offers are available to explore." : "No offers have been created yet."}
-                    action={isReadOnly ? undefined :
+                    description={search || statusFilter !== "all" ? "Try adjusting your search or filters." : "No offers have been created yet."}
+                    action={
                       search || statusFilter !== "all" ? undefined : (
                         <Button size="sm" onClick={() => { setEditing(null); setShowDialog(true) }}>
                           <Plus className="mr-1 size-3" />
@@ -270,7 +270,7 @@ export default function OffersPage() {
                       <TableCell className="text-xs">
                         {new Date(o.end_date).toLocaleDateString()}
                       </TableCell>
-                       {!isReadOnly && <TableCell className="text-right">
+                      <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button size="icon" variant="ghost" onClick={() => { setEditing(o); setShowDialog(true) }}>
                             <Pencil className="size-4" />
@@ -366,7 +366,7 @@ export default function OffersPage() {
                             </AlertDialog>
                           )}
                         </div>
-                       </TableCell>}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -377,12 +377,12 @@ export default function OffersPage() {
           </CardContent>
         </Card>
 
-        {!isReadOnly && <OfferDialog
+        <OfferDialog
           open={showDialog}
           onClose={() => setShowDialog(false)}
           onSaved={load}
           offer={editing}
-        />}
+        />
       </div>
     </ErrorBoundary>
   )

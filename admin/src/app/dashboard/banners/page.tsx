@@ -70,7 +70,8 @@ interface Restaurant {
 }
 
 export default function BannersPage() {
-  const { user, isAdmin, isOwner, isViewer, isReadOnly, isLoading: authLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
+  const isAdmin = user?.role === "admin"
   const [banners, setBanners] = useState<Banner[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Banner | null>(null)
@@ -87,8 +88,7 @@ export default function BannersPage() {
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
 
-  const endpoint = isAdmin || isViewer ? "/admin/banners" : "/dashboard/banners"
-  const showAdminReadFields = isAdmin || isViewer
+  const endpoint = isAdmin ? "/admin/banners" : "/dashboard/banners"
 
   const {
     register,
@@ -125,13 +125,13 @@ export default function BannersPage() {
   }, [endpoint, authLoading, user])
 
   const loadMyOffers = useCallback(async () => {
-    if (authLoading || !user || !isOwner) return
+    if (authLoading || !user || isAdmin) return
     try {
       const res = await api.get<{ data: Offer[] }>("/dashboard/offers?per_page=100")
       const list = res.data || []
       setMyOffers(list)
     } catch { setMyOffers([]) }
-  }, [authLoading, isOwner, user])
+  }, [authLoading, isAdmin, user])
 
   const loadAdminData = useCallback(async () => {
     if (authLoading || !user || !isAdmin) return
@@ -366,16 +366,16 @@ export default function BannersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-               {isOwner ? "My Banners" : "Banners"}
+              {isAdmin ? "Banners" : "My Banners"}
             </h1>
             <p className="text-muted-foreground">
-               {isViewer ? "Explore promotional banner campaigns" : isAdmin ? "Manage promotional banners" : "Create banners linked to your offers"}
+              {isAdmin ? "Manage promotional banners" : "Create banners linked to your offers"}
             </p>
           </div>
-          {!isReadOnly && <Button onClick={startCreate}><Plus className="mr-2 size-4" />New Banner</Button>}
+          <Button onClick={startCreate}><Plus className="mr-2 size-4" />New Banner</Button>
         </div>
 
-         {!isReadOnly && (editing || showForm) && (
+        {(editing || showForm) && (
           <Card className="border-primary/20">
             <CardContent className="pt-6 space-y-4">
               <h3 className="font-semibold">{editing ? "Edit Banner" : "New Banner"}</h3>
@@ -414,7 +414,7 @@ export default function BannersPage() {
                 {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
               </div>
 
-         {showAdminReadFields && (
+              {isAdmin && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
@@ -518,7 +518,7 @@ export default function BannersPage() {
         )}
 
         {/* Filter */}
-        {(isAdmin || isViewer) && (
+        {isAdmin && (
           <div className="flex items-center gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -541,20 +541,20 @@ export default function BannersPage() {
                   <TableRow>
                     <TableHead className="w-40">Banner</TableHead>
                     <TableHead>Sponsor</TableHead>
-                     {showAdminReadFields && <TableHead>Link</TableHead>}
+                    {isAdmin && <TableHead>Link</TableHead>}
                     <TableHead>Schedule</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right w-20">Clicks</TableHead>
-                     {!isReadOnly && <TableHead className="text-right w-32">Actions</TableHead>}
+                    <TableHead className="text-right w-32">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                   {loading ? <TableSkeleton columns={showAdminReadFields ? (isReadOnly ? 6 : 7) : 6} /> :
+                  {loading ? <TableSkeleton columns={isAdmin ? 7 : 6} /> :
                     filteredBanners.length === 0 ? (
                       <EmptyState
                         icon={<ImageIcon className="size-10 text-muted-foreground/50" />}
                         title="No banners"
-                        description={isViewer ? "No portfolio-safe banners are available to explore." : "Create your first banner to get started."}
+                        description="Create your first banner to get started."
                       />
                     ) : filteredBanners.map(b => (
                       <TableRow key={b.id} className="group">
@@ -582,11 +582,11 @@ export default function BannersPage() {
                             <div className="text-sm text-muted-foreground">{b.sponsor_name || "-"}</div>
                           </div>
                         </TableCell>
-                         {showAdminReadFields && <TableCell>{linkTypeBadge(b.link_type)}</TableCell>}
+                        {isAdmin && <TableCell>{linkTypeBadge(b.link_type)}</TableCell>}
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{dateRange(b)}</TableCell>
                         <TableCell>{statusBadge(b.status)}</TableCell>
                         <TableCell className="text-right text-sm text-muted-foreground">{b.click_count}</TableCell>
-                         {!isReadOnly && <TableCell className="text-right">
+                        <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {isAdmin && b.status === "pending" && b.owner_id && (
                               <>
@@ -606,7 +606,7 @@ export default function BannersPage() {
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
-                         </TableCell>}
+                        </TableCell>
                       </TableRow>
                     ))}
                 </TableBody>
@@ -616,7 +616,7 @@ export default function BannersPage() {
         </Card>
       </div>
 
-       {!isReadOnly && <ImageCropDialog
+      <ImageCropDialog
         open={!!cropImageUrl}
         imageUrl={cropImageUrl || ""}
         fileName="banner.jpg"
@@ -625,7 +625,7 @@ export default function BannersPage() {
         aspectRatio={1024 / 360}
         onCropComplete={handleCropComplete}
         onCancel={() => setCropImageUrl(null)}
-       />}
+      />
     </ErrorBoundary>
   )
 }

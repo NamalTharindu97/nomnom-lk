@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -21,44 +19,15 @@ type AuthHandler struct {
 	firebaseService *services.FirebaseService
 	auditService    *services.AuditService
 	browserSession  *browserSession
-	demoViewer      *config.DemoViewerConfig
 }
 
-func NewAuthHandler(authService *services.AuthService, firebaseService *services.FirebaseService, auditService *services.AuditService, browserCfg *config.BrowserSessionConfig, jwtCfg *config.JWTConfig, demoViewer *config.DemoViewerConfig) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService, firebaseService *services.FirebaseService, auditService *services.AuditService, browserCfg *config.BrowserSessionConfig, jwtCfg *config.JWTConfig) *AuthHandler {
 	return &AuthHandler{
 		authService:     authService,
 		firebaseService: firebaseService,
 		auditService:    auditService,
 		browserSession:  newBrowserSession(browserCfg, jwtCfg),
-		demoViewer:      demoViewer,
 	}
-}
-
-func (h *AuthHandler) BrowserDemo(c *gin.Context) {
-	if h.demoViewer == nil || !h.demoViewer.Enabled {
-		response.NotFound(c, "not found")
-		return
-	}
-
-	result, err := h.authService.LoginDemo(h.demoViewer.Email, h.demoViewer.SessionTTL)
-	if err != nil {
-		status := http.StatusForbidden
-		if errors.Is(err, services.ErrDemoViewerNotFound) {
-			status = http.StatusNotFound
-		}
-		response.Error(c, status, "DEMO_UNAVAILABLE", err.Error())
-		return
-	}
-	ttl, _ := time.ParseDuration(h.demoViewer.SessionTTL)
-	if err := h.browserSession.setDemo(c, result.AccessToken, ttl); err != nil {
-		response.InternalError(c, "failed to create browser session")
-		return
-	}
-	h.auditService.LogAction(result.User.ID, result.User.Name, string(result.User.Role), "auth.demo.session", "user", result.User.ID.String(), "Recruiter demo browser session created")
-	c.JSON(http.StatusOK, gin.H{
-		"user":       gin.H{"name": result.User.Name, "role": result.User.Role, "read_only": true},
-		"expires_in": result.ExpiresIn,
-	})
 }
 
 // BrowserLogin creates a dashboard-only session without exposing JWTs to JavaScript.
@@ -74,7 +43,7 @@ func (h *AuthHandler) BrowserLogin(c *gin.Context) {
 		status := http.StatusUnauthorized
 		if strings.Contains(err.Error(), "account locked") {
 			status = http.StatusLocked
-		} else if errors.Is(err, services.ErrPortfolioViewerAuth) || err.Error() == "your account has been suspended. contact an administrator" || err.Error() == "access restricted to administrators and restaurant owners only" {
+		} else if err.Error() == "your account has been suspended. contact an administrator" || err.Error() == "access restricted to administrators and restaurant owners only" {
 			status = http.StatusForbidden
 		}
 		h.auditService.LogAction(uuid.Nil, req.Email, "", "auth.login.failed", "user", "",
@@ -138,13 +107,6 @@ func (h *AuthHandler) BrowserSession(c *gin.Context) {
 	name, _ := middleware.GetUserName(c)
 	role, _ := middleware.GetUserRole(c)
 	impersonatedBy, _ := middleware.GetImpersonatedBy(c)
-	if middleware.IsPortfolioViewer(c) {
-		c.JSON(http.StatusOK, gin.H{
-			"user":            gin.H{"name": name, "role": role, "read_only": true},
-			"impersonated_by": "",
-		})
-		return
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"user":            gin.H{"id": userID, "email": email, "name": name, "role": role},
 		"impersonated_by": impersonatedBy,
@@ -213,7 +175,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		status := http.StatusUnauthorized
 		if strings.Contains(err.Error(), "account locked") {
 			status = http.StatusLocked
-		} else if errors.Is(err, services.ErrPortfolioViewerAuth) || err.Error() == "your account has been suspended. contact an administrator" {
+		} else if err.Error() == "your account has been suspended. contact an administrator" {
 			status = http.StatusForbidden
 		}
 		h.auditService.LogAction(uuid.Nil, req.Email, "", "auth.login.failed", "user", "",
@@ -269,7 +231,7 @@ func (h *AuthHandler) FirebaseLogin(c *gin.Context) {
 	result, err := h.authService.FirebaseLogin(firebaseUID, email, name)
 	if err != nil {
 		status := http.StatusInternalServerError
-		if errors.Is(err, services.ErrPortfolioViewerAuth) || err.Error() == "your account has been suspended. contact an administrator" {
+		if err.Error() == "your account has been suspended. contact an administrator" {
 			status = http.StatusForbidden
 		}
 		h.auditService.LogAction(uuid.Nil, email, "", "auth.firebase.failed", "user", "",

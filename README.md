@@ -5,25 +5,6 @@
 
 NomNom LK is a full-stack Sri Lankan food-offer discovery platform. Consumers use the Flutter app to discover, search, and save offers. Restaurant owners manage owner-scoped restaurants and offers, while administrators handle approvals, users, banners, notifications, coupons, analytics, audit logs, and platform configuration.
 
-## Recruiter Demo
-
-[**Explore the live read-only dashboard**](https://demo.nomnomlk.com/login)
-
-Open the login page and select **Explore read-only demo**. No credentials are
-required. The 30-minute recruiter session can explore portfolio-safe analytics,
-restaurants, offers, banners, categories, cuisine tags, and platform
-integrations. User accounts, notifications, audit logs, settings, uploads, and
-all mutations remain unavailable.
-
-Read-only access is enforced by the Go API through an explicit GET allowlist,
-sanitized response mappings, short-lived access-only cookies, a fail-closed
-rate limit, and server-side rejection of every mutation method. Hidden dashboard
-controls are an additional usability measure, not the security boundary.
-
-![NomNom LK one-click recruiter login](docs/screenshots/recruiter-demo-login.png)
-
-![NomNom LK recruiter demo dashboard](docs/screenshots/recruiter-demo-dashboard.png)
-
 ## Current Status
 
 The core product and Play Store compliance fixes are complete. Staging is deployed on a Contabo VPS with HTTPS, immutable-image CI/CD, migrated data, Sentry crash reporting, and public legal pages. Current release work is focused on Play Store listing assets, the Data Safety form, and final production promotion.
@@ -35,7 +16,7 @@ The core product and Play Store compliance fixes are complete. Staging is deploy
 | Logging | Correlated diagnostics with bounded retention and stable host aliases |
 | Flutter tests | 344 passing |
 | Backend tests | 145 passing |
-| Admin E2E tests | 73 passing |
+| Admin E2E tests | 53+ passing |
 | Staging deployment | Healthy |
 | Production promotion | Pending approval |
 
@@ -55,7 +36,6 @@ Recent reliability work includes:
 |---|---|
 | API | <https://api.nomnomlk.com> |
 | Admin | <https://admin.nomnomlk.com> |
-| Recruiter Demo | <https://demo.nomnomlk.com/login> - select **Explore read-only demo** |
 | Privacy Policy | <https://admin.nomnomlk.com/privacy> |
 | Terms of Service | <https://admin.nomnomlk.com/terms> |
 | Support | <https://admin.nomnomlk.com/support> |

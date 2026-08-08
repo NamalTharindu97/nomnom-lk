@@ -2,13 +2,11 @@ export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1"
 
 export class ApiError extends Error {
   status: number
-  code?: string
   details?: unknown
 
-  constructor(status: number, message: string, details?: unknown, code?: string) {
+  constructor(status: number, message: string, details?: unknown) {
     super(message)
     this.status = status
-    this.code = code
     this.details = details
   }
 }
@@ -30,15 +28,10 @@ function redirectToLogin() {
 
 async function parseError(res: Response) {
   const body = await res.json().catch(() => ({}))
-  const code = body.error?.code
-  const message = code === "PORTFOLIO_DEMO_READ_ONLY"
-    ? "This recruiter demo is read only. Explore freely without changing data."
-    : body.error?.message || res.statusText
   return new ApiError(
     res.status,
-    message,
-    body.error?.details,
-    code
+    body.error?.message || res.statusText,
+    body.error?.details
   )
 }
 
@@ -83,7 +76,7 @@ async function request<T>(path: string, options: RequestInit = {}, canRetry = tr
   })
 
   const isBrowserAuth = path.startsWith("/auth/browser/")
-  if (res.status === 401 && canRetry && !["/auth/browser/login", "/auth/browser/demo", "/auth/browser/refresh"].includes(path)) {
+  if (res.status === 401 && canRetry && path !== "/auth/browser/login" && path !== "/auth/browser/refresh") {
     if (await refreshBrowserSession()) {
       return request<T>(path, options, false)
     }

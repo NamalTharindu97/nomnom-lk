@@ -68,20 +68,14 @@ func (r *UserRepo) BulkDelete(ids []uuid.UUID) error {
 	return r.db.Delete(&models.User{}, "id IN ?", ids).Error
 }
 
-func (r *UserRepo) CountByIDsAndRole(ids []uuid.UUID, role models.UserRole) (int64, error) {
-	var count int64
-	err := r.db.Model(&models.User{}).Where("id IN ? AND role = ?", ids, role).Count(&count).Error
-	return count, err
-}
-
 type OwnerWithStats struct {
-	ID              uuid.UUID `json:"id"`
-	Email           string    `json:"email"`
-	Name            string    `json:"name"`
-	IsActive        bool      `json:"is_active"`
-	RestaurantCount int64     `json:"restaurant_count"`
-	OfferCount      int64     `json:"offer_count"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID               uuid.UUID `json:"id"`
+	Email            string    `json:"email"`
+	Name             string    `json:"name"`
+	IsActive         bool      `json:"is_active"`
+	RestaurantCount  int64     `json:"restaurant_count"`
+	OfferCount       int64     `json:"offer_count"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 func (r *UserRepo) FindOwnersWithStats(page, perPage int) ([]OwnerWithStats, int64, error) {
@@ -175,7 +169,7 @@ func (r *UserRepo) FindAll(page, perPage int, emailFilter, roleFilter, statusFil
 	}
 
 	query.Count(&total)
-	err := query.Offset((page - 1) * perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
+	err := query.Offset((page-1)*perPage).Limit(perPage).Order("created_at DESC").Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}
