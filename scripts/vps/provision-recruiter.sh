@@ -215,8 +215,19 @@ if ! docker exec "$CADDY_CONTAINER" caddy validate --config /etc/caddy/Caddyfile
 fi
 docker restart "$CADDY_CONTAINER" >/dev/null
 
+wait_for_url() {
+  local url=$1
+  for _ in $(seq 1 30); do
+    if curl --fail --silent --show-error --output /dev/null "$url"; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
 for url in https://api.nomnomlk.com/health https://admin.nomnomlk.com/login; do
-  if ! curl --fail --silent --show-error --output /dev/null "$url"; then
+  if ! wait_for_url "$url"; then
     printf 'Existing staging endpoint failed after Caddy restart: %s\n' "$url" >&2
     exit 1
   fi
