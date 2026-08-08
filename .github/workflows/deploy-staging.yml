@@ -93,7 +93,7 @@ jobs:
 
       - name: Build and publish backend image (fallback)
         if: steps.prebuilt.outputs.missing == '1'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: backend
           platforms: linux/amd64
@@ -113,7 +113,7 @@ jobs:
 
       - name: Build and publish admin image (fallback)
         if: steps.prebuilt.outputs.missing == '1'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: admin
           platforms: linux/amd64
