@@ -7,7 +7,7 @@ x-logging: &default-logging
     max-file: "5"
 
 services:
-  backend:
+  recruiter-backend:
     image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to an immutable full-SHA tag}
     restart: unless-stopped
     logging: *default-logging
@@ -64,7 +64,7 @@ services:
     mem_limit: 768m
     cpus: 1.0
 
-  admin:
+  recruiter-admin:
     image: ${ADMIN_IMAGE:?Set ADMIN_IMAGE to an immutable full-SHA tag}
     restart: unless-stopped
     logging: *default-logging
@@ -79,7 +79,7 @@ services:
         aliases:
           - recruiter-admin
     depends_on:
-      - backend
+      - recruiter-backend
     mem_limit: 512m
     cpus: 0.75
 
