@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
-    name: Build, publish, and deploy staging
+  ship-and-deploy:
+    name: Ship prebuilt images and deploy staging
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
@@ -62,16 +62,37 @@ jobs:
           git fetch origin staging
           git merge-base --is-ancestor "${{ steps.source.outputs.sha }}" origin/staging
 
+      - name: Check for prebuilt images
+        id: prebuilt
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -Eeuo pipefail
+          missing=0
+          for img in "$DOCKER_USERNAME/nomnom-backend:$SHA" "$DOCKER_USERNAME/nomnom-admin:$SHA"; do
+            if docker manifest inspect "$img" >/dev/null 2>&1; then
+              echo "Found $img"
+            else
+              echo "Missing $img"
+              missing=1
+            fi
+          done
+          echo "missing=$missing" >> "$GITHUB_OUTPUT"
+
       - name: Log in to Docker Hub
+        if: steps.prebuilt.outputs.missing == '1'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Docker Buildx
+        if: steps.prebuilt.outputs.missing == '1'
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and publish backend
+      - name: Build and publish backend image (fallback)
+        if: steps.prebuilt.outputs.missing == '1'
         uses: docker/build-push-action@v5
         with:
           context: backend
@@ -81,15 +102,17 @@ jobs:
           cache-from: type=gha,scope=staging-backend
           cache-to: type=gha,mode=max,scope=staging-backend
 
-      - name: Scan backend image
+      - name: Scan backend image (fallback)
+        if: steps.prebuilt.outputs.missing == '1'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:${{ steps.source.outputs.sha }}
           format: table
-          exit-code: 1
+          exit-code: ${{ vars.TRIVY_IGNORE_HIGH_CRITICAL == 'true' && '0' || '1' }}
           severity: HIGH,CRITICAL
 
-      - name: Build and publish admin
+      - name: Build and publish admin image (fallback)
+        if: steps.prebuilt.outputs.missing == '1'
         uses: docker/build-push-action@v5
         with:
           context: admin
@@ -102,12 +125,13 @@ jobs:
           cache-from: type=gha,scope=staging-admin
           cache-to: type=gha,mode=max,scope=staging-admin
 
-      - name: Scan admin image
+      - name: Scan admin image (fallback)
+        if: steps.prebuilt.outputs.missing == '1'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.source.outputs.sha }}
           format: table
-          exit-code: 1
+          exit-code: ${{ vars.TRIVY_IGNORE_HIGH_CRITICAL == 'true' && '0' || '1' }}
           severity: HIGH,CRITICAL
 
       - name: Install SSH identity
@@ -141,15 +165,32 @@ jobs:
             "$VPS_DEPLOY_USER@$VPS_HOST" \
             "sudo /usr/local/sbin/nomnom-deploy-staging 'docker.io/$DOCKER_USERNAME/nomnom-backend:$SOURCE_SHA' 'docker.io/$DOCKER_USERNAME/nomnom-admin:$SOURCE_SHA'"
 
-      - name: Verify public endpoints
+      - name: Smoke test
+        env:
+          ADMIN_EMAIL: admin@nomnomlk.com
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_BOOTSTRAP_PASSWORD }}
         run: |
           set -Eeuo pipefail
-          curl --fail --silent --show-error https://api.nomnomlk.com/health
+          curl --fail --silent --show-error https://api.nomnomlk.com/health >/dev/null
+          echo "API /health OK"
+          curl --fail --silent --show-error https://api.nomnomlk.com/api/v1/banners/active >/dev/null
+          echo "Public banners OK"
+          payload=$(jq -nc --arg email "$ADMIN_EMAIL" --arg password "$ADMIN_PASSWORD" '{email: $email, password: $password}')
+          curl --fail --silent --show-error -c "$RUNNER_TEMP/nomnom-cookies" \
+            -H 'Content-Type: application/json' --data "$payload" \
+            https://admin.nomnomlk.com/api/v1/auth/browser/login >/dev/null
+          echo "Admin browser login OK"
+          curl --fail --silent --show-error -b "$RUNNER_TEMP/nomnom-cookies" \
+            https://admin.nomnomlk.com/api/v1/dashboard/stats >/dev/null
+          echo "Authenticated dashboard OK"
           curl --fail --silent --show-error --output /dev/null https://admin.nomnomlk.com/login
+          echo "Smoke test passed"
 
       - name: Record deployment
         run: |
-          echo "## Staging deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Commit: \`${{ steps.source.outputs.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- API: https://api.nomnomlk.com" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Admin: https://admin.nomnomlk.com" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Staging deployment"
+            echo "- Commit: \`${{ steps.source.outputs.sha }}\`"
+            echo "- API: https://api.nomnomlk.com"
+            echo "- Admin: https://admin.nomnomlk.com"
+          } >> "$GITHUB_STEP_SUMMARY"

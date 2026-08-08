@@ -29,8 +29,16 @@
 - **Preserve existing features and fixes (mandatory):** Never remove, replace, disable, or regress an existing feature, behavior, bug fix, route, localization, test, or deployment capability while implementing another task unless the user explicitly approves that exact removal. Before each phase, record the affected baseline behavior and tests; make the smallest additive change; run targeted regression tests plus the relevant full build/test suite; inspect the final diff for accidental deletions; and rebuild/re-run Flutter after every Flutter change. If a requested change conflicts with existing behavior, stop and ask instead of silently choosing one. Do not perform unrelated cleanup or broad rewrites during phased work.
 
 ## Key Decisions
-- **Git workflow (current):** Feature branches (`phase/N-name`) only — commit, push branch, create PR. Never push directly to `origin/master`.
-- **Git workflow (approved P50 target):** `staging` is the protected integration branch and `master` remains the protected production/live branch. Feature/fix/phase branches target `staging`; staging deploys automatically to isolated infrastructure; only `staging` may enter `master`; production deploys the exact staging-tested SHA images after manual GitHub environment approval. Render image auto-deploy and mutable `latest` deployments will be disabled during cutover.
+- **Git workflow:** `staging` is the protected integration branch and `master` is the protected production/live branch. Feature/fix/phase branches target `staging`; only `staging` may enter `master`; production deploys the exact staging-tested SHA images after manual GitHub environment approval.
+- **Git best practices (follow always):**
+  - Work on short-lived branches: `fix/<slug>` or `feat/<slug>` (also accept `phase/<N>-<slug>`), branched off `staging`.
+  - Never push directly to `staging` or `master`; all changes land via PR → `staging`, then PR `staging` → `master`.
+  - Merge via **squash** (keeps history clean; each merged commit = one reviewable change).
+  - Keep feature branches current — rebase or merge `staging` in regularly. Branches left behind (>100 commits) become unmergeable or are superseded and deleted.
+  - Rebase *your own* feature branches; never rebase shared branches (`staging`, `master`) or force-push to them.
+  - After merging a PR, delete its head branch (GitHub auto-delete is not enabled here — do it manually).
+  - Never commit secrets, build artifacts, or generated binaries. `key.properties`/keystores are gitignored.
+  - Stale merged branches may be cleaned up anytime via `git fetch origin --prune` + deleting refs; keep intentional long-lived branches (e.g., `ios/device-testing`).
 - **Dashboard RBAC pattern:** Separate `/api/v1/dashboard/*` route group with `RequireDashboardAccess` + `RequireActive` + `OwnerScoped` middleware chain. `OwnerScoped` sets `owner_scope_id` in context for `restaurant_owner` only; handlers use `GetOwnerScopeID()` to scope queries. `uuid.Nil` means "no scope" = admin = access all.
 - **Repo scoping convention:** `FindAllByOwner` and `FindByOwnerID` methods skip `owner_id` filter when `ownerID == uuid.Nil`, enabling single-query pattern for both admin (all) and owner (filtered).
 - **Cookie-based auth sync:** `document.cookie` set on login, cleared on logout, enables Next.js 16 proxy.ts server-side route guard for `/dashboard/*`.
