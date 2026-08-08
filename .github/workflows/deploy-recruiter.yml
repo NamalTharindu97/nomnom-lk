@@ -23,9 +23,10 @@ jobs:
       name: staging
       url: https://demo.nomnomlk.com
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out staging deployment tooling
+        uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: staging
           fetch-depth: 0
 
       - name: Validate recruiter source
