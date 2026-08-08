@@ -33,7 +33,7 @@ func NewDashboardHandler(dashboardService *services.DashboardService, sseService
 }
 
 func (h *DashboardHandler) Stats(c *gin.Context) {
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 
 	stats, err := h.dashboardService.Stats(ownerID)
 	if err != nil {
@@ -44,7 +44,7 @@ func (h *DashboardHandler) Stats(c *gin.Context) {
 }
 
 func (h *DashboardHandler) ListRestaurants(c *gin.Context) {
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 	status := c.DefaultQuery("status", "all")
 	query := c.Query("q")
 	params := pagination.Extract(c)
@@ -57,14 +57,14 @@ func (h *DashboardHandler) ListRestaurants(c *gin.Context) {
 
 	data := make([]gin.H, len(restaurants))
 	for i, r := range restaurants {
-		data[i] = dashboardRestaurantToMap(&r, c, middleware.IsPortfolioViewer(c))
+		data[i] = dashboardRestaurantToMap(&r, c)
 	}
 
 	response.SuccessPaginated(c, data, pagination.Meta(params, total))
 }
 
 func (h *DashboardHandler) GetRestaurant(c *gin.Context) {
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.ValidationError(c, []response.ErrorDetail{
@@ -79,7 +79,7 @@ func (h *DashboardHandler) GetRestaurant(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, dashboardRestaurantDetailToMap(restaurant, c, middleware.IsPortfolioViewer(c)))
+	response.Success(c, dashboardRestaurantDetailToMap(restaurant, c))
 }
 
 func (h *DashboardHandler) CreateRestaurant(c *gin.Context) {
@@ -91,7 +91,7 @@ func (h *DashboardHandler) CreateRestaurant(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 
 	restaurant, err := h.dashboardService.CreateRestaurant(&req, ownerID)
 	if err != nil {
@@ -108,7 +108,7 @@ func (h *DashboardHandler) CreateRestaurant(c *gin.Context) {
 			fmt.Sprintf("Created restaurant: %s", restaurant.Name))
 	}
 
-	c.JSON(http.StatusCreated, dashboardRestaurantDetailToMap(restaurant, c, false))
+	c.JSON(http.StatusCreated, dashboardRestaurantDetailToMap(restaurant, c))
 }
 
 func (h *DashboardHandler) UpdateRestaurant(c *gin.Context) {
@@ -128,7 +128,7 @@ func (h *DashboardHandler) UpdateRestaurant(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 
 	restaurant, err := h.dashboardService.UpdateRestaurant(id, ownerID, &req)
 	if err != nil {
@@ -145,7 +145,7 @@ func (h *DashboardHandler) UpdateRestaurant(c *gin.Context) {
 			fmt.Sprintf("Updated restaurant: %s", restaurant.Name))
 	}
 
-	response.Success(c, dashboardRestaurantDetailToMap(restaurant, c, false))
+	response.Success(c, dashboardRestaurantDetailToMap(restaurant, c))
 }
 
 func (h *DashboardHandler) DeleteRestaurant(c *gin.Context) {
@@ -157,7 +157,7 @@ func (h *DashboardHandler) DeleteRestaurant(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 
 	restaurant, _ := h.dashboardService.GetRestaurantByIDForOwner(ownerID, id)
 	restaurantName := ""
@@ -182,13 +182,13 @@ func (h *DashboardHandler) DeleteRestaurant(c *gin.Context) {
 }
 
 func (h *DashboardHandler) ListOffers(c *gin.Context) {
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 	status := c.DefaultQuery("status", "all")
 	sort := c.DefaultQuery("sort", "newest")
 	query := c.Query("q")
 	params := pagination.Extract(c)
 
-	offers, total, err := h.dashboardService.ListOffers(c.Request.Context(), ownerID, status, query, params.Page, params.PerPage, sort, !middleware.IsPortfolioViewer(c))
+	offers, total, err := h.dashboardService.ListOffers(c.Request.Context(), ownerID, status, query, params.Page, params.PerPage, sort)
 	if err != nil {
 		response.InternalError(c, "failed to list offers")
 		return
@@ -196,14 +196,14 @@ func (h *DashboardHandler) ListOffers(c *gin.Context) {
 
 	data := make([]gin.H, len(offers))
 	for i, o := range offers {
-		data[i] = dashboardOfferToMap(&o, c, middleware.IsPortfolioViewer(c))
+		data[i] = dashboardOfferToMap(&o, c)
 	}
 
 	response.SuccessPaginated(c, data, pagination.Meta(params, total))
 }
 
 func (h *DashboardHandler) GetOffer(c *gin.Context) {
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.ValidationError(c, []response.ErrorDetail{
@@ -218,7 +218,7 @@ func (h *DashboardHandler) GetOffer(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, dashboardOfferToMap(offer, c, middleware.IsPortfolioViewer(c)))
+	response.Success(c, dashboardOfferToMap(offer, c))
 }
 
 func (h *DashboardHandler) CreateOffer(c *gin.Context) {
@@ -230,7 +230,7 @@ func (h *DashboardHandler) CreateOffer(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 	createdBy, _ := middleware.GetUserID(c)
 
 	offer, err := h.dashboardService.CreateOffer(&req, ownerID, createdBy)
@@ -252,7 +252,7 @@ func (h *DashboardHandler) CreateOffer(c *gin.Context) {
 			fmt.Sprintf("Created offer: %s", offer.Title))
 	}
 
-	c.JSON(http.StatusCreated, dashboardOfferToMap(offer, c, false))
+	c.JSON(http.StatusCreated, dashboardOfferToMap(offer, c))
 }
 
 func (h *DashboardHandler) UpdateOffer(c *gin.Context) {
@@ -272,7 +272,7 @@ func (h *DashboardHandler) UpdateOffer(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 
 	offer, err := h.dashboardService.UpdateOffer(id, ownerID, &req)
 	if err != nil {
@@ -289,7 +289,7 @@ func (h *DashboardHandler) UpdateOffer(c *gin.Context) {
 			fmt.Sprintf("Updated offer: %s", offer.Title))
 	}
 
-	response.Success(c, dashboardOfferToMap(offer, c, false))
+	response.Success(c, dashboardOfferToMap(offer, c))
 }
 
 func (h *DashboardHandler) DeleteOffer(c *gin.Context) {
@@ -301,7 +301,7 @@ func (h *DashboardHandler) DeleteOffer(c *gin.Context) {
 		return
 	}
 
-	ownerID, _ := middleware.GetDashboardOwnerID(c)
+	ownerID, _ := middleware.GetOwnerScopeID(c)
 
 	offer, _ := h.dashboardService.GetOfferByIDForOwner(ownerID, id)
 	offerTitle := ""
@@ -327,7 +327,7 @@ func (h *DashboardHandler) DeleteOffer(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context, portfolioSafe bool) gin.H {
+func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 	m := gin.H{
 		"id":              r.ID,
@@ -337,14 +337,10 @@ func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context, portfolioSaf
 		"contact_phone":   r.ContactPhone,
 		"cuisine_tags":    r.CuisineTags,
 		"cover_image":     r.CoverImage,
-		"social_links":    r.SocialLinks,
+		"social_links": r.SocialLinks,
 		"order_platforms": r.OrderPlatforms,
 		"owner_id":        r.OwnerID,
 		"status":          r.Status,
-	}
-	if portfolioSafe {
-		delete(m, "contact_phone")
-		delete(m, "owner_id")
 	}
 
 	if r.Translations != nil {
@@ -358,7 +354,7 @@ func dashboardRestaurantToMap(r *models.Restaurant, c *gin.Context, portfolioSaf
 	return m
 }
 
-func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context, portfolioSafe bool) gin.H {
+func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 	m := gin.H{
 		"id":              r.ID,
@@ -368,15 +364,11 @@ func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context, portfo
 		"contact_phone":   r.ContactPhone,
 		"cuisine_tags":    r.CuisineTags,
 		"cover_image":     r.CoverImage,
-		"social_links":    r.SocialLinks,
+		"social_links": r.SocialLinks,
 		"order_platforms": r.OrderPlatforms,
 		"owner_id":        r.OwnerID,
 		"status":          r.Status,
 		"created_at":      r.CreatedAt,
-	}
-	if portfolioSafe {
-		delete(m, "contact_phone")
-		delete(m, "owner_id")
 	}
 
 	if r.Translations != nil {
@@ -386,7 +378,7 @@ func dashboardRestaurantDetailToMap(r *models.Restaurant, c *gin.Context, portfo
 	return m
 }
 
-func dashboardOfferToMap(o *models.Offer, c *gin.Context, portfolioSafe bool) gin.H {
+func dashboardOfferToMap(o *models.Offer, c *gin.Context) gin.H {
 	lang := middleware.GetLanguage(c)
 
 	restaurant := gin.H{"id": o.RestaurantID}
@@ -395,10 +387,6 @@ func dashboardOfferToMap(o *models.Offer, c *gin.Context, portfolioSafe bool) gi
 		restaurant["slug"] = o.Restaurant.Slug
 		restaurant["social_links"] = o.Restaurant.SocialLinks
 		restaurant["order_platforms"] = o.Restaurant.OrderPlatforms
-	}
-	if portfolioSafe {
-		delete(restaurant, "social_links")
-		delete(restaurant, "order_platforms")
 	}
 
 	m := gin.H{

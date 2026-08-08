@@ -70,10 +70,6 @@ services:
       FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase_credentials
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@nomnomlk.com}
       ADMIN_PASSWORD_FILE: /run/secrets/admin_password
-      DEMO_VIEWER_ENABLED: ${DEMO_VIEWER_ENABLED:-true}
-      DEMO_VIEWER_EMAIL: ${DEMO_VIEWER_EMAIL:-recruiter-demo@nomnomlk.com}
-      DEMO_VIEWER_NAME: ${DEMO_VIEWER_NAME:-Recruiter Demo}
-      DEMO_VIEWER_SESSION_TTL: ${DEMO_VIEWER_SESSION_TTL:-30m}
     secrets:
       - database_password
       - redis_password

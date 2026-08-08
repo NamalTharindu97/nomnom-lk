@@ -11,15 +11,6 @@ on:
         description: Full staging commit SHA to deploy
         required: false
         type: string
-      provision_recruiter:
-        description: Provision or update the isolated recruiter stack
-        required: false
-        default: false
-        type: boolean
-      recruiter_source_sha:
-        description: Full staging SHA for recruiter application images
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -46,11 +37,10 @@ jobs:
         id: source
         env:
           DISPATCH_SHA: ${{ inputs.source_sha }}
-          PINNED_SHA: ${{ vars.STAGING_DEPLOY_SHA }}
           WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -Eeuo pipefail
-          sha=${DISPATCH_SHA:-${PINNED_SHA:-$WORKFLOW_SHA}}
+          sha=${DISPATCH_SHA:-$WORKFLOW_SHA}
           if [[ -z "$sha" ]]; then
             sha=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY.git" refs/heads/staging | cut -f1)
           fi
@@ -59,11 +49,6 @@ jobs:
             exit 1
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          if [[ -z "$DISPATCH_SHA" && -n "$PINNED_SHA" ]]; then
-            echo "pinned=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "pinned=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Check out tested source
         uses: actions/checkout@v4
@@ -87,7 +72,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and publish backend
-        if: steps.source.outputs.pinned != 'true'
         uses: docker/build-push-action@v5
         with:
           context: backend
@@ -98,7 +82,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=staging-backend
 
       - name: Scan backend image
-        if: steps.source.outputs.pinned != 'true'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-backend:${{ steps.source.outputs.sha }}
@@ -107,7 +90,6 @@ jobs:
           severity: HIGH,CRITICAL
 
       - name: Build and publish admin
-        if: steps.source.outputs.pinned != 'true'
         uses: docker/build-push-action@v5
         with:
           context: admin
@@ -121,22 +103,12 @@ jobs:
           cache-to: type=gha,mode=max,scope=staging-admin
 
       - name: Scan admin image
-        if: steps.source.outputs.pinned != 'true'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/nomnom-admin:${{ steps.source.outputs.sha }}
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
-
-      - name: Verify pinned images exist
-        if: steps.source.outputs.pinned == 'true'
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: |
-          docker buildx imagetools inspect "docker.io/$DOCKER_USERNAME/nomnom-backend:$SOURCE_SHA"
-          docker buildx imagetools inspect "docker.io/$DOCKER_USERNAME/nomnom-admin:$SOURCE_SHA"
 
       - name: Install SSH identity
         env:
@@ -148,32 +120,6 @@ jobs:
           install -d "$RUNNER_TEMP/nomnom-ssh"
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
           printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
-
-      - name: Resolve recruiter application SHA
-        if: github.event_name == 'workflow_dispatch' && inputs.provision_recruiter
-        id: recruiter
-        env:
-          RECRUITER_SHA: ${{ inputs.recruiter_source_sha }}
-          STAGING_SHA: ${{ steps.source.outputs.sha }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        run: |
-          set -Eeuo pipefail
-          sha=${RECRUITER_SHA:-$STAGING_SHA}
-          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::recruiter_source_sha must be a full 40-character Git commit SHA"
-            exit 1
-          fi
-          git merge-base --is-ancestor "$sha" origin/staging
-          docker buildx imagetools inspect "docker.io/$DOCKER_USERNAME/nomnom-backend:$sha"
-          docker buildx imagetools inspect "docker.io/$DOCKER_USERNAME/nomnom-admin:$sha"
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-
-      - name: Check out recruiter deployment tooling
-        if: github.event_name == 'workflow_dispatch' && inputs.provision_recruiter
-        uses: actions/checkout@v4
-        with:
-          ref: staging
-          path: recruiter-tooling
 
       - name: Deploy immutable images to VPS
         env:
@@ -194,36 +140,6 @@ jobs:
             -o "UserKnownHostsFile=$RUNNER_TEMP/nomnom-ssh/known_hosts" \
             "$VPS_DEPLOY_USER@$VPS_HOST" \
             "sudo /usr/local/sbin/nomnom-deploy-staging 'docker.io/$DOCKER_USERNAME/nomnom-backend:$SOURCE_SHA' 'docker.io/$DOCKER_USERNAME/nomnom-admin:$SOURCE_SHA'"
-
-      - name: Provision isolated recruiter stack
-        if: github.event_name == 'workflow_dispatch' && inputs.provision_recruiter
-        env:
-          VPS_HOST: ${{ vars.VPS_HOST }}
-          VPS_PORT: ${{ vars.VPS_PORT }}
-          VPS_DEPLOY_USER: ${{ vars.VPS_DEPLOY_USER }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          SOURCE_SHA: ${{ steps.recruiter.outputs.sha }}
-          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
-        run: |
-          set -Eeuo pipefail
-          port=${VPS_PORT:-22}
-          umask 077
-          install -d "$RUNNER_TEMP/nomnom-ssh"
-          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
-          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
-          install -d "$RUNNER_TEMP/recruiter-bundle"
-          cp -R recruiter-tooling/deploy recruiter-tooling/scripts "$RUNNER_TEMP/recruiter-bundle/"
-          tar -C "$RUNNER_TEMP/recruiter-bundle" -czf "$RUNNER_TEMP/recruiter-bundle.tar.gz" .
-          scp -i "$RUNNER_TEMP/nomnom-ssh/id" -P "$port" \
-            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-            -o "UserKnownHostsFile=$RUNNER_TEMP/nomnom-ssh/known_hosts" \
-            "$RUNNER_TEMP/recruiter-bundle.tar.gz" "$VPS_DEPLOY_USER@$VPS_HOST:/tmp/nomnom-recruiter-bundle.tar.gz"
-          ssh -i "$RUNNER_TEMP/nomnom-ssh/id" -p "$port" \
-            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-            -o "UserKnownHostsFile=$RUNNER_TEMP/nomnom-ssh/known_hosts" \
-            "$VPS_DEPLOY_USER@$VPS_HOST" \
-            "rm -rf /tmp/nomnom-recruiter-bundle && mkdir -p /tmp/nomnom-recruiter-bundle && tar -xzf /tmp/nomnom-recruiter-bundle.tar.gz -C /tmp/nomnom-recruiter-bundle && sudo /tmp/nomnom-recruiter-bundle/scripts/vps/provision-recruiter.sh 'demo.nomnomlk.com' 'docker.io/$DOCKER_USERNAME/nomnom-backend:$SOURCE_SHA' 'docker.io/$DOCKER_USERNAME/nomnom-admin:$SOURCE_SHA'"
 
       - name: Verify public endpoints
         run: |

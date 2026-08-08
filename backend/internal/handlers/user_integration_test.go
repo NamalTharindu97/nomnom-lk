@@ -4,7 +4,6 @@ package handlers_test
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -132,21 +131,6 @@ func TestIntegration_UserCreate_OwnerBlocked(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
-func TestIntegration_UserCreate_PortfolioViewerRoleBlocked(t *testing.T) {
-	engine, _, err := testutil.Setup()
-	require.NoError(t, err)
-
-	body := testutil.JSONBody(map[string]interface{}{
-		"email":    fmt.Sprintf("viewer-create-%d@test.com", time.Now().UnixNano()),
-		"name":     "Recruiter Demo",
-		"password": "password123",
-		"role":     "portfolio_viewer",
-	})
-	w := testutil.PerformRequest(engine, http.MethodPost, "/api/v1/users", body, testutil.GenerateAdminToken())
-	require.Equal(t, http.StatusBadRequest, w.Code)
-	require.Contains(t, w.Body.String(), "VALIDATION_ERROR")
-}
-
 func TestIntegration_UserCreate_DuplicateEmail(t *testing.T) {
 	engine, _, err := testutil.Setup()
 	require.NoError(t, err)
@@ -255,47 +239,6 @@ func TestIntegration_UserDelete_AdminAllowed(t *testing.T) {
 	token := testutil.GenerateAdminToken()
 	w := testutil.PerformRequest(engine, http.MethodDelete, "/api/v1/users/"+userID, nil, token)
 	assert.Equal(t, http.StatusNoContent, w.Code)
-}
-
-func TestIntegration_PortfolioViewerAccountProtectedFromAdminMutations(t *testing.T) {
-	engine, _, err := testutil.Setup()
-	require.NoError(t, err)
-	db := testutil.GetTestDB()
-	require.NotNil(t, db)
-
-	email := fmt.Sprintf("viewer-protected-%d@test.com", time.Now().UnixNano())
-	var userID string
-	row := db.Raw(`INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
-		VALUES (gen_random_uuid(), ?, 'Recruiter Demo', 'portfolio_viewer', true, NOW(), NOW())
-		RETURNING id`, email).Row()
-	require.NoError(t, row.Scan(&userID))
-	t.Cleanup(func() { db.Exec("DELETE FROM users WHERE id = ?::uuid", userID) })
-
-	adminToken := testutil.GenerateAdminToken()
-	tests := []struct {
-		name   string
-		method string
-		path   string
-		body   io.Reader
-	}{
-		{name: "update", method: http.MethodPut, path: "/api/v1/users/" + userID, body: testutil.JSONBody(map[string]interface{}{"name": "Changed"})},
-		{name: "delete", method: http.MethodDelete, path: "/api/v1/users/" + userID},
-		{name: "bulk deactivate", method: http.MethodPost, path: "/api/v1/admin/users/bulk", body: testutil.JSONBody(map[string]interface{}{"action": "deactivate", "ids": []string{userID}})},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := testutil.PerformRequest(engine, tt.method, tt.path, tt.body, adminToken)
-			require.Equal(t, http.StatusForbidden, w.Code)
-			require.Contains(t, w.Body.String(), "SYSTEM_ACCOUNT_PROTECTED")
-		})
-	}
-
-	var name string
-	var active bool
-	require.NoError(t, db.Raw("SELECT name, is_active FROM users WHERE id = ?::uuid", userID).Row().Scan(&name, &active))
-	require.Equal(t, "Recruiter Demo", name)
-	require.True(t, active)
 }
 
 func TestIntegration_UserBulkActivate_AdminAllowed(t *testing.T) {

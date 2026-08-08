@@ -20,20 +20,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// ErrPortfolioViewerAuth prevents normal authentication from issuing demo sessions.
-var ErrPortfolioViewerAuth = errors.New("recruiter demo only supports one-click sign-in")
-
-var (
-	ErrDemoViewerNotFound = errors.New("recruiter demo account is unavailable")
-	ErrDemoViewerInactive = errors.New("recruiter demo account is inactive")
-)
-
-type DemoSession struct {
-	AccessToken string
-	ExpiresIn   int
-	User        *models.User
-}
-
 type AuthService struct {
 	userRepo         *repository.UserRepo
 	refreshTokenRepo *repository.RefreshTokenRepo
@@ -103,29 +89,6 @@ func (s *AuthService) LoginDashboard(email, password string) (*response.AuthResp
 	return s.generateAuthResponse(user)
 }
 
-func (s *AuthService) LoginDemo(email, sessionTTL string) (*DemoSession, error) {
-	user, err := s.userRepo.FindByEmail(email)
-	if err != nil || user.Role != models.RolePortfolioViewer {
-		return nil, ErrDemoViewerNotFound
-	}
-	if !user.IsActive {
-		return nil, ErrDemoViewerInactive
-	}
-	if user.EmailVerifiedAt == nil {
-		return nil, ErrDemoViewerNotFound
-	}
-
-	ttl, err := time.ParseDuration(sessionTTL)
-	if err != nil || ttl <= 0 {
-		return nil, ErrDemoViewerNotFound
-	}
-	accessToken, err := jwt.GenerateAccessToken(s.cfg.Secret, user.ID, user.Email, user.Name, string(user.Role), sessionTTL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create demo session: %w", err)
-	}
-	return &DemoSession{AccessToken: accessToken, ExpiresIn: int(ttl.Seconds()), User: user}, nil
-}
-
 func (s *AuthService) authenticatePassword(email, password string) (*models.User, error) {
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
@@ -146,9 +109,6 @@ func (s *AuthService) authenticatePassword(email, password string) (*models.User
 
 	if !user.IsActive {
 		return nil, errors.New("your account has been suspended. contact an administrator")
-	}
-	if user.Role == models.RolePortfolioViewer {
-		return nil, ErrPortfolioViewerAuth
 	}
 
 	if user.PasswordHash == "" {
@@ -193,9 +153,6 @@ func (s *AuthService) SendVerificationCode(email string) error {
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		return errors.New("email not found")
-	}
-	if user.Role == models.RolePortfolioViewer {
-		return ErrPortfolioViewerAuth
 	}
 
 	if user.EmailVerifiedAt != nil {
@@ -246,9 +203,6 @@ func (s *AuthService) VerifyEmail(email, code string) (*response.AuthResponse, e
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-	if user.Role == models.RolePortfolioViewer {
-		return nil, ErrPortfolioViewerAuth
-	}
 
 	now := time.Now()
 	user.EmailVerifiedAt = &now
@@ -272,9 +226,6 @@ func (s *AuthService) FirebaseLogin(firebaseUID, email, name string) (*response.
 		}
 
 		if user != nil {
-			if user.Role == models.RolePortfolioViewer {
-				return nil, ErrPortfolioViewerAuth
-			}
 			user.FirebaseUID = &firebaseUID
 			if err := s.userRepo.Update(user); err != nil {
 				return nil, fmt.Errorf("failed to link firebase account: %w", err)
@@ -293,9 +244,6 @@ func (s *AuthService) FirebaseLogin(firebaseUID, email, name string) (*response.
 				return nil, fmt.Errorf("failed to create user: %w", err)
 			}
 		}
-	}
-	if user.Role == models.RolePortfolioViewer {
-		return nil, ErrPortfolioViewerAuth
 	}
 
 	if !user.IsActive {
@@ -325,10 +273,6 @@ func (s *AuthService) Refresh(refreshTokenStr string) (*response.TokenPairRespon
 	if !user.IsActive {
 		s.refreshTokenRepo.DeleteByID(storedToken.ID)
 		return nil, errors.New("your account has been suspended. contact an administrator")
-	}
-	if user.Role == models.RolePortfolioViewer {
-		s.refreshTokenRepo.DeleteByID(storedToken.ID)
-		return nil, ErrPortfolioViewerAuth
 	}
 
 	if user.IsPendingDeletion() {

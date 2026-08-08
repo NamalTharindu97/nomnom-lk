@@ -17,7 +17,6 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Plus, Pencil, Trash2, Folder } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
 
 interface Category {
   id: string
@@ -27,7 +26,6 @@ interface Category {
 }
 
 export default function CategoriesPage() {
-  const { isViewer, isReadOnly } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Category | null>(null)
@@ -73,9 +71,9 @@ export default function CategoriesPage() {
 
   return (
     <ErrorBoundary><div className="space-y-6">
-       <div><h1 className="text-2xl font-bold tracking-tight">Categories</h1><p className="text-muted-foreground">{isViewer ? "Explore how offers are organized" : "Organize offers by category"}</p></div>
-       <div className={`grid gap-6 ${isReadOnly ? "" : "lg:grid-cols-2"}`}>
-         {!isReadOnly && <Card>
+      <div><h1 className="text-2xl font-bold tracking-tight">Categories</h1><p className="text-muted-foreground">Organize offers by category</p></div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
           <CardHeader><CardTitle>{editing ? "Edit Category" : "New Category"}</CardTitle><CardDescription>Create categories to organize your offers</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-2"><Label htmlFor="cat-name">Name</Label><Input id="cat-name" value={name} onChange={e => setName(e.target.value)} placeholder="Pizza & Pasta" /></div>
@@ -84,18 +82,18 @@ export default function CategoriesPage() {
               {editing && <Button variant="outline" onClick={startCreate}>Cancel</Button>}
             </div>
           </CardContent>
-         </Card>}
+        </Card>
         <Card>
           <CardHeader><CardTitle>All Categories</CardTitle></CardHeader>
           <CardContent>
             <Table>
-               <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Slug</TableHead>{!isReadOnly && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Slug</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>
-                {loading ? <TableSkeleton columns={isReadOnly ? 2 : 3} /> : categories.length === 0 ? <EmptyState icon={<Folder className="size-10 text-muted-foreground/50" />} title="No categories" description={isViewer ? "Categories will appear here when available." : "Create your first category."} /> : categories.map(c => (
+                {loading ? <TableSkeleton columns={3} /> : categories.length === 0 ? <EmptyState icon={<Folder className="size-10 text-muted-foreground/50" />} title="No categories" description="Create your first category." /> : categories.map(c => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.slug}</TableCell>
-                     {!isReadOnly && <TableCell className="text-right">
+                    <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" onClick={() => startEdit(c)}><Pencil className="size-4" /></Button>
                         <AlertDialog>
@@ -103,7 +101,7 @@ export default function CategoriesPage() {
                           <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Category</AlertDialogTitle><AlertDialogDescription>Delete <strong>{c.name}</strong>? This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                         </AlertDialog>
                       </div>
-                     </TableCell>}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

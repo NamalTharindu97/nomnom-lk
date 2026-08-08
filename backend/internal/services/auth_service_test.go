@@ -13,7 +13,6 @@ import (
 	"github.com/nomnom-lk/backend/internal/database"
 	"github.com/nomnom-lk/backend/internal/models"
 	"github.com/nomnom-lk/backend/internal/repository"
-	appjwt "github.com/nomnom-lk/backend/pkg/jwt"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -45,47 +44,6 @@ func TestMain(m *testing.M) {
 	})
 
 	os.Exit(m.Run())
-}
-
-func TestAuthService_LoginDemo(t *testing.T) {
-	svc, userRepo, _ := setupAuthServiceTest(t)
-	now := time.Now()
-
-	tests := []struct {
-		name      string
-		role      models.UserRole
-		active    bool
-		verified  *time.Time
-		wantError error
-	}{
-		{name: "active viewer", role: models.RolePortfolioViewer, active: true, verified: &now},
-		{name: "wrong role fails closed", role: models.RoleAdmin, active: true, verified: &now, wantError: ErrDemoViewerNotFound},
-		{name: "inactive viewer", role: models.RolePortfolioViewer, active: false, verified: &now, wantError: ErrDemoViewerInactive},
-		{name: "unverified viewer", role: models.RolePortfolioViewer, active: true, wantError: ErrDemoViewerNotFound},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			email := "demo_" + uuid.New().String()[:8] + "@test.com"
-			user := &models.User{Email: email, Name: "Recruiter Demo", Role: tt.role, IsActive: tt.active, EmailVerifiedAt: tt.verified}
-			require.NoError(t, userRepo.Create(user))
-			if !tt.active {
-				require.NoError(t, testDB.Model(user).Update("is_active", false).Error)
-			}
-
-			result, err := svc.LoginDemo(email, "2m")
-			if tt.wantError != nil {
-				require.ErrorIs(t, err, tt.wantError)
-				require.Nil(t, result)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, 120, result.ExpiresIn)
-			claims, err := appjwt.ValidateToken("test-secret-key-for-testing-only", result.AccessToken)
-			require.NoError(t, err)
-			require.Equal(t, string(models.RolePortfolioViewer), claims.Role)
-			require.WithinDuration(t, time.Now().Add(2*time.Minute), claims.ExpiresAt.Time, 2*time.Second)
-		})
-	}
 }
 
 func envOrDefault(key, def string) string {
@@ -261,7 +219,7 @@ func TestAuthService_SendVerificationCode_AlreadyVerified(t *testing.T) {
 func TestAuthService_SendVerificationCode_EmailNotFound(t *testing.T) {
 	svc, _, _ := setupAuthServiceTest(t)
 
-	err := svc.SendVerificationCode("noexist_" + uuid.New().String()[:8] + "@test.com")
+	err := svc.SendVerificationCode("noexist_"+uuid.New().String()[:8]+"@test.com")
 	assert.ErrorContains(t, err, "email not found")
 }
 
@@ -341,40 +299,6 @@ func TestAuthService_FirebaseLogin_ExistingEmailLinks(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, updated.FirebaseUID)
 	assert.Equal(t, fbUID, *updated.FirebaseUID)
-}
-
-func TestAuthService_PortfolioViewerNormalAuthPathsRejected(t *testing.T) {
-	svc, userRepo, refreshRepo := setupAuthServiceTest(t)
-	email := "viewer_" + uuid.New().String()[:8] + "@test.com"
-	firebaseUID := "viewer_" + uuid.New().String()[:8]
-	defer cleanupUser(t, userRepo, email)
-
-	require.NoError(t, svc.Register(email, "password123", "Recruiter Demo"))
-	user, err := userRepo.FindByEmail(email)
-	require.NoError(t, err)
-	now := time.Now()
-	user.EmailVerifiedAt = &now
-	require.NoError(t, userRepo.Update(user))
-
-	auth, err := svc.Login(email, "password123")
-	require.NoError(t, err)
-	user.Role = models.RolePortfolioViewer
-	require.NoError(t, userRepo.Update(user))
-
-	_, err = svc.Login(email, "password123")
-	require.ErrorIs(t, err, ErrPortfolioViewerAuth)
-	_, err = svc.LoginDashboard(email, "password123")
-	require.ErrorIs(t, err, ErrPortfolioViewerAuth)
-	_, err = svc.FirebaseLogin(firebaseUID, email, "Recruiter Demo")
-	require.ErrorIs(t, err, ErrPortfolioViewerAuth)
-	_, err = svc.Refresh(auth.RefreshToken)
-	require.ErrorIs(t, err, ErrPortfolioViewerAuth)
-
-	updated, err := userRepo.FindByEmail(email)
-	require.NoError(t, err)
-	require.Nil(t, updated.FirebaseUID)
-	_, err = refreshRepo.FindByHash(hashToken(auth.RefreshToken))
-	require.Error(t, err, "viewer refresh token should be revoked")
 }
 
 func TestAuthService_FirebaseLogin_InactiveUser(t *testing.T) {

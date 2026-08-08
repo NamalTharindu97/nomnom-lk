@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nomnom-lk/backend/internal/config"
@@ -53,39 +52,5 @@ func TestBrowserSessionClearMatchesCookieScope(t *testing.T) {
 	for _, cookie := range cookies {
 		require.Equal(t, -1, cookie.MaxAge)
 		require.True(t, cookie.Secure)
-	}
-}
-
-func TestBrowserSessionDemoHasNoRefreshCookieAndUsesConfiguredExpiry(t *testing.T) {
-	session := newBrowserSession(
-		&config.BrowserSessionConfig{CookieSecure: true},
-		&config.JWTConfig{AccessExpiry: "15m", RefreshExpiry: "720h"},
-	)
-	recorder := httptest.NewRecorder()
-	context, _ := gin.CreateTestContext(recorder)
-
-	require.NoError(t, session.setDemo(context, "demo-access", 30*time.Minute))
-	cookies := recorder.Result().Cookies()
-	require.Len(t, cookies, 2)
-	for _, cookie := range cookies {
-		require.NotEqual(t, browserRefreshCookie, cookie.Name)
-		require.InDelta(t, 30*time.Minute/time.Second, cookie.MaxAge, 1)
-	}
-}
-
-func TestBrowserLogoutClearsAccessOnlyDemoSession(t *testing.T) {
-	handler := &AuthHandler{browserSession: newBrowserSession(
-		&config.BrowserSessionConfig{CookieSecure: true},
-		&config.JWTConfig{AccessExpiry: "15m", RefreshExpiry: "720h"},
-	)}
-	recorder := httptest.NewRecorder()
-	context, _ := gin.CreateTestContext(recorder)
-	context.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/browser/logout", nil)
-
-	handler.BrowserLogout(context)
-	require.Equal(t, http.StatusNoContent, context.Writer.Status())
-	require.Len(t, recorder.Result().Cookies(), 3)
-	for _, cookie := range recorder.Result().Cookies() {
-		require.Equal(t, -1, cookie.MaxAge)
 	}
 }

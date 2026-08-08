@@ -51,16 +51,6 @@ func (s *browserSession) setAccess(c *gin.Context, accessToken string) {
 	s.setCookie(c, middleware.BrowserAccessCookie, accessToken, "/", s.accessExpiry, true)
 }
 
-func (s *browserSession) setDemo(c *gin.Context, accessToken string, expiry time.Duration) error {
-	csrfToken, err := newCSRFToken()
-	if err != nil {
-		return err
-	}
-	s.setCookie(c, middleware.BrowserAccessCookie, accessToken, "/", expiry, true)
-	s.setCookie(c, middleware.BrowserCSRFCookie, csrfToken, "/", expiry, false)
-	return nil
-}
-
 func (s *browserSession) clear(c *gin.Context) {
 	s.clearCookie(c, middleware.BrowserAccessCookie, "/", true)
 	s.clearCookie(c, browserRefreshCookie, "/api/v1/auth/browser", true)

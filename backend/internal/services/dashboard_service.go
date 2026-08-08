@@ -36,8 +36,8 @@ func (s *DashboardService) ListRestaurants(ownerID uuid.UUID, status, query stri
 	return s.restaurantRepo.FindAllByOwner(ownerID, status, query, page, perPage)
 }
 
-func (s *DashboardService) ListOffers(ctx context.Context, ownerID uuid.UUID, status, query string, page, perPage int, sort string, cacheable bool) ([]models.Offer, int64, error) {
-	if s.rdb == nil || !cacheable {
+func (s *DashboardService) ListOffers(ctx context.Context, ownerID uuid.UUID, status, query string, page, perPage int, sort string) ([]models.Offer, int64, error) {
+	if s.rdb == nil {
 		return s.offerRepo.FindAllByOwner(ownerID, status, query, page, perPage, sort)
 	}
 
