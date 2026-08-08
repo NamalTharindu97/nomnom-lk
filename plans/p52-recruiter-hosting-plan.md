@@ -13,6 +13,7 @@
 
 - Keep the existing staging Caddy as the only host listener on ports 80/443.
 - Add an isolated `nomnom-recruiter` Compose project with separate backend, admin, PostgreSQL, Redis, network, volumes, and generated secrets.
+- Give recruiter application services unique Compose names so Docker DNS cannot shadow staging's `admin` or `backend` service aliases when Caddy joins both edge networks.
 - Attach Caddy only to the recruiter edge network and route `demo.nomnomlk.com` to `recruiter-admin:3000`.
 - Keep recruiter PostgreSQL and Redis on an internal network with no host ports.
 - Clone staging data once, clear session/device/notification/audit/favorite data, anonymize all non-viewer accounts, and disable their login.
@@ -28,7 +29,7 @@
 5. Dispatch `Deploy Staging` with pre-P52 SHA `76e30e4de5b79c3220c59c9e52b80bdfd0e74a39`.
    Set the protected staging variable `STAGING_DEPLOY_SHA` to that SHA so later
    staging pushes do not silently replace the intentional runtime pin.
-6. Verify staging admin/owner login, API health, public data, Flutter endpoints, and absence of the recruiter entry point.
+6. Verify staging admin/owner login, API health, public data, Flutter endpoints, absence of the recruiter entry point, and a `404` from the staging demo-session route.
 7. Confirm the dedicated recruiter URL remains on the pinned P52 images.
 
 ## Rollback

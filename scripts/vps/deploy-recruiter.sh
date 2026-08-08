@@ -21,8 +21,10 @@ for image in "$BACKEND_IMAGE" "$ADMIN_IMAGE"; do
   fi
 done
 
-old_backend=$(docker inspect --format '{{.Config.Image}}' nomnom-recruiter-backend-1 2>/dev/null || true)
-old_admin=$(docker inspect --format '{{.Config.Image}}' nomnom-recruiter-admin-1 2>/dev/null || true)
+old_backend=$(docker inspect --format '{{.Config.Image}}' nomnom-recruiter-recruiter-backend-1 2>/dev/null || \
+  docker inspect --format '{{.Config.Image}}' nomnom-recruiter-backend-1 2>/dev/null || true)
+old_admin=$(docker inspect --format '{{.Config.Image}}' nomnom-recruiter-recruiter-admin-1 2>/dev/null || \
+  docker inspect --format '{{.Config.Image}}' nomnom-recruiter-admin-1 2>/dev/null || true)
 succeeded=false
 
 rollback() {
@@ -30,7 +32,7 @@ rollback() {
   set +e
   if [[ "$succeeded" != true && -n "$old_backend" && -n "$old_admin" ]]; then
     BACKEND_IMAGE="$old_backend" ADMIN_IMAGE="$old_admin" \
-      docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps backend admin
+      docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps recruiter-backend recruiter-admin
   fi
   return "$status"
 }
@@ -40,9 +42,9 @@ cd "$COMPOSE_DIR"
 BACKEND_IMAGE="$BACKEND_IMAGE" ADMIN_IMAGE="$ADMIN_IMAGE" \
   docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" config --quiet
 BACKEND_IMAGE="$BACKEND_IMAGE" ADMIN_IMAGE="$ADMIN_IMAGE" \
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" pull backend admin
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" pull recruiter-backend recruiter-admin
 BACKEND_IMAGE="$BACKEND_IMAGE" ADMIN_IMAGE="$ADMIN_IMAGE" \
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps backend admin
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-deps --remove-orphans recruiter-backend recruiter-admin
 
 for _ in $(seq 1 60); do
   if curl --fail --silent --show-error --output /dev/null "https://$DOMAIN/login" && \

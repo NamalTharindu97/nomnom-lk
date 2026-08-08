@@ -176,7 +176,7 @@ SQL
   touch "$ROOT/.database-initialized"
 fi
 
-docker compose -f compose.recruiter.yml --env-file compose.recruiter.env up -d backend admin
+docker compose -f compose.recruiter.yml --env-file compose.recruiter.env up -d recruiter-backend recruiter-admin
 docker network inspect nomnom-recruiter-edge >/dev/null
 if ! docker inspect --format '{{json .NetworkSettings.Networks}}' "$CADDY_CONTAINER" | grep -q 'nomnom-recruiter-edge'; then
   docker network connect nomnom-recruiter-edge "$CADDY_CONTAINER"
