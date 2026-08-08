@@ -16,6 +16,10 @@ on:
         required: false
         default: false
         type: boolean
+      recruiter_source_sha:
+        description: Full staging SHA for recruiter application images
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -145,6 +149,32 @@ jobs:
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
           printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
 
+      - name: Resolve recruiter application SHA
+        if: github.event_name == 'workflow_dispatch' && inputs.provision_recruiter
+        id: recruiter
+        env:
+          RECRUITER_SHA: ${{ inputs.recruiter_source_sha }}
+          STAGING_SHA: ${{ steps.source.outputs.sha }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          set -Eeuo pipefail
+          sha=${RECRUITER_SHA:-$STAGING_SHA}
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::recruiter_source_sha must be a full 40-character Git commit SHA"
+            exit 1
+          fi
+          git merge-base --is-ancestor "$sha" origin/staging
+          docker buildx imagetools inspect "docker.io/$DOCKER_USERNAME/nomnom-backend:$sha"
+          docker buildx imagetools inspect "docker.io/$DOCKER_USERNAME/nomnom-admin:$sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Check out recruiter deployment tooling
+        if: github.event_name == 'workflow_dispatch' && inputs.provision_recruiter
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+          path: recruiter-tooling
+
       - name: Deploy immutable images to VPS
         env:
           VPS_HOST: ${{ vars.VPS_HOST }}
@@ -172,7 +202,7 @@ jobs:
           VPS_PORT: ${{ vars.VPS_PORT }}
           VPS_DEPLOY_USER: ${{ vars.VPS_DEPLOY_USER }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          SOURCE_SHA: ${{ steps.recruiter.outputs.sha }}
           VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
         run: |
@@ -183,7 +213,7 @@ jobs:
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/nomnom-ssh/id"
           printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/nomnom-ssh/known_hosts"
           install -d "$RUNNER_TEMP/recruiter-bundle"
-          cp -R deploy scripts "$RUNNER_TEMP/recruiter-bundle/"
+          cp -R recruiter-tooling/deploy recruiter-tooling/scripts "$RUNNER_TEMP/recruiter-bundle/"
           tar -C "$RUNNER_TEMP/recruiter-bundle" -czf "$RUNNER_TEMP/recruiter-bundle.tar.gz" .
           scp -i "$RUNNER_TEMP/nomnom-ssh/id" -P "$port" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
